@@ -3,12 +3,12 @@ namespace var {
     struct Token;
 }
     
-    DECLD char*					prev_var_file_data =			nullptr;
-    DECLD var::Token*			prev_var_file_tokens =			nullptr;
-    DECLD char*					write_copy_cur = 0; // stop 'may be used uninitialized' warning
+    DECLD char*                 prev_var_file_data =            nullptr;
+    DECLD var::Token*           prev_var_file_tokens =          nullptr;
+    DECLD char*                 write_copy_cur = 0; // stop 'may be used uninitialized' warning
     
-    DECLD HANDLE				var_file_h;
-    DECLD FILETIME				var_file_filetime;
+    DECLD HANDLE                var_file_h;
+    DECLD FILETIME              var_file_filetime;
     
     DECL void write_copy_until (char* until) {
         
@@ -27,32 +27,32 @@ namespace var {
     
     enum var_types_e : u32 {
         // These put first so that MSVC shows VT_FLT for value 0
-        VT_FLT =									0b0000000000000,
-        VT_SINT =									0b0000000100000,
-        VT_UINT =									0b0000001100000,
-        VT_EXTRAT =									0b0000001000000,
+        VT_FLT =                                    0b0000000000000,
+        VT_SINT =                                   0b0000000100000,
+        VT_UINT =                                   0b0000001100000,
+        VT_EXTRAT =                                 0b0000001000000,
         
-        VT_SCALAR =									0b0000000000000,
-        VT_VEC2 =									0b0000000000001,
-        VT_VEC3 =									0b0000000000010,
-        VT_VEC4 =									0b0000000000011,
-        VT_QUAT =									0b0000000000100,
-        VT_MAT2 =									0b0000000000101,
-        VT_MAT3 =									0b0000000000110,
-        VT_MAT4 =									0b0000000000111,
+        VT_SCALAR =                                 0b0000000000000,
+        VT_VEC2 =                                   0b0000000000001,
+        VT_VEC3 =                                   0b0000000000010,
+        VT_VEC4 =                                   0b0000000000011,
+        VT_QUAT =                                   0b0000000000100,
+        VT_MAT2 =                                   0b0000000000101,
+        VT_MAT3 =                                   0b0000000000110,
+        VT_MAT4 =                                   0b0000000000111,
         
-        VT_SIZE1 =									0b0000000000000,
-        VT_SIZE2 =									0b0000000001000,
-        VT_SIZE4 =									0b0000000010000,
-        VT_SIZE8 =									0b0000000011000,
+        VT_SIZE1 =                                  0b0000000000000,
+        VT_SIZE2 =                                  0b0000000001000,
+        VT_SIZE4 =                                  0b0000000010000,
+        VT_SIZE8 =                                  0b0000000011000,
         
         // If angle unit is set, actual storage in radians (conversion happens on unit being set)
-        VT_ANGLE =									0b0000010000000, // Only for floats, actual storage in radians
-        VT_COLOR =									0b0000100000000, // Only for floats, actual storage in linear
+        VT_ANGLE =                                  0b0000010000000, // Only for floats, actual storage in radians
+        VT_COLOR =                                  0b0000100000000, // Only for floats, actual storage in linear
         
-        VT_FPTR_VAR =								0b0001000000000, // pdata is not a variable in memory, but instead a pointer to a 'setter' function
+        VT_FPTR_VAR =                               0b0001000000000, // pdata is not a variable in memory, but instead a pointer to a 'setter' function
         
-        VT_SPECIAL =								0x80000000, // Special values, -> these follow the normal enum scheme (as opposed to the bitfields we use normally)
+        VT_SPECIAL =                                0x80000000, // Special values, -> these follow the normal enum scheme (as opposed to the bitfields we use normally)
         
     };
     DEFINE_ENUM_FLAG_OPS(var_types_e, u32)
@@ -61,96 +61,96 @@ namespace var {
         #define TI DECLD constexpr u32
         
         // 
-        T VT_FV2 =									VT_FLT|VT_VEC2;
-        T VT_FV3 =									VT_FLT|VT_VEC3;
-        T VT_FV4 =									VT_FLT|VT_VEC4;
-        T VT_FQUAT =								VT_FLT|VT_QUAT;
+        T VT_FV2 =                                  VT_FLT|VT_VEC2;
+        T VT_FV3 =                                  VT_FLT|VT_VEC3;
+        T VT_FV4 =                                  VT_FLT|VT_VEC4;
+        T VT_FQUAT =                                VT_FLT|VT_QUAT;
         
-        T VT_SV2 =									VT_SINT|VT_VEC2;
-        T VT_SV3 =									VT_SINT|VT_VEC3;
-        T VT_SV4 =									VT_SINT|VT_VEC4;
-        
-        
-        T VT_F32 =									VT_FLT|VT_SIZE4;
-        T VT_F64 =									VT_FLT|VT_SIZE8;
-        
-        T VT_S8 =									VT_SINT|VT_SIZE1;
-        T VT_S16 =									VT_SINT|VT_SIZE2;
-        T VT_S32 =									VT_SINT|VT_SIZE4;
-        T VT_S64 =									VT_SINT|VT_SIZE8;
-        
-        T VT_U8 =									VT_UINT|VT_SIZE1;
-        T VT_U16 =									VT_UINT|VT_SIZE2;
-        T VT_U32 =									VT_UINT|VT_SIZE4;
-        T VT_U64 =									VT_UINT|VT_SIZE8;
-        
-        T VT_BOOL =									VT_EXTRAT|VT_SIZE1;
-        T VT_CSTR =									VT_EXTRAT|VT_SIZE8;
-        T VT_LSTR =									VT_EXTRAT|VT_SIZE8|VT_VEC2;
+        T VT_SV2 =                                  VT_SINT|VT_VEC2;
+        T VT_SV3 =                                  VT_SINT|VT_VEC3;
+        T VT_SV4 =                                  VT_SINT|VT_VEC4;
         
         
-        T VT_F32V2 =								VT_F32|VT_VEC2;
-        T VT_F32V3 =								VT_F32|VT_VEC3;
-        T VT_F32V4 =								VT_F32|VT_VEC4;
-        T VT_F32QUAT =								VT_F32|VT_QUAT;
+        T VT_F32 =                                  VT_FLT|VT_SIZE4;
+        T VT_F64 =                                  VT_FLT|VT_SIZE8;
         
-        T VT_S32V2 =								VT_S32|VT_VEC2;
-        T VT_S32V3 =								VT_S32|VT_VEC3;
-        T VT_S32V4 =								VT_S32|VT_VEC4;
+        T VT_S8 =                                   VT_SINT|VT_SIZE1;
+        T VT_S16 =                                  VT_SINT|VT_SIZE2;
+        T VT_S32 =                                  VT_SINT|VT_SIZE4;
+        T VT_S64 =                                  VT_SINT|VT_SIZE8;
         
-        T VT_U32V2 =								VT_U32|VT_VEC2;
-        T VT_U32V3 =								VT_U32|VT_VEC3;
-        T VT_U32V4 =								VT_U32|VT_VEC4;
+        T VT_U8 =                                   VT_UINT|VT_SIZE1;
+        T VT_U16 =                                  VT_UINT|VT_SIZE2;
+        T VT_U32 =                                  VT_UINT|VT_SIZE4;
+        T VT_U64 =                                  VT_UINT|VT_SIZE8;
         
-        T VT_F32COL =								VT_F32V3|VT_COLOR;
+        T VT_BOOL =                                 VT_EXTRAT|VT_SIZE1;
+        T VT_CSTR =                                 VT_EXTRAT|VT_SIZE8;
+        T VT_LSTR =                                 VT_EXTRAT|VT_SIZE8|VT_VEC2;
         
-        T VT_F32M2 =								VT_F32|VT_MAT2;
-        T VT_U32M3 =								VT_F32|VT_MAT3;
-        T VT_U32M4 =								VT_F32|VT_MAT4;
+        
+        T VT_F32V2 =                                VT_F32|VT_VEC2;
+        T VT_F32V3 =                                VT_F32|VT_VEC3;
+        T VT_F32V4 =                                VT_F32|VT_VEC4;
+        T VT_F32QUAT =                              VT_F32|VT_QUAT;
+        
+        T VT_S32V2 =                                VT_S32|VT_VEC2;
+        T VT_S32V3 =                                VT_S32|VT_VEC3;
+        T VT_S32V4 =                                VT_S32|VT_VEC4;
+        
+        T VT_U32V2 =                                VT_U32|VT_VEC2;
+        T VT_U32V3 =                                VT_U32|VT_VEC3;
+        T VT_U32V4 =                                VT_U32|VT_VEC4;
+        
+        T VT_F32COL =                               VT_F32V3|VT_COLOR;
+        
+        T VT_F32M2 =                                VT_F32|VT_MAT2;
+        T VT_U32M3 =                                VT_F32|VT_MAT3;
+        T VT_U32M4 =                                VT_F32|VT_MAT4;
         
         // Special values for registered vars data structure
-        T VT_KEYWORD =								VT_SPECIAL|(var_types_e)0; // Only for call expr arguments, to allow keywords as special function arguments
+        T VT_KEYWORD =                              VT_SPECIAL|(var_types_e)0; // Only for call expr arguments, to allow keywords as special function arguments
         
-        T VT_ARRAY =								VT_SPECIAL|(var_types_e)1;
-        T VT_DYNARR =							VT_SPECIAL|(var_types_e)2;
+        T VT_ARRAY =                                VT_SPECIAL|(var_types_e)1;
+        T VT_DYNARR =                           VT_SPECIAL|(var_types_e)2;
         
-        T VT_STRUCT =								VT_SPECIAL|(var_types_e)3;
+        T VT_STRUCT =                               VT_SPECIAL|(var_types_e)3;
         
-        T VT_ENTITY_TREE =							VT_SPECIAL|(var_types_e)4;
-        T VT_CHILDREN_LIST =						VT_SPECIAL|(var_types_e)5;
+        T VT_ENTITY_TREE =                          VT_SPECIAL|(var_types_e)4;
+        T VT_CHILDREN_LIST =                        VT_SPECIAL|(var_types_e)5;
         
         
-        TI VT_VEC_OFFS =							0;
-        T VT_VEC_BIT =				(var_types_e)	0b000000000111;
-        TI VT_SCALAR_SIZE_OFFS =					3;
-        T VT_SCALAR_SIZE_BIT =		(var_types_e)	0b000000011000;
-        TI VT_SCALAR_TYPE_OFFS =					5;
-        T VT_SCALAR_TYPE_BIT =		(var_types_e)	0b000001100000;
-        TI VT_UNIT_OFFS =							7;
-        T VT_UNIT_BIT =				(var_types_e)	0b000110000000;
+        TI VT_VEC_OFFS =                            0;
+        T VT_VEC_BIT =              (var_types_e)   0b000000000111;
+        TI VT_SCALAR_SIZE_OFFS =                    3;
+        T VT_SCALAR_SIZE_BIT =      (var_types_e)   0b000000011000;
+        TI VT_SCALAR_TYPE_OFFS =                    5;
+        T VT_SCALAR_TYPE_BIT =      (var_types_e)   0b000001100000;
+        TI VT_UNIT_OFFS =                           7;
+        T VT_UNIT_BIT =             (var_types_e)   0b000110000000;
         
-        DECL constexpr bool is_flt (var_types_e t) {						return (t & VT_SCALAR_TYPE_BIT) == VT_FLT; }
-        DECL constexpr bool is_sint (var_types_e t) {						return (t & VT_SCALAR_TYPE_BIT) == VT_SINT; }
-        DECL constexpr bool is_flt_or_sint (var_types_e t) {				return (t & VT_EXTRAT) == 0; }
-        DECL constexpr bool is_scalar (var_types_e t) {						return (t & VT_VEC_BIT) == VT_SCALAR; }
-        DECL constexpr bool is_vec (var_types_e t) {						return (t & VT_VEC_BIT) >= VT_VEC2 && (t & VT_VEC_BIT) <= VT_VEC4; }
-        DECL constexpr bool is_quat (var_types_e t) {						return (t & VT_VEC_BIT) == VT_QUAT; }
-        DECL constexpr bool is_scalar_or_vec (var_types_e t) {				return (t & VT_QUAT) == 0; }
-        DECL constexpr bool is_vec_or_quat (var_types_e t) {				return (t & VT_VEC_BIT) >= VT_VEC2 && (t & VT_VEC_BIT) <= VT_QUAT; }
-        DECL constexpr bool is_scalar_or_vec_or_quat (var_types_e t) {		return (t & VT_VEC_BIT) <= VT_QUAT; }
+        DECL constexpr bool is_flt (var_types_e t) {                        return (t & VT_SCALAR_TYPE_BIT) == VT_FLT; }
+        DECL constexpr bool is_sint (var_types_e t) {                       return (t & VT_SCALAR_TYPE_BIT) == VT_SINT; }
+        DECL constexpr bool is_flt_or_sint (var_types_e t) {                return (t & VT_EXTRAT) == 0; }
+        DECL constexpr bool is_scalar (var_types_e t) {                     return (t & VT_VEC_BIT) == VT_SCALAR; }
+        DECL constexpr bool is_vec (var_types_e t) {                        return (t & VT_VEC_BIT) >= VT_VEC2 && (t & VT_VEC_BIT) <= VT_VEC4; }
+        DECL constexpr bool is_quat (var_types_e t) {                       return (t & VT_VEC_BIT) == VT_QUAT; }
+        DECL constexpr bool is_scalar_or_vec (var_types_e t) {              return (t & VT_QUAT) == 0; }
+        DECL constexpr bool is_vec_or_quat (var_types_e t) {                return (t & VT_VEC_BIT) >= VT_VEC2 && (t & VT_VEC_BIT) <= VT_QUAT; }
+        DECL constexpr bool is_scalar_or_vec_or_quat (var_types_e t) {      return (t & VT_VEC_BIT) <= VT_QUAT; }
         
-        DECL constexpr bool is_str (var_types_e t) {						return t == VT_CSTR || t == VT_LSTR; }
+        DECL constexpr bool is_str (var_types_e t) {                        return t == VT_CSTR || t == VT_LSTR; }
         
-        DECL constexpr bool is_size_4_or_8 (var_types_e t) {				return t & VT_SIZE4; }
+        DECL constexpr bool is_size_4_or_8 (var_types_e t) {                return t & VT_SIZE4; }
         
-        DECL constexpr u32			get_scalar_size_indx (var_types_e t) {	return (t & VT_SCALAR_SIZE_BIT) >> VT_SCALAR_SIZE_OFFS; }
-        DECL constexpr u32			get_scalar_size_bits (var_types_e t) {	return (u32)8 << get_scalar_size_indx(t); }
+        DECL constexpr u32          get_scalar_size_indx (var_types_e t) {  return (t & VT_SCALAR_SIZE_BIT) >> VT_SCALAR_SIZE_OFFS; }
+        DECL constexpr u32          get_scalar_size_bits (var_types_e t) {  return (u32)8 << get_scalar_size_indx(t); }
         
         // Does not work for quat
-        DECL constexpr u32			get_vec_dimensions (var_types_e t) {	return (t & VT_VEC_BIT) -VT_SCALAR +1; }
-        DECL constexpr var_types_e	set_vec_dimensions (u32 i) {			return (var_types_e)(VT_SCALAR +(i -1)); }
+        DECL constexpr u32          get_vec_dimensions (var_types_e t) {    return (t & VT_VEC_BIT) -VT_SCALAR +1; }
+        DECL constexpr var_types_e  set_vec_dimensions (u32 i) {            return (var_types_e)(VT_SCALAR +(i -1)); }
         
-        DECL u32					get_elements (var_types_e t) {
+        DECL u32                    get_elements (var_types_e t) {
             t &= VT_VEC_BIT;
             switch (t) {
                 case VT_SCALAR:
@@ -168,7 +168,7 @@ namespace var {
                 default: assert(false); return 1; // can never happen
             }
         }
-        DECL constexpr var_types_e	set_mat_dim (u32 i) {					return (var_types_e)(VT_MAT2 +(i -2)); }
+        DECL constexpr var_types_e  set_mat_dim (u32 i) {                   return (var_types_e)(VT_MAT2 +(i -2)); }
         
         DECLD constexpr char const* VEC_TYPE_NAME[8] = {
             "scalar",
@@ -180,13 +180,13 @@ namespace var {
             "m3",
             "m4",
         };
-        DECL constexpr char const* get_vec_name (var_types_e t) {			return VEC_TYPE_NAME[t & VT_VEC_BIT]; }
+        DECL constexpr char const* get_vec_name (var_types_e t) {           return VEC_TYPE_NAME[t & VT_VEC_BIT]; }
         
         DECLD constexpr char const* SCALAR_TYPE_NAME[2] = {
             "flt",
             "int",
         };
-        DECL constexpr char const* get_scalar_type_name (var_types_e t) {	return SCALAR_TYPE_NAME[(t & VT_SCALAR_TYPE_BIT) >> VT_SCALAR_TYPE_OFFS]; }
+        DECL constexpr char const* get_scalar_type_name (var_types_e t) {   return SCALAR_TYPE_NAME[(t & VT_SCALAR_TYPE_BIT) >> VT_SCALAR_TYPE_OFFS]; }
         
         DECL bool is_array (var_types_e t) {
             switch (t) {
@@ -214,12 +214,12 @@ namespace var {
     enum keyword_e : u32;
     
     struct Expr_Val {
-        var_types_e		type;
+        var_types_e     type;
         union {
-            expr_val_fm	fm;
-            expr_val_im	im;
-            keyword_e	kw;
-            lstr		lstr;
+            expr_val_fm fm;
+            expr_val_im im;
+            keyword_e   kw;
+            lstr        lstr;
         };
         
         // MSVC now suddenly gives 'attempting to reference a deleted function' without this??
@@ -227,14 +227,14 @@ namespace var {
     };
     
     union Val_Union { // For temporary storage in print_basic_type()
-        expr_val_fm	fm;
-        expr_val_im	im;
-        char const*	cstr;
+        expr_val_fm fm;
+        expr_val_im im;
+        char const* cstr;
     };
     
-    DECLD constexpr ui	MAX_VAR_SIZE = 16 * 8;
+    DECLD constexpr ui  MAX_VAR_SIZE = 16 * 8;
     
-    #define SETTER_FUNC_SIG(name)	void (name)(Expr_Val cr val)
+    #define SETTER_FUNC_SIG(name)   void (name)(Expr_Val cr val)
     typedef SETTER_FUNC_SIG(* setter_fp);
     
     DECL SETTER_FUNC_SIG(setter_vsync_swap_interval) {
@@ -244,44 +244,44 @@ namespace var {
     union Var;
     
     struct Var_Single {
-        Var*				next;
-        uptr				pdata;
-        lstr				name;
-        var_types_e			type;
+        Var*                next;
+        uptr                pdata;
+        lstr                name;
+        var_types_e         type;
     };
     struct Var_Struct {
-        Var*				next;
-        uptr				pdata;
-        lstr				name;
-        var_types_e			type;
+        Var*                next;
+        uptr                pdata;
+        lstr                name;
+        var_types_e         type;
         
-        Var*				members;
+        Var*                members;
     };
     struct Var_Array {
-        Var*				next;
-        uptr				pdata;
-        lstr				name;
-        var_types_e			type;
+        Var*                next;
+        uptr                pdata;
+        lstr                name;
+        var_types_e         type;
         
-        Var*				members;
-        uptr				arr_len;
-        uptr				arr_stride;
+        Var*                members;
+        uptr                arr_len;
+        uptr                arr_stride;
     };
     
     union Var {
         struct {
-            Var*			next;
-            uptr			pdata;
-            lstr			name;
-            var_types_e		type;
+            Var*            next;
+            uptr            pdata;
+            lstr            name;
+            var_types_e     type;
         };
-        Var_Struct			strct;
-        Var_Array			arr;
+        Var_Struct          strct;
+        Var_Array           arr;
     };
     
     DECLV Var* _struct (u32 count, ...) {
         
-        va_list	vl;
+        va_list vl;
         va_start(vl, count);
         
         Var* ret = va_arg(vl, Var*);
@@ -316,138 +316,138 @@ namespace var {
         return (Var*)working_stk.push<Var_Array>({nullptr, pdata, name, type, _var(0,"<array_member>",members), len, stride});
     }
     
-    #define GBL_VAR(inst, type)					_var(		(uptr)&inst,			STRINGIFY(inst),	type)
-    #define GBL_VAR_NAME(name, inst, type)		_var(		(uptr)&inst,			STRINGIFY(name),	type)
-    #define GBL_ARRAY(inst, stride, memb)		_array(		(uptr)&inst,			STRINGIFY(inst),	VT_ARRAY,		arrlenof(inst),			stride,	memb)
-    #define GBL_DYNARR(inst, stride, memb)		_array(		(uptr)&inst,			STRINGIFY(inst),	VT_DYNARR,	0,						stride,	memb)
+    #define GBL_VAR(inst, type)                 _var(       (uptr)&inst,            STRINGIFY(inst),    type)
+    #define GBL_VAR_NAME(name, inst, type)      _var(       (uptr)&inst,            STRINGIFY(name),    type)
+    #define GBL_ARRAY(inst, stride, memb)       _array(     (uptr)&inst,            STRINGIFY(inst),    VT_ARRAY,       arrlenof(inst),         stride, memb)
+    #define GBL_DYNARR(inst, stride, memb)      _array(     (uptr)&inst,            STRINGIFY(inst),    VT_DYNARR,  0,                      stride, memb)
     
-    #define VAR(s,m, type)						_var(		offsetof(s,m),			STRINGIFY(m),		type)
-    #define VAR_SETTR(inst, type)				_var(		(uptr)&setter_##inst,	STRINGIFY(inst),	VT_FPTR_VAR|type)
-    #define ARRAY(s,m, stride, memb)			_array(		offsetof(s,m),			STRINGIFY(m),		VT_ARRAY,		arrlenof(((s*)0)->m),	stride,	memb)
-    #define DYNARR(s,m, stride, memb)			_array(		offsetof(s,m),			STRINGIFY(m),		VT_DYNARR,	0,						stride,	memb)
+    #define VAR(s,m, type)                      _var(       offsetof(s,m),          STRINGIFY(m),       type)
+    #define VAR_SETTR(inst, type)               _var(       (uptr)&setter_##inst,   STRINGIFY(inst),    VT_FPTR_VAR|type)
+    #define ARRAY(s,m, stride, memb)            _array(     offsetof(s,m),          STRINGIFY(m),       VT_ARRAY,       arrlenof(((s*)0)->m),   stride, memb)
+    #define DYNARR(s,m, stride, memb)           _array(     offsetof(s,m),          STRINGIFY(m),       VT_DYNARR,  0,                      stride, memb)
     
     DECL Var* _var_entities (uptr pdata, lstr name, Var* members) { // var is struct
         return (Var*)working_stk.push<Var_Struct>({nullptr, pdata, name, VT_ENTITY_TREE, members});
     }
     
     #if 0
-    Entity*	ent_parent;
+    Entity* ent_parent;
     void begin_enities () {
         ent_parent = 
     }
     #endif
     
-    DECLD Var*		root_var;
+    DECLD Var*      root_var;
     
     void init_vars () {
         
         auto strct_light = STRUCT(
-            VAR(		Light,				name,							VT_CSTR),
-            VAR(		Light,				pos_world,						VT_F32V3),
-            VAR(		Light,				ori_world,						VT_F32QUAT),
-            VAR(		Light,				type,							VT_U32), // TODO: enum
-            VAR(		Light,				flags,							VT_U32), // TODO: enum
-            VAR(		Light,				power,							VT_F32V3|VT_COLOR)
+            VAR(        Light,              name,                           VT_CSTR),
+            VAR(        Light,              pos_world,                      VT_F32V3),
+            VAR(        Light,              ori_world,                      VT_F32QUAT),
+            VAR(        Light,              type,                           VT_U32), // TODO: enum
+            VAR(        Light,              flags,                          VT_U32), // TODO: enum
+            VAR(        Light,              power,                          VT_F32V3|VT_COLOR)
         );
         
         auto strct_generic = STRUCT(
-            VAR(		Generic_Movable,	name,							VT_CSTR),
-            VAR(		Generic_Movable,	pos_world,						VT_F32V3),
-            VAR(		Generic_Movable,	ori_world,						VT_F32QUAT),
-            VAR(		Showcase::Cerberus,	select_radius,					VT_F32) // same offset for all
+            VAR(        Generic_Movable,    name,                           VT_CSTR),
+            VAR(        Generic_Movable,    pos_world,                      VT_F32V3),
+            VAR(        Generic_Movable,    ori_world,                      VT_F32QUAT),
+            VAR(        Showcase::Cerberus, select_radius,                  VT_F32) // same offset for all
         );
         
         auto strct_showcase_grid_obj = STRUCT(
-            VAR(		Generic_Movable,	name,							VT_CSTR),
-            VAR(		Generic_Movable,	pos_world,						VT_F32V3),
-            VAR(		Generic_Movable,	ori_world,						VT_F32QUAT),
-            VAR(		Showcase::Grid_Obj,	select_radius,					VT_F32),
-            VAR(		Showcase::Grid_Obj,	grid_offs,						VT_F32)
+            VAR(        Generic_Movable,    name,                           VT_CSTR),
+            VAR(        Generic_Movable,    pos_world,                      VT_F32V3),
+            VAR(        Generic_Movable,    ori_world,                      VT_F32QUAT),
+            VAR(        Showcase::Grid_Obj, select_radius,                  VT_F32),
+            VAR(        Showcase::Grid_Obj, grid_offs,                      VT_F32)
         );
         
         #if 0
         auto entity = STRUCT(
-            VAR(		Entity,				name,							VT_CSTR),
-            VAR(		Entity,				children,						VT_CHILDREN_LIST),
-            VAR(		Entity,				pos,							VT_F32V3),
-            VAR(		Entity,				ori,							VT_F32QUAT),
-            VAR(		Entity,				scale,							VT_F32V3),
-            VAR(		Entity,				tag,							VT_U32),
-            VAR(		Entity,				Mesh,							STRUCT(
-                VAR(		Entity_Mesh,		mesh_name,						VT_CSTR)
+            VAR(        Entity,             name,                           VT_CSTR),
+            VAR(        Entity,             children,                       VT_CHILDREN_LIST),
+            VAR(        Entity,             pos,                            VT_F32V3),
+            VAR(        Entity,             ori,                            VT_F32QUAT),
+            VAR(        Entity,             scale,                          VT_F32V3),
+            VAR(        Entity,             tag,                            VT_U32),
+            VAR(        Entity,             Mesh,                           STRUCT(
+                VAR(        Entity_Mesh,        mesh_name,                      VT_CSTR)
             )),
-            VAR(		Entity,				Light,							STRUCT(
-                VAR(		Entity_Light,		type,							VT_U32),
-                VAR(		Entity_Light,		flags,							VT_U32),
-                VAR(		Entity_Light,		power,							VT_F32V3)
+            VAR(        Entity,             Light,                          STRUCT(
+                VAR(        Entity_Light,       type,                           VT_U32),
+                VAR(        Entity_Light,       flags,                          VT_U32),
+                VAR(        Entity_Light,       power,                          VT_F32V3)
             ))
         );
         #endif
         
         root_var = _var(0, "<global>",
         STRUCT(
-            VAR_SETTR(						vsync_swap_interval,				VT_S32),
-            GBL_VAR(						controls,							STRUCT(
-                VAR(		Controls,			cam_mouselook_sens,					VT_F32V2),
-                VAR(		Controls,			cam_roll_vel,						VT_F32|VT_ANGLE),
-                VAR(		Controls,			cam_translate_vel,					VT_F32V3),
-                VAR(		Controls,			cam_translate_fast_mult,			VT_F32V3),
-                VAR(		Controls,			cam_fov_control_vel,				VT_F32|VT_ANGLE),
-                VAR(		Controls,			cam_fov_control_mw_vel,				VT_F32|VT_ANGLE)
+            VAR_SETTR(                      vsync_swap_interval,                VT_S32),
+            GBL_VAR(                        controls,                           STRUCT(
+                VAR(        Controls,           cam_mouselook_sens,                 VT_F32V2),
+                VAR(        Controls,           cam_roll_vel,                       VT_F32|VT_ANGLE),
+                VAR(        Controls,           cam_translate_vel,                  VT_F32V3),
+                VAR(        Controls,           cam_translate_fast_mult,            VT_F32V3),
+                VAR(        Controls,           cam_fov_control_vel,                VT_F32|VT_ANGLE),
+                VAR(        Controls,           cam_fov_control_mw_vel,             VT_F32|VT_ANGLE)
             )),
-            GBL_VAR(						passes,								STRUCT(
-                ARRAY(		Passes,				bloom_size,			sizeof(f32),	VT_F32),
-                ARRAY(		Passes,				bloom_res_scale,	sizeof(f32),	VT_F32),
-                ARRAY(		Passes,				bloom_coeff,		sizeof(f32),	VT_F32),
-                VAR(		Passes,				shadow_res,							VT_U32)
+            GBL_VAR(                        passes,                             STRUCT(
+                ARRAY(      Passes,             bloom_size,         sizeof(f32),    VT_F32),
+                ARRAY(      Passes,             bloom_res_scale,    sizeof(f32),    VT_F32),
+                ARRAY(      Passes,             bloom_coeff,        sizeof(f32),    VT_F32),
+                VAR(        Passes,             shadow_res,                         VT_U32)
             )),
-            GBL_VAR(						env_viewer,							STRUCT(
-                VAR(		Env_Viewer,			illuminance_res,					VT_U32),
-                VAR(		Env_Viewer,			luminance_res,						VT_U32),
-                VAR(		Env_Viewer,			luminance_prefilter_levels,			VT_U32),
-                VAR(		Env_Viewer,			luminance_prefilter_base_samples,	VT_U32),
-                VAR(		Env_Viewer,			cur_humus_indx,						VT_U32),
-                VAR(		Env_Viewer,			cur_sibl_indx,						VT_U32),
-                VAR(		Env_Viewer,			sibl,								VT_BOOL)
+            GBL_VAR(                        env_viewer,                         STRUCT(
+                VAR(        Env_Viewer,         illuminance_res,                    VT_U32),
+                VAR(        Env_Viewer,         luminance_res,                      VT_U32),
+                VAR(        Env_Viewer,         luminance_prefilter_levels,         VT_U32),
+                VAR(        Env_Viewer,         luminance_prefilter_base_samples,   VT_U32),
+                VAR(        Env_Viewer,         cur_humus_indx,                     VT_U32),
+                VAR(        Env_Viewer,         cur_sibl_indx,                      VT_U32),
+                VAR(        Env_Viewer,         sibl,                               VT_BOOL)
             )),
-            GBL_VAR(						camera,								STRUCT(
-                VAR(		Camera,				pos_world,							VT_F32V3),
-                VAR(		Camera,				aer,								VT_F32V3|VT_ANGLE),
-                VAR(		Camera,				base_ori,							VT_F32QUAT),
-                VAR(		Camera,				vfov,								VT_F32|VT_ANGLE),
-                VAR(		Camera,				clip_near,							VT_F32),
-                VAR(		Camera,				clip_far,							VT_F32)
+            GBL_VAR(                        camera,                             STRUCT(
+                VAR(        Camera,             pos_world,                          VT_F32V3),
+                VAR(        Camera,             aer,                                VT_F32V3|VT_ANGLE),
+                VAR(        Camera,             base_ori,                           VT_F32QUAT),
+                VAR(        Camera,             vfov,                               VT_F32|VT_ANGLE),
+                VAR(        Camera,             clip_near,                          VT_F32),
+                VAR(        Camera,             clip_far,                           VT_F32)
             )),
-            GBL_VAR(						lights,								STRUCT(
-                DYNARR(		Lights,				lights,				sizeof(Light),	strct_light),
-                ARRAY(		Lights,				select_radius,		sizeof(f32),	VT_F32)
+            GBL_VAR(                        lights,                             STRUCT(
+                DYNARR(     Lights,             lights,             sizeof(Light),  strct_light),
+                ARRAY(      Lights,             select_radius,      sizeof(f32),    VT_F32)
             )),
-            GBL_ARRAY(						materials,				sizeof(std140_Material), STRUCT(
-                VAR(		std140_Material,	albedo,								VT_F32COL),
-                VAR(		std140_Material,	metallic,							VT_F32),
-                VAR(		std140_Material,	roughness,							VT_F32),
-                VAR(		std140_Material,	IOR,								VT_F32)
+            GBL_ARRAY(                      materials,              sizeof(std140_Material), STRUCT(
+                VAR(        std140_Material,    albedo,                             VT_F32COL),
+                VAR(        std140_Material,    metallic,                           VT_F32),
+                VAR(        std140_Material,    roughness,                          VT_F32),
+                VAR(        std140_Material,    IOR,                                VT_F32)
             )),
-            GBL_ARRAY(						mesh_names,					sizeof(char const*), VT_CSTR),
-            GBL_VAR(						tex,								STRUCT(
-                ARRAY(		Textures,			names,					sizeof(char const*), VT_CSTR)
+            GBL_ARRAY(                      mesh_names,                 sizeof(char const*), VT_CSTR),
+            GBL_VAR(                        tex,                                STRUCT(
+                ARRAY(      Textures,           names,                  sizeof(char const*), VT_CSTR)
             )),
-            GBL_VAR(						showcase,							STRUCT(
-                VAR(		Showcase,			grid_steps,							VT_U32),
-                VAR(		Showcase,			sphere,								strct_showcase_grid_obj),
-                VAR(		Showcase,			bunny,								strct_showcase_grid_obj),
-                VAR(		Showcase,			buddha,								strct_showcase_grid_obj),
-                VAR(		Showcase,			dragon,								strct_showcase_grid_obj),
-                VAR(		Showcase,			teapot,								strct_showcase_grid_obj),
-                VAR(		Showcase,			materials,							strct_showcase_grid_obj),
-                VAR(		Showcase,			cerberus,							strct_generic)
+            GBL_VAR(                        showcase,                           STRUCT(
+                VAR(        Showcase,           grid_steps,                         VT_U32),
+                VAR(        Showcase,           sphere,                             strct_showcase_grid_obj),
+                VAR(        Showcase,           bunny,                              strct_showcase_grid_obj),
+                VAR(        Showcase,           buddha,                             strct_showcase_grid_obj),
+                VAR(        Showcase,           dragon,                             strct_showcase_grid_obj),
+                VAR(        Showcase,           teapot,                             strct_showcase_grid_obj),
+                VAR(        Showcase,           materials,                          strct_showcase_grid_obj),
+                VAR(        Showcase,           cerberus,                           strct_generic)
             )),
-            GBL_VAR(						material_showcase_grid_steps,			VT_U32V2),
-            GBL_VAR(						material_showcase_grid_mat,				VT_F32M2)
+            GBL_VAR(                        material_showcase_grid_steps,           VT_U32V2),
+            GBL_VAR(                        material_showcase_grid_mat,             VT_F32M2)
             
             #if 1
             #else
-            _var_entities(		(uptr)&scenes,		STRINGIFY(scenes),			entity)
+            _var_entities(      (uptr)&scenes,      STRINGIFY(scenes),          entity)
             #endif
             
         ));
@@ -537,35 +537,35 @@ namespace var {
         "normalize",
     };
     
-    DECL constexpr bool is_angle_unit (keyword_e kw) {			return kw >= UNIT_RAD && kw <= UNIT_DEG; }
-    DECL constexpr bool is_color_unit (keyword_e kw) {			return kw >= UNIT_COL && kw <= UNIT_SRGB; }
-    DECL constexpr bool is_vec (keyword_e kw) {					return kw >= TYPE_V2 && kw <= TYPE_UV4; }
-    DECL constexpr bool is_quat (keyword_e kw) {				return kw == TYPE_QUAT; }
-    DECL constexpr bool is_mat (keyword_e kw) {					return kw >= TYPE_M2 && kw <= TYPE_M4; }
-    DECL constexpr bool is_keyword_literal (keyword_e kw) {		return kw >= LIT_PI && kw <= LIT_IDENTITY; }
+    DECL constexpr bool is_angle_unit (keyword_e kw) {          return kw >= UNIT_RAD && kw <= UNIT_DEG; }
+    DECL constexpr bool is_color_unit (keyword_e kw) {          return kw >= UNIT_COL && kw <= UNIT_SRGB; }
+    DECL constexpr bool is_vec (keyword_e kw) {                 return kw >= TYPE_V2 && kw <= TYPE_UV4; }
+    DECL constexpr bool is_quat (keyword_e kw) {                return kw == TYPE_QUAT; }
+    DECL constexpr bool is_mat (keyword_e kw) {                 return kw >= TYPE_M2 && kw <= TYPE_M4; }
+    DECL constexpr bool is_keyword_literal (keyword_e kw) {     return kw >= LIT_PI && kw <= LIT_IDENTITY; }
     
-    DECL u32			get_kw_vec_dim (keyword_e kw) {
+    DECL u32            get_kw_vec_dim (keyword_e kw) {
         assert(kw >= UNIT_COL && kw <= TYPE_UV4, "%", u32(kw));
         return kw < TYPE_V2 ? 3 : ((kw -TYPE_V2) % 3) +2;
     }
-    DECL u32			get_kw_mat_dim (keyword_e kw) {
+    DECL u32            get_kw_mat_dim (keyword_e kw) {
         assert(kw >= TYPE_M2 && kw <= TYPE_M4, "%", u32(kw));
         return (kw -TYPE_M2) +2;
     }
     
-    #define KW_ANGLE_UNIT_CASES				UNIT_RAD: case UNIT_DEG
-    #define KW_COLOR_UNIT_CASES				UNIT_COL: case UNIT_SRGB
-    #define KW_FVEC_CASES					TYPE_V2: case TYPE_V3: case TYPE_V4
-    #define KW_VEC_CASES					KW_FVEC_CASES: \
+    #define KW_ANGLE_UNIT_CASES             UNIT_RAD: case UNIT_DEG
+    #define KW_COLOR_UNIT_CASES             UNIT_COL: case UNIT_SRGB
+    #define KW_FVEC_CASES                   TYPE_V2: case TYPE_V3: case TYPE_V4
+    #define KW_VEC_CASES                    KW_FVEC_CASES: \
                                             case TYPE_SV2: case TYPE_SV3: case TYPE_SV4: \
                                             case TYPE_UV2: case TYPE_UV3: case TYPE_UV4
-    #define KW_FMAT_CASES					TYPE_M2: case TYPE_M3: case TYPE_M4
-    #define KW_KEYWORD_LITERAL_CASES		LIT_PI: case LIT_FALSE: case LIT_TRUE: case LIT_NULL: case LIT_IDENTITY
+    #define KW_FMAT_CASES                   TYPE_M2: case TYPE_M3: case TYPE_M4
+    #define KW_KEYWORD_LITERAL_CASES        LIT_PI: case LIT_FALSE: case LIT_TRUE: case LIT_NULL: case LIT_IDENTITY
     
-    #define KW_UNIT_CASES					KW_ANGLE_UNIT_CASES: case KW_COLOR_UNIT_CASES
-    #define KW_CONSTRUCTOR_CASES			KW_VEC_CASES: case TYPE_QUAT: case KW_FMAT_CASES
+    #define KW_UNIT_CASES                   KW_ANGLE_UNIT_CASES: case KW_COLOR_UNIT_CASES
+    #define KW_CONSTRUCTOR_CASES            KW_VEC_CASES: case TYPE_QUAT: case KW_FMAT_CASES
     
-    #define KW_FUNC_CALL_CASES				KW_UNIT_CASES: case KW_CONSTRUCTOR_CASES: case FUNC_NORMALIZE
+    #define KW_FUNC_CALL_CASES              KW_UNIT_CASES: case KW_CONSTRUCTOR_CASES: case FUNC_NORMALIZE
     
     DECL keyword_e match_keyword (lstr cr iden) {
         return (keyword_e)match_iden(iden, KEYWORDS, KEYWORDS_COUNT);
@@ -589,23 +589,23 @@ namespace var {
     }
     
     enum parse_flags_e : u32 {
-        PF_INFER_TYPE=							0b00000001,
-        PF_STRING_APPEND=						0b00000010,
-        PF_MEMBER_OF_ARRAY=						0b00000100,
-        PF_IN_NNARY=							0b00001000,
-        PF_IN_DOLLAR_CMD_VAL=					0b00010000,
-        PF_ONLY_SYNTAX_CHECK=					0b00100000,
-        PF_INITIAL_LOAD=						0b01000000,
-        PF_WRITE_CURRENT=						0b10000000,
+        PF_INFER_TYPE=                          0b00000001,
+        PF_STRING_APPEND=                       0b00000010,
+        PF_MEMBER_OF_ARRAY=                     0b00000100,
+        PF_IN_NNARY=                            0b00001000,
+        PF_IN_DOLLAR_CMD_VAL=                   0b00010000,
+        PF_ONLY_SYNTAX_CHECK=                   0b00100000,
+        PF_INITIAL_LOAD=                        0b01000000,
+        PF_WRITE_CURRENT=                       0b10000000,
     };
-    DECLD constexpr u32		PF_WRITE_SAVE=		0b11000000;
-    DECLD constexpr u32		PF_WRITE_BIT=		0b11000000;
+    DECLD constexpr u32     PF_WRITE_SAVE=      0b11000000;
+    DECLD constexpr u32     PF_WRITE_BIT=       0b11000000;
     DEFINE_ENUM_FLAG_OPS(parse_flags_e, u32)
     
     enum dollar_cmd_set_e : u32 {
-        SET=		0b001,
-        CURRENT=	0b010,
-        INITIAL=	0b100,
+        SET=        0b001,
+        CURRENT=    0b010,
+        INITIAL=    0b100,
     };
     DEFINE_ENUM_FLAG_OPS(dollar_cmd_set_e, u32)
     
@@ -615,7 +615,7 @@ namespace var {
     #define require(cond) if (!(cond)) { return 0; }
     
     enum token_e : u32 {
-        EOF_=				0,
+        EOF_=               0,
         EOF_MARKER,
         VAR_IDENTIFIER,
         KEYWORD,
@@ -675,17 +675,17 @@ namespace var {
     };
     
     struct Token {
-        token_e					tok;
+        token_e                 tok;
         union {
-            keyword_e			kw;
-            dollar_command_e	dollar_cmd;
+            keyword_e           kw;
+            dollar_command_e    dollar_cmd;
         };
         // string data
-        char*					begin;
-        u32						len;
+        char*                   begin;
+        u32                     len;
         // Source pos for error reporting
-        u32						line_num;
-        char*					line_begin;
+        u32                     line_num;
+        char*                   line_begin;
         
         constexpr lstr get_lstr () const {
             return { begin, len };
@@ -701,11 +701,11 @@ namespace var {
     
     _DECL void print_error_lines (Token const* first, Token const* last) {
         
-        //	Just the first token for now
-        //	TODO:
-        //		add smarter handing of lines longer than the console width
-        //		add printing of multiple lines (when there is a range of tokens)
-        //		 where you print at max 2 lines (for more than 2 lines print the first and last)
+        //  Just the first token for now
+        //  TODO:
+        //      add smarter handing of lines longer than the console width
+        //      add printing of multiple lines (when there is a range of tokens)
+        //       where you print at max 2 lines (for more than 2 lines print the first and last)
         
         assert(first->begin <= last->begin);
         
@@ -942,8 +942,8 @@ namespace var {
     }
     
     
-    #define syntax(cond, first, last, ...)	require(_syntax(cond, first, last, __VA_ARGS__))
-    #define syntaxdev(cond, ...)			require(_dev_syntax_error(cond, __VA_ARGS__))
+    #define syntax(cond, first, last, ...)  require(_syntax(cond, first, last, __VA_ARGS__))
+    #define syntaxdev(cond, ...)            require(_dev_syntax_error(cond, __VA_ARGS__))
     
     _DECL char* line_comment (char* cur, u32* line_num, char** line_begin) {
         require(*cur == '#');
@@ -1014,24 +1014,24 @@ namespace var {
             case 'a': case 'b': case 'c': case 'd': case 'e': case 'f': case 'g': case 'h': case 'i': \
             case 'j': case 'k': case 'l': case 'm': case 'n': case 'o': case 'p': case 'q': case 'r': \
             case 's': case 't': case 'u': case 'v': case 'w': case 'x': case 'y': case 'z'
-    #define IDENTIFIER_CASES	NUMBER_START_CASES: case IDENTIFIER_START_CASES
+    #define IDENTIFIER_CASES    NUMBER_START_CASES: case IDENTIFIER_START_CASES
     
     DECL bool FORCEINLINE is_identifier_start_c (char c) {
         switch (c) {
-            case IDENTIFIER_START_CASES:	return true;
-            default:				return false;
+            case IDENTIFIER_START_CASES:    return true;
+            default:                return false;
         }
     }
     DECL bool FORCEINLINE is_identifier_c (char c) {
         switch (c) {
-            case IDENTIFIER_CASES:	return true;
-            default:				return false;
+            case IDENTIFIER_CASES:  return true;
+            default:                return false;
         }
     }
     DECL bool FORCEINLINE is_dec_digit_c (char c) {
         switch (c) {
-            case DEC_DIGIT_CASES:	return true;
-            default:				return false;
+            case DEC_DIGIT_CASES:   return true;
+            default:                return false;
         }
     }
     
@@ -1043,38 +1043,38 @@ namespace var {
     
     DECL bool FORCEINLINE is_bin_digit_c (char c) {
         switch (c) {
-            case BIN_DIGIT_CASES:	return true;
-            default:				return false;
+            case BIN_DIGIT_CASES:   return true;
+            default:                return false;
         }
     }
     DECL bool FORCEINLINE is_hex_digit_c (char c) {
         switch (c) {
-            case HEX_DIGIT_CASES:	return true;
-            default:				return false;
+            case HEX_DIGIT_CASES:   return true;
+            default:                return false;
         }
     }
     DECL bool FORCEINLINE is_hex_lower_c (char c) {
         switch (c) {
-            case HEX_LOWER_CASES:	return true;
-            default:				return false;
+            case HEX_LOWER_CASES:   return true;
+            default:                return false;
         }
     }
     DECL bool FORCEINLINE is_hex_upper_c (char c) {
         switch (c) {
-            case HEX_UPPER_CASES:	return true;
-            default:				return false;
+            case HEX_UPPER_CASES:   return true;
+            default:                return false;
         }
     }
     
     _DECL u32 tokenize (char* source_data) {
         
-        char*	cur = source_data;
-        Token*	tokens = working_stk.getTop<Token>();
+        char*   cur = source_data;
+        Token*  tokens = working_stk.getTop<Token>();
         
-        u32		line_num = 1;
-        char*	line_begin = cur;
+        u32     line_num = 1;
+        char*   line_begin = cur;
         
-        Token*	tok;
+        Token*  tok;
         
         do {
             
@@ -1124,10 +1124,10 @@ namespace var {
             lstr str;
             
             switch (*cur) {
-                case '\0':						tok->tok = EOF_;
+                case '\0':                      tok->tok = EOF_;
                     break;
                 
-                case '^':						tok->tok = EOF_MARKER; {
+                case '^':                       tok->tok = EOF_MARKER; {
                     
                     ++cur; // consume inital '^'
                     
@@ -1191,7 +1191,7 @@ namespace var {
                 tok_end = cur;
                 } break;
                 
-                case NUMBER_START_CASES:		tok->tok = NUMBER; {
+                case NUMBER_START_CASES:        tok->tok = NUMBER; {
                     
                     bool hex_or_bin = *cur == '0';
                     if (hex_or_bin) {
@@ -1243,7 +1243,7 @@ namespace var {
                 tok_end = cur;
                 } break;
                 
-                case '"':						tok->tok = STRING; {
+                case '"':                       tok->tok = STRING; {
                     
                     ++cur; // consume inital '"'
                     
@@ -1281,7 +1281,7 @@ namespace var {
                 tok_end = cur;
                 } break;
                 
-                case '$':						tok->tok = DOLLAR_CMD; {
+                case '$':                       tok->tok = DOLLAR_CMD; {
                     
                     str.str = cur +1;
                     
@@ -1296,26 +1296,26 @@ namespace var {
                 tok_end = cur;
                 } break;
                 
-                case '%':						tok->tok = PERCENT; {
+                case '%':                       tok->tok = PERCENT; {
                     assert(false);
                 } break;
                 
-                case '.':						tok->tok = MEMBER_DOT;		break;
-                case '=':						tok->tok = EQUALS;			break;
-                case ';':						tok->tok = SEMICOLON;		break;
-                case ',':						tok->tok = COMMA;			break;
-                case '?':						tok->tok = NNARY_COND;	break;
-                case ':':						tok->tok = NNARY_SEPER;	break;
-                case '(':						tok->tok = PAREN_OPEN;		break;
-                case ')':						tok->tok = PAREN_CLOSE;		break;
-                case '[':						tok->tok = BRACKET_OPEN;	break;
-                case ']':						tok->tok = BRACKET_CLOSE;	break;
-                case '{':						tok->tok = CURLY_OPEN;		break;
-                case '}':						tok->tok = CURLY_CLOSE;		break;
-                case '-':						tok->tok = MINUS;			break;
-                case '+':						tok->tok = PLUS;			break;
-                case '*':						tok->tok = MULTIPLY;		break;
-                case '/':						tok->tok = DIVIDE;			break;
+                case '.':                       tok->tok = MEMBER_DOT;      break;
+                case '=':                       tok->tok = EQUALS;          break;
+                case ';':                       tok->tok = SEMICOLON;       break;
+                case ',':                       tok->tok = COMMA;           break;
+                case '?':                       tok->tok = NNARY_COND;  break;
+                case ':':                       tok->tok = NNARY_SEPER; break;
+                case '(':                       tok->tok = PAREN_OPEN;      break;
+                case ')':                       tok->tok = PAREN_CLOSE;     break;
+                case '[':                       tok->tok = BRACKET_OPEN;    break;
+                case ']':                       tok->tok = BRACKET_CLOSE;   break;
+                case '{':                       tok->tok = CURLY_OPEN;      break;
+                case '}':                       tok->tok = CURLY_CLOSE;     break;
+                case '-':                       tok->tok = MINUS;           break;
+                case '+':                       tok->tok = PLUS;            break;
+                case '*':                       tok->tok = MULTIPLY;        break;
+                case '/':                       tok->tok = DIVIDE;          break;
                 default: {
                     Token fake_tok = { ERROR_REP_TOKENIZER, {(keyword_e)0}, cur, 1, line_num, line_begin };
                     syntax(false, &fake_tok, &fake_tok, "Unexpected character '%' in tokenizer!", *cur);
@@ -1330,30 +1330,30 @@ namespace var {
             {
                 lstr str = "<unknown>";
                 switch (tok->tok) {
-                    case EOF_:					str = "\\0";							break;
-                    case EOF_MARKER:			str = tok->get_lstr();					break;
-                    case VAR_IDENTIFIER:		str = tok->get_lstr();					break;
-                    case KEYWORD:				str = KEYWORDS[tok->kw];				break;
-                    case NUMBER:				str = tok->get_lstr();					break;
-                    case STRING:				str = tok->get_lstr();					break;
-                    case DOLLAR_CMD:			str = DOLLAR_COMMANDS[tok->dollar_cmd];	break;
-                    case PERCENT:				str = "%";							break;
-                    case MEMBER_DOT:			str = ".";							break;
-                    case EQUALS:				str = "=";							break;
-                    case SEMICOLON:				str = ";";							break;
-                    case COMMA:					str = ",";							break;
-                    case NNARY_COND:			str = "?";							break;
-                    case NNARY_SEPER:			str = ":";							break;
-                    case PAREN_OPEN:			str = "(";							break;
-                    case PAREN_CLOSE:			str = "";							break;
-                    case BRACKET_OPEN:			str = "[";							break;
-                    case BRACKET_CLOSE:			str = "]";							break;
-                    case CURLY_OPEN:			str = "{";							break;
-                    case CURLY_CLOSE:			str = "}";							break;
-                    case MINUS:					str = "-";							break;
-                    case PLUS:					str = "+";							break;
-                    case MULTIPLY:				str = "*";							break;
-                    case DIVIDE:				str = "/";							break;
+                    case EOF_:                  str = "\\0";                            break;
+                    case EOF_MARKER:            str = tok->get_lstr();                  break;
+                    case VAR_IDENTIFIER:        str = tok->get_lstr();                  break;
+                    case KEYWORD:               str = KEYWORDS[tok->kw];                break;
+                    case NUMBER:                str = tok->get_lstr();                  break;
+                    case STRING:                str = tok->get_lstr();                  break;
+                    case DOLLAR_CMD:            str = DOLLAR_COMMANDS[tok->dollar_cmd]; break;
+                    case PERCENT:               str = "%";                          break;
+                    case MEMBER_DOT:            str = ".";                          break;
+                    case EQUALS:                str = "=";                          break;
+                    case SEMICOLON:             str = ";";                          break;
+                    case COMMA:                 str = ",";                          break;
+                    case NNARY_COND:            str = "?";                          break;
+                    case NNARY_SEPER:           str = ":";                          break;
+                    case PAREN_OPEN:            str = "(";                          break;
+                    case PAREN_CLOSE:           str = "";                           break;
+                    case BRACKET_OPEN:          str = "[";                          break;
+                    case BRACKET_CLOSE:         str = "]";                          break;
+                    case CURLY_OPEN:            str = "{";                          break;
+                    case CURLY_CLOSE:           str = "}";                          break;
+                    case MINUS:                 str = "-";                          break;
+                    case PLUS:                  str = "+";                          break;
+                    case MULTIPLY:              str = "*";                          break;
+                    case DIVIDE:                str = "/";                          break;
                     default: {}
                 }
                 
@@ -1384,19 +1384,19 @@ namespace var {
         return cur;
     }
     
-    #define UNARY_OPERATOR_CASES	PLUS: case MINUS
-    #define BINARY_OPERATOR_CASES	MULTIPLY: case DIVIDE: case PLUS: case MINUS
+    #define UNARY_OPERATOR_CASES    PLUS: case MINUS
+    #define BINARY_OPERATOR_CASES   MULTIPLY: case DIVIDE: case PLUS: case MINUS
     
     DECL bool is_unary_operator (token_e tok) {
         switch (tok) {
-            case UNARY_OPERATOR_CASES:	return true;
-            default:					return false;
+            case UNARY_OPERATOR_CASES:  return true;
+            default:                    return false;
         }
     }
     DECL bool is_binary_operator (token_e tok) {
         switch (tok) {
-            case BINARY_OPERATOR_CASES:	return true;
-            default:					return false;
+            case BINARY_OPERATOR_CASES: return true;
+            default:                    return false;
         }
     }
     
@@ -1407,16 +1407,16 @@ namespace var {
         switch (kw) {
             
             case UNIT_DEG: {
-                __m128d	xy0 = _mm_loadu_pd(&val->fm.arr[0].x);
-                __m128d	zw0 = _mm_loadu_pd(&val->fm.arr[0].z);
-                __m128d	xy1 = _mm_loadu_pd(&val->fm.arr[1].x);
-                __m128d	zw1 = _mm_loadu_pd(&val->fm.arr[1].z);
-                __m128d	xy2 = _mm_loadu_pd(&val->fm.arr[2].x);
-                __m128d	zw2 = _mm_loadu_pd(&val->fm.arr[2].z);
-                __m128d	xy3 = _mm_loadu_pd(&val->fm.arr[3].x);
-                __m128d	zw3 = _mm_loadu_pd(&val->fm.arr[3].z);
+                __m128d xy0 = _mm_loadu_pd(&val->fm.arr[0].x);
+                __m128d zw0 = _mm_loadu_pd(&val->fm.arr[0].z);
+                __m128d xy1 = _mm_loadu_pd(&val->fm.arr[1].x);
+                __m128d zw1 = _mm_loadu_pd(&val->fm.arr[1].z);
+                __m128d xy2 = _mm_loadu_pd(&val->fm.arr[2].x);
+                __m128d zw2 = _mm_loadu_pd(&val->fm.arr[2].z);
+                __m128d xy3 = _mm_loadu_pd(&val->fm.arr[3].x);
+                __m128d zw3 = _mm_loadu_pd(&val->fm.arr[3].z);
                 
-                __m128d	conv = _mm_set1_pd(DEG_TO_RADd);
+                __m128d conv = _mm_set1_pd(DEG_TO_RADd);
                         xy0 = _mm_mul_pd(xy0, conv);
                         zw0 = _mm_mul_pd(zw0, conv);
                         xy1 = _mm_mul_pd(xy1, conv);
@@ -1473,7 +1473,7 @@ namespace var {
         
         uptr int_ = 0;
         
-        bool	hex_or_bin = cur[0] == '0' && (cur[1] == 'x' || cur[1] == 'b');
+        bool    hex_or_bin = cur[0] == '0' && (cur[1] == 'x' || cur[1] == 'b');
         if (hex_or_bin) {
             ++cur;
             
@@ -1483,11 +1483,11 @@ namespace var {
                     assert(i < (sizeof(uptr) * 2));
                     
                     u8 digit = *cur;
-                    if (		is_dec_digit_c(*cur) ) {
+                    if (        is_dec_digit_c(*cur) ) {
                         digit -= '0';
-                    } else if (	is_hex_lower_c(*cur) ) {
+                    } else if ( is_hex_lower_c(*cur) ) {
                         digit -= 'a' -10;
-                    } else if (	is_hex_upper_c(*cur) ) {
+                    } else if ( is_hex_upper_c(*cur) ) {
                         digit -= 'A' -10;
                     } else {
                         break;
@@ -1726,7 +1726,7 @@ namespace var {
                 }
             } break;
             case DIVIDE: {
-                syntax(	(val->type & (VT_VEC_BIT|VT_SCALAR_TYPE_BIT)) == (rhs.type & (VT_VEC_BIT|VT_SCALAR_TYPE_BIT)),
+                syntax( (val->type & (VT_VEC_BIT|VT_SCALAR_TYPE_BIT)) == (rhs.type & (VT_VEC_BIT|VT_SCALAR_TYPE_BIT)),
                         op_tok, op_tok, "Type mismatch in division!");
                 {
                     auto l=(val->type & VT_ANGLE), r=(rhs.type & VT_ANGLE);
@@ -1802,12 +1802,12 @@ namespace var {
     _DECL Token* call_expression (Token* tok, Expr_Val* val, parse_flags_e flags) {
         
         struct Arg_Tok {
-            Token*	f;
-            Token*	l;
+            Token*  f;
+            Token*  l;
         };
         
-        Expr_Val	args[MAX_CALL_ARGS];
-        Arg_Tok		toks[MAX_CALL_ARGS];
+        Expr_Val    args[MAX_CALL_ARGS];
+        Arg_Tok     toks[MAX_CALL_ARGS];
         
         parse_flags_e recurse_flags = flags;
         
@@ -1947,8 +1947,8 @@ namespace var {
                                     arg0, arg_i, argn);
                         }
                         if ((val->type & VT_ANGLE) != (args[arg_i].type & VT_ANGLE)) {
-                            char const* arg0 = val->type & VT_ANGLE ?			"angle" : "unitless";
-                            char const* argn = args[arg_i].type & VT_ANGLE ?	"angle" : "unitless";
+                            char const* arg0 = val->type & VT_ANGLE ?           "angle" : "unitless";
+                            char const* argn = args[arg_i].type & VT_ANGLE ?    "angle" : "unitless";
                             syntax(false, toks[arg_i].f, toks[arg_i].l, "Vector ctor: Unit mismatch, the previous args were <%> but arg% is <%>!",
                                     arg0, arg_i, argn);
                         }
@@ -2005,7 +2005,7 @@ namespace var {
                         
                         u32 arg_dim = get_vec_dimensions(args[arg_i].type);
                         
-                        if (	(args[arg_i].type == VT_KEYWORD || !is_vec(args[arg_i].type)) &&
+                        if (    (args[arg_i].type == VT_KEYWORD || !is_vec(args[arg_i].type)) &&
                                 arg_dim == (arg_counter == targ_dim ? targ_dim : targ_elem) ) {
                             char const* targ = KEYWORDS[kw].str;
                             char const* argn = get_vec_name(args[arg_i].type);
@@ -2024,8 +2024,8 @@ namespace var {
                                     arg0, arg_i, argn);
                         }
                         if ((val->type & VT_ANGLE) != (args[arg_i].type & VT_ANGLE)) {
-                            char const* arg0 = val->type & VT_ANGLE ?			"angle" : "unitless";
-                            char const* argn = args[arg_i].type & VT_ANGLE ?	"angle" : "unitless";
+                            char const* arg0 = val->type & VT_ANGLE ?           "angle" : "unitless";
+                            char const* argn = args[arg_i].type & VT_ANGLE ?    "angle" : "unitless";
                             syntax(false, toks[arg_i].f, toks[arg_i].l, "Vector ctor: Unit mismatch, the previous args were <%> but arg% is <%>!",
                                     arg0, arg_i, argn);
                         }
@@ -2109,10 +2109,10 @@ namespace var {
                 
                 #if 0 // 691 lines asm
                 switch (val->type & VT_VEC_BIT) {
-                    case VT_VEC2:	val->fv.xy(		normalize(val->fv.xy()) );	break;
-                    case VT_VEC3:	val->fv.xyz(	normalize(val->fv.xyz()) );	break;
+                    case VT_VEC2:   val->fv.xy(     normalize(val->fv.xy()) );  break;
+                    case VT_VEC3:   val->fv.xyz(    normalize(val->fv.xyz()) ); break;
                     case VT_VEC4:
-                    case VT_QUAT:	val->fv =		normalize(val->fv);			break;
+                    case VT_QUAT:   val->fv =       normalize(val->fv);         break;
                 }
                 #else // 640 lines asm
                 using namespace sse_op;
@@ -2216,8 +2216,8 @@ namespace var {
         
         Token* expr = tok;
         
-        parse_flags_e	orig_flags = flags;
-        var_types_e		orig_type = val->type;
+        parse_flags_e   orig_flags = flags;
+        var_types_e     orig_type = val->type;
         if (!is_unary_operator(tok->tok)) {
             Token* cur = tok;
             for (;;) {
@@ -2329,9 +2329,9 @@ namespace var {
                     }
                     
                     flags |= PF_IN_NNARY; // Set IN_NNARY for all the whole follwing and recursive chain for providing precedence warnings
-                    parse_flags_e	rec_flags = orig_flags|PF_IN_NNARY;
+                    parse_flags_e   rec_flags = orig_flags|PF_IN_NNARY;
                     
-                    for (uptr i=0;; ++i) {	// n-nary cases are allowed to be different types because this increases
+                    for (uptr i=0;; ++i) {  // n-nary cases are allowed to be different types because this increases
                                             //  flexibility and the only drawback is potential code-rot like with #if statements
                                             //  but this should not be an issue at expression scales
                         
@@ -2340,8 +2340,8 @@ namespace var {
                         
                         syntaxdev(tok = expression(tok, &tmp, rec_flags, rec_prec), "expression:: n-nary expression %", i);
                         
-                        bool last =			tok->tok != NNARY_SEPER;
-                        bool active_case =	i == cond || (last && cond > i);
+                        bool last =         tok->tok != NNARY_SEPER;
+                        bool active_case =  i == cond || (last && cond > i);
                         if (active_case) {
                             *val = tmp;
                         }
@@ -2395,18 +2395,18 @@ namespace var {
             }
         } else {
             switch (v.type & ~VT_ANGLE) {
-                case VT_FLT:			print("flt{%}\n",			v.fv.x);							break;
-                case VT_FV2:			print("fv2{%, %}\n",			v.fv.x, v.fv.y);					break;
-                case VT_FV3:			print("fv3{%, %, %}\n",		v.fv.x, v.fv.y, v.fv.z);			break;
-                case VT_FV4:			print("fv4{%, %, %, %}\n",	v.fv.x, v.fv.y, v.fv.z, v.fv.w);	break;
-                case VT_FQUAT:			print("quat{%, %, %,  %}\n",	v.fv.x, v.fv.y, v.fv.z, v.fv.w);	break;
-                case VT_SINT:			print("int{%}\n",			v.iv.x);							break;
-                case VT_SV2:			print("iv2{%, %}\n",			v.iv.x, v.iv.y);					break;
-                case VT_SV3:			print("iv3{%, %, %}\n",		v.iv.x, v.iv.y, v.iv.z);			break;
-                case VT_SV4:			print("iv4{%, %, %, %}\n",	v.iv.x, v.iv.y, v.iv.z, v.iv.w);	break;
-                case VT_BOOL:			print("bool{%}\n",			v.iv.x ? "true":"false");			break;
-                case VT_LSTR:			print("str \"%\"\n",			v.lstr);							break;
-                case VT_COLOR|VT_VEC3:	print("col{%, %, %}\n",		v.fv.x, v.fv.y, v.fv.z);			break;
+                case VT_FLT:            print("flt{%}\n",           v.fv.x);                            break;
+                case VT_FV2:            print("fv2{%, %}\n",            v.fv.x, v.fv.y);                    break;
+                case VT_FV3:            print("fv3{%, %, %}\n",     v.fv.x, v.fv.y, v.fv.z);            break;
+                case VT_FV4:            print("fv4{%, %, %, %}\n",  v.fv.x, v.fv.y, v.fv.z, v.fv.w);    break;
+                case VT_FQUAT:          print("quat{%, %, %,  %}\n",    v.fv.x, v.fv.y, v.fv.z, v.fv.w);    break;
+                case VT_SINT:           print("int{%}\n",           v.iv.x);                            break;
+                case VT_SV2:            print("iv2{%, %}\n",            v.iv.x, v.iv.y);                    break;
+                case VT_SV3:            print("iv3{%, %, %}\n",     v.iv.x, v.iv.y, v.iv.z);            break;
+                case VT_SV4:            print("iv4{%, %, %, %}\n",  v.iv.x, v.iv.y, v.iv.z, v.iv.w);    break;
+                case VT_BOOL:           print("bool{%}\n",          v.iv.x ? "true":"false");           break;
+                case VT_LSTR:           print("str \"%\"\n",            v.lstr);                            break;
+                case VT_COLOR|VT_VEC3:  print("col{%, %, %}\n",     v.fv.x, v.fv.y, v.fv.z);            break;
                 default: assert(false, "Unimplemented type in member_parsed(), %!", bin(v.type));
             }
         }
@@ -2415,7 +2415,7 @@ namespace var {
         
         if ((var->type & VT_SCALAR_TYPE_BIT) != VT_EXTRAT) {
             
-            syntax(v.type != VT_KEYWORD, f,l, v.kw == LIT_NULL ?	"flt and int are not nullable":
+            syntax(v.type != VT_KEYWORD, f,l, v.kw == LIT_NULL ?    "flt and int are not nullable":
                                                                     "No keywords allowed for flt or int");
             syntax((var->type & VT_VEC_BIT) == (v.type & VT_VEC_BIT), f,l, "Vector mismatch");
             syntax((var->type & VT_UNIT_BIT) == (v.type & VT_UNIT_BIT), f,l, "Unit mismatch");
@@ -2504,9 +2504,9 @@ namespace var {
             ((setter_fp)var->pdata)(v);
             
         } else {
-            byte	temp_data[MAX_VAR_SIZE];
+            byte    temp_data[MAX_VAR_SIZE];
             
-            byte*	cur = temp_data;
+            byte*   cur = temp_data;
             
             if ((var->type & VT_SCALAR_TYPE_BIT) != VT_EXTRAT) {
                 
@@ -2580,7 +2580,7 @@ namespace var {
                 
             }
             
-            u32		data_size = (u32)(cur -temp_data);
+            u32     data_size = (u32)(cur -temp_data);
             
             bool changed = !cmemcmp(pdata, (void*)temp_data, data_size);
             if (changed) {
@@ -2597,18 +2597,18 @@ namespace var {
                     }
                     
                     switch (v.type & ~VT_ANGLE) {
-                        case VT_FLT:	print("flt{%}\n",			v.fv.x);							break;
-                        case VT_FV2:			print("fv2{%, %}\n",			v.fv.x, v.fv.y);					break;
-                        case VT_FV3:			print("fv3{%, %, %}\n",		v.fv.x, v.fv.y, v.fv.z);			break;
-                        case VT_FV4:			print("fv4{%, %, %, %}\n",	v.fv.x, v.fv.y, v.fv.z, v.fv.w);	break;
-                        case VT_FQUAT:			print("quat{%, %, %,  %}\n",	v.fv.x, v.fv.y, v.fv.z, v.fv.w);	break;
-                        case VT_SINT:			print("int{%}\n",			v.iv.x);							break;
-                        case VT_SIV2:			print("iv2{%, %}\n",			v.iv.x, v.iv.y);					break;
-                        case VT_SIV3:			print("iv3{%, %, %}\n",		v.iv.x, v.iv.y, v.iv.z);			break;
-                        case VT_SIV4:			print("iv4{%, %, %, %}\n",	v.iv.x, v.iv.y, v.iv.z, v.iv.w);	break;
-                        case VT_BOOL:			print("bool{%}\n",			v.iv.x ? "true":"false");			break;
-                        case VT_LSTR:			print("str \"%\"\n",			v.lstr);							break;
-                        case VT_COLOR|VT_VEC3:	print("col{%, %, %}\n",		v.fv.x, v.fv.y, v.fv.z);			break;
+                        case VT_FLT:    print("flt{%}\n",           v.fv.x);                            break;
+                        case VT_FV2:            print("fv2{%, %}\n",            v.fv.x, v.fv.y);                    break;
+                        case VT_FV3:            print("fv3{%, %, %}\n",     v.fv.x, v.fv.y, v.fv.z);            break;
+                        case VT_FV4:            print("fv4{%, %, %, %}\n",  v.fv.x, v.fv.y, v.fv.z, v.fv.w);    break;
+                        case VT_FQUAT:          print("quat{%, %, %,  %}\n",    v.fv.x, v.fv.y, v.fv.z, v.fv.w);    break;
+                        case VT_SINT:           print("int{%}\n",           v.iv.x);                            break;
+                        case VT_SIV2:           print("iv2{%, %}\n",            v.iv.x, v.iv.y);                    break;
+                        case VT_SIV3:           print("iv3{%, %, %}\n",     v.iv.x, v.iv.y, v.iv.z);            break;
+                        case VT_SIV4:           print("iv4{%, %, %, %}\n",  v.iv.x, v.iv.y, v.iv.z, v.iv.w);    break;
+                        case VT_BOOL:           print("bool{%}\n",          v.iv.x ? "true":"false");           break;
+                        case VT_LSTR:           print("str \"%\"\n",            v.lstr);                            break;
+                        case VT_COLOR|VT_VEC3:  print("col{%, %, %}\n",     v.fv.x, v.fv.y, v.fv.z);            break;
                         default: assert(false, "Unimplemented type in member_parsed()!");
                     }
                 }
@@ -2794,7 +2794,7 @@ namespace var {
                     
                     char* end = working_stk.getTop<char>();
                     
-                    while (str != end) {	// Windows generates codes when printing special flaot values like infiniy or NaN (for ex. 1.#IND)
+                    while (str != end) {    // Windows generates codes when printing special flaot values like infiniy or NaN (for ex. 1.#IND)
                                             //  since we use '#' for comments we have to replace those with something else ('@' in our case)
                         if (*str == '#') {
                             *str = '@';
@@ -2912,7 +2912,7 @@ namespace var {
                 auto* member_var = var->arr.members;
                 assert(member_var);
                 
-                auto*	arr = (dynarr<byte>*)pdata;
+                auto*   arr = (dynarr<byte>*)pdata;
                 
                 u32 arr_len = arr->len;
                 uptr arr_stride = var->arr.arr_stride;
@@ -3017,7 +3017,7 @@ namespace var {
                 
             }
             
-            if (	(dollar_cmd == DC_CURRENT && (flags & PF_WRITE_BIT) == PF_WRITE_CURRENT) ||
+            if (    (dollar_cmd == DC_CURRENT && (flags & PF_WRITE_BIT) == PF_WRITE_CURRENT) ||
                     (dollar_cmd == DC_SAVE && (flags & PF_WRITE_BIT) == PF_WRITE_SAVE) ) {
                 
                 char* write_insert_cur =
@@ -3058,7 +3058,7 @@ namespace var {
         
         assert(depth > 0);
         
-        Token*	arr_tok; // '[] = { ... }'
+        Token*  arr_tok; // '[] = { ... }'
         
         bool length_specified;
         uptr max_arrlen;
@@ -3125,17 +3125,17 @@ namespace var {
             syntax_token(&tok, CURLY_OPEN, "array:: Array must follow 'var = [] {}' syntax");
         }
         
-        Var const*	var = aray.members;
+        Var const*  var = aray.members;
         assert(aray.members && !aray.members->next); // aray.members points ONE node with the basic member type or the tree of the member struct
         
-        uptr		member_i = 0;
-        bool		named_members = tok->tok == MEMBER_DOT;
+        uptr        member_i = 0;
+        bool        named_members = tok->tok == MEMBER_DOT;
         
         for (;;) {
             
             Token* assgn_tok = tok;
             {
-                bool	member_named;
+                bool    member_named;
                 member_named = tok->tok == MEMBER_DOT;
                 if (member_named) {
                     ++tok;
@@ -3232,10 +3232,10 @@ namespace var {
     _DECL Token* structure (Token* tok, Var_Struct cr strct, parse_flags_e flags, void* pdata,
             ui depth) {
         
-        Var const*	ordered_vars = strct.members;
-        lstr		iden;
-        uptr		member_i = 0;
-        bool		named_members = false;
+        Var const*  ordered_vars = strct.members;
+        lstr        iden;
+        uptr        member_i = 0;
+        bool        named_members = false;
         
         Token* strct_tok = tok;
         if (depth > 0) {
@@ -3252,7 +3252,7 @@ namespace var {
             
             Token* assgn_tok = tok;
             {
-                bool	member_named;
+                bool    member_named;
                 if (depth == 0) {
                     member_named = tok->tok == VAR_IDENTIFIER;
                 } else {
@@ -3264,9 +3264,9 @@ namespace var {
                 syntax(member_named == named_members, assgn_tok,tok, "structure:: Don't mix named and ordered members in one member list.");
             }
             
-            ui			inline_depth = depth;
-            void*		inline_pdata = pdata;
-            Var const*	var;
+            ui          inline_depth = depth;
+            void*       inline_pdata = pdata;
+            Var const*  var;
             
             if (named_members) {
                 // Named member assignment
@@ -3362,7 +3362,7 @@ namespace var {
         bool member_array = tok->tok == BRACKET_OPEN;
         syntax( member_array == is_array(var->type),
                 assgn_tok,tok,
-                member_array ?	"member_value:: Non-array-variable cannot have 'var = []' syntax" :
+                member_array ?  "member_value:: Non-array-variable cannot have 'var = []' syntax" :
                                 "member_value:: Array variable must have 'var = [] {}' syntax" );
         
         bool strct = tok->tok == CURLY_OPEN;
@@ -3396,7 +3396,7 @@ namespace var {
             
             assert(basic_type(var->type));
             
-            Expr_Val	val;
+            Expr_Val    val;
             
             if (is_flt(var->type)) {
                 flags |= PF_INFER_TYPE;
@@ -3452,11 +3452,11 @@ namespace var {
         }
         _DECL void member_list (Var const* parent, void* pdata, ui depth, uptr array) {
             
-            Var const*	var = parent->strct.members;
+            Var const*  var = parent->strct.members;
             
             for (uptr member_i=0; var; ++member_i) {
                 
-                void*		recurse_pdata = pdata;
+                void*       recurse_pdata = pdata;
                 
                 if (!array) {
                     
@@ -3516,8 +3516,8 @@ namespace var {
     
     #undef S
     
-    DECLD HANDLE			cmd_pipe_handle;
-    DECLD OVERLAPPED		cmd_pipe_ov =					{}; // initialize to zero
+    DECLD HANDLE            cmd_pipe_handle;
+    DECLD OVERLAPPED        cmd_pipe_ov =                   {}; // initialize to zero
     
     DECL bool pipe_test () {
         
@@ -3590,7 +3590,7 @@ namespace var {
                 if (res) { cur = res; }
             }
             
-            if (	str::comp(iden, "update") ) {
+            if (    str::comp(iden, "update") ) {
                 //print("update cmd recieved.\n");
                 cmd_read = true;
             } else {

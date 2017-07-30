@@ -5,7 +5,7 @@ DONE:
  -platform code done (mostly copied from graph project)
  -somewhat changed shader loading code, now a mixture of graph and opengl code
   -recursive inclusion of files with $include directive (fixed missing newline of $include line)
-   -	>>a
+   -    >>a
         >>$include "b" (file with text b without final newline)
         >>c
         now becomes:
@@ -572,3 +572,4 @@ TODO
  ->not happened since i reimplemented normal mesh drawing
  
  Materials seem be all metallic when compiling with llvm ? bug in var file parsing ?
+ 
