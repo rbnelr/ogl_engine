@@ -1,4 +1,4 @@
-﻿	
+﻿ 
 #include "stdio.h"
     
 namespace print_n {
@@ -7,18 +7,17 @@ namespace print_n {
     
     HANDLE error_log_file;
     HANDLE full_log_file;
-    HANDLE profile_log_file;
     
     #if _PLATF == PLATF_GENERIC_WIN
-    HANDLE	stdout_handle;
-    HANDLE	stderr_handle;
+    HANDLE  stdout_handle;
+    HANDLE  stderr_handle;
     
     DECLD constexpr lstr newlineSequence = "\r\n";
     
-    #define S32_PRINTF_CODE				"I32d"
-    #define S64_PRINTF_CODE				"I64d"
-    #define U32_PRINTF_CODE				"I32u"
-    #define U64_PRINTF_CODE				"I64u"
+    #define S32_PRINTF_CODE             "I32d"
+    #define S64_PRINTF_CODE             "I64d"
+    #define U32_PRINTF_CODE             "I32u"
+    #define U64_PRINTF_CODE             "I64u"
     
     DECLM WORD get_console_color (HANDLE h) {
         CONSOLE_SCREEN_BUFFER_INFO info;
@@ -43,10 +42,10 @@ namespace print_n {
     #elif _PLATF == PLATF_GENERIC_UNIX
     DECLD constexpr lstr newlineSequence = "\n";
     
-    #define S32_PRINTF_CODE				"d"
-    #define S64_PRINTF_CODE				"lld"
-    #define U32_PRINTF_CODE				"u"
-    #define U64_PRINTF_CODE				"llu"
+    #define S32_PRINTF_CODE             "d"
+    #define S64_PRINTF_CODE             "lld"
+    #define U32_PRINTF_CODE             "u"
+    #define U64_PRINTF_CODE             "llu"
     
     DECL int platformGetStdStream (const char * stdDevice) {
         auto ret = open(stdDevice, O_RDONLY);
@@ -133,57 +132,19 @@ namespace print_n {
         #endif
     }
     
-    DECL void print_profile (lstr cr str) {
-        
-        #if _PLATF == PLATF_GENERIC_WIN
-        auto old_col = get_console_color(stderr_handle);
-        set_console_profile_color(stderr_handle);
-        
-        {
-            DWORD numWritten;
-            auto ret = WriteFile(stdout_handle, str.str, (DWORD)str.len, &numWritten, NULL);
-            if (ret == 0 || numWritten != (DWORD)str.len) {
-                DBGBREAK_IF_DEBUGGER_PRESENT;
-            }
-        }
-        
-        set_console_color(stderr_handle, old_col);
-        
-        #elif _PLATF == PLATF_GENERIC_UNIX
-        printf("%.*s", str.len, str.str);
-        #endif
-        
-    }
-    DECL void log_profile (lstr cr str) {
-        
-        #if _PLATF == PLATF_GENERIC_WIN
-        if (profile_log_file != INVALID_HANDLE_VALUE) {
-            DWORD numWritten;
-            auto ret = WriteFile(profile_log_file, str.str, (DWORD)str.len, &numWritten, NULL);
-            if (ret == 0 || numWritten != (DWORD)str.len) {
-                DBGBREAK_IF_DEBUGGER_PRESENT;
-            }
-        }
-        
-        #elif _PLATF == PLATF_GENERIC_UNIX
-        printf("%.*s", str.len, str.str);
-        #endif
-        
-    }
-    
-    Printer			make_printer_stdout () {
+    Printer         make_printer_stdout () {
         return { &working_stk, TMP_STK, 0, print_stdout };
     }
-    Printer			make_printer_stderr () {
+    Printer         make_printer_stderr () {
         return { &working_stk, TMP_STK, 0, print_stderr };
     }
-    Printer_Stk		make_printer_stk (Stack* stk, printstr_fp printstr) {
+    Printer_Stk     make_printer_stk (Stack* stk, printstr_fp printstr) {
         return { stk, STK, printstr };
     }
-    Printer			make_printer_dynarr (dynarr<char>* arr, printstr_fp printstr) {
+    Printer         make_printer_dynarr (dynarr<char>* arr, printstr_fp printstr) {
         return { arr, DYNARR, printstr };
     }
-    Printer_File	make_printer_file (fileh_t fhandle) {
+    Printer_File    make_printer_file (fileh_t fhandle) {
         return { fhandle, &working_stk, TMP_STK, print_file };
     }
     
@@ -202,9 +163,9 @@ namespace print_n {
         {
             DEFER_POP(&working_stk);
             
-            lstr exe_path =			win32::get_exe_path(&working_stk);
-            lstr exe_filename =		win32::find_exe_filename(exe_path);
-            lstr pc_name =			win32::get_pc_name(&working_stk);
+            lstr exe_path =         win32::get_exe_path(&working_stk);
+            lstr exe_filename =     win32::find_exe_filename(exe_path);
+            lstr pc_name =          win32::get_pc_name(&working_stk);
             
             SYSTEMTIME loc, utc;
             
@@ -219,10 +180,6 @@ namespace print_n {
                 loc.wYear, loc.wMonth, loc.wDay,
                 loc.wHour, loc.wMinute, loc.wSecond ).str;
                 
-            cstr profile_filename = print_working_stk("logs/%_%_%.%.%-%.%.%.profile.log\\0", pc_name, exe_filename,
-                loc.wYear, loc.wMonth, loc.wDay,
-                loc.wHour, loc.wMinute, loc.wSecond ).str;
-                
             lstr loc_ms_str = print_working_stk("%.%.%-%.%.%.%",
                 loc.wYear, loc.wMonth, loc.wDay,
                 loc.wHour, loc.wMinute, loc.wSecond, loc.wMilliseconds );
@@ -233,7 +190,6 @@ namespace print_n {
             
             win32::overwrite_file_wr(error_filename, &error_log_file);
             win32::overwrite_file_wr(full_filename, &full_log_file);
-            win32::overwrite_file_wr(profile_filename, &profile_log_file);
             
             if (error_log_file != INVALID_HANDLE_VALUE) {
                 auto print_file = make_printer_file(error_log_file);
@@ -253,15 +209,6 @@ namespace print_n {
                 print_file(" -----------------------------------------------------------------------------------------------\n");
             }
             
-            if (full_log_file != INVALID_HANDLE_VALUE) {
-                auto print_file = make_printer_file(profile_log_file);
-                print_file(" -----------------------------------------------------------------------------------------------\n");
-                print_file("| Profiling log file\n");
-                print_file("| Run at % local time (% utc time)\n", loc_ms_str, utc_ms_str);
-                print_file("| Run on '%' at '%'\n", pc_name, exe_path);
-                print_file(" -----------------------------------------------------------------------------------------------\n");
-            }
-            
         }
         
     }
@@ -272,60 +219,60 @@ namespace print_n {
     ////
     template <typename T>
     struct ForEach {
-        static constexpr print_type_e VAL =								OTHER;
-        static FORCEINLINE char do_ (T cr arg) {						return '\0'; } 
+        static constexpr print_type_e VAL =                             OTHER;
+        static FORCEINLINE char do_ (T cr arg) {                        return '\0'; } 
     };
     
     template<typename T> struct ForEach<T*> {
-        static constexpr print_type_e VAL =								PTR;
-        static FORCEINLINE uptr do_ (T* p) {							return reinterpret_cast<uptr>(p); }
+        static constexpr print_type_e VAL =                             PTR;
+        static FORCEINLINE uptr do_ (T* p) {                            return reinterpret_cast<uptr>(p); }
     };
     
     template<> struct ForEach<char*> {
-        static constexpr print_type_e VAL =								CSTR;
-        static FORCEINLINE char const* do_ (char* cstr) {				return cstr; }
+        static constexpr print_type_e VAL =                             CSTR;
+        static FORCEINLINE char const* do_ (char* cstr) {               return cstr; }
     };
     template<> struct ForEach<const char*> {
-        static constexpr print_type_e VAL =								CSTR;
-        static FORCEINLINE const char* do_ (const char* cstr) {			return cstr; }
+        static constexpr print_type_e VAL =                             CSTR;
+        static FORCEINLINE const char* do_ (const char* cstr) {         return cstr; }
     };
     template<> struct ForEach<CStr_Escaped> {
-        static constexpr print_type_e VAL =								CSTR_ESC;
-        static FORCEINLINE CStr_Escaped do_ (CStr_Escaped cstr) {		return cstr; }
+        static constexpr print_type_e VAL =                             CSTR_ESC;
+        static FORCEINLINE CStr_Escaped do_ (CStr_Escaped cstr) {       return cstr; }
     };
     
     template<> struct ForEach<lstr> {
-        static constexpr print_type_e VAL =								LSTR;
-        static FORCEINLINE lstr do_ (lstr str) {						return str; }
+        static constexpr print_type_e VAL =                             LSTR;
+        static FORCEINLINE lstr do_ (lstr str) {                        return str; }
     };
     template<> struct ForEach<mlstr> {
-        static constexpr print_type_e VAL =								LSTR;
-        static FORCEINLINE lstr do_ (mlstr str) {						return lstr(str); }
+        static constexpr print_type_e VAL =                             LSTR;
+        static FORCEINLINE lstr do_ (mlstr str) {                       return lstr(str); }
     };
     template<> struct ForEach<LStr_Escaped> {
-        static constexpr print_type_e VAL =								LSTR_ESC;
-        static FORCEINLINE LStr_Escaped do_ (LStr_Escaped lstr) {		return lstr; }
+        static constexpr print_type_e VAL =                             LSTR_ESC;
+        static FORCEINLINE LStr_Escaped do_ (LStr_Escaped lstr) {       return lstr; }
     };
     
     template<> struct ForEach<bool> {
-        static constexpr print_type_e VAL =								BOOL;
-        static FORCEINLINE bool do_ (bool b) {							return b; }
+        static constexpr print_type_e VAL =                             BOOL;
+        static FORCEINLINE bool do_ (bool b) {                          return b; }
     };
     
     template<> struct ForEach<char> {
-        static constexpr print_type_e VAL =								CHAR;
-        static FORCEINLINE char do_ (char c) {							return c; }
+        static constexpr print_type_e VAL =                             CHAR;
+        static FORCEINLINE char do_ (char c) {                          return c; }
     };
     template<> struct ForEach<Rep_S> {
-        static constexpr print_type_e VAL =								REPS;
-        static FORCEINLINE Rep_S do_ (Rep_S reps) {						return reps; }
+        static constexpr print_type_e VAL =                             REPS;
+        static FORCEINLINE Rep_S do_ (Rep_S reps) {                     return reps; }
     };
     
     #define INT(SIGN, T) \
             template<> struct ForEach<T> { \
-                static constexpr print_type_e VAL =						sizeof(T) == 8 ? SIGN##64 : SIGN##32; \
+                static constexpr print_type_e VAL =                     sizeof(T) == 8 ? SIGN##64 : SIGN##32; \
                 typedef types::Get##SIGN##Integer<MAX<uptr>(sizeof(T), 4)>::type ret_t; \
-                static FORCEINLINE ret_t do_ (T i) {					return i; } \
+                static FORCEINLINE ret_t do_ (T i) {                    return i; } \
             };
     INT(S, schar)
     INT(S, sshort)
@@ -341,32 +288,32 @@ namespace print_n {
     #undef INT
     
     template<> struct ForEach<Hex> {
-        static constexpr print_type_e VAL =								HEX;
-        static FORCEINLINE u64 do_ (Hex h) {							return h.val; }
+        static constexpr print_type_e VAL =                             HEX;
+        static FORCEINLINE u64 do_ (Hex h) {                            return h.val; }
     };
     template<> struct ForEach<Bin> {
-        static constexpr print_type_e VAL =								BIN;
-        static FORCEINLINE u64 do_ (Bin b) {							return b.val; }
+        static constexpr print_type_e VAL =                             BIN;
+        static FORCEINLINE u64 do_ (Bin b) {                            return b.val; }
     };
     
     template<> struct ForEach<f32> {
-        static constexpr print_type_e VAL =								F32;
-        static FORCEINLINE u32 do_ (f32 f) {							return reint_flt_as_int(f); } // To prevent the automatic f32->f64 conversion that happens normally when passing f32 to variadic functions
+        static constexpr print_type_e VAL =                             F32;
+        static FORCEINLINE u32 do_ (f32 f) {                            return reint_flt_as_int(f); } // To prevent the automatic f32->f64 conversion that happens normally when passing f32 to variadic functions
     };
     template<> struct ForEach<f64> {
-        static constexpr print_type_e VAL =								F64;
-        static FORCEINLINE f64 do_ (f64 f) {							return f; }
+        static constexpr print_type_e VAL =                             F64;
+        static FORCEINLINE f64 do_ (f64 f) {                            return f; }
     };
     
     
     template <typename... Ts>
     struct _rdataTypeString {
-        static constexpr uptr		N = sizeof...(Ts);
-        static print_type_e const	arr[N +1];
+        static constexpr uptr       N = sizeof...(Ts);
+        static print_type_e const   arr[N +1];
     };
     
     template <typename... Ts>
-    print_type_e const	_rdataTypeString<Ts...>::arr[N +1] = {
+    print_type_e const  _rdataTypeString<Ts...>::arr[N +1] = {
         ForEach<Ts>::VAL..., TERMINATOR
     };
     
@@ -432,8 +379,8 @@ namespace print_n {
         
         #define GET_VAL(type) va_arg(args, type)
         
-        u32		arr_str;
-        char*	stk_str;
+        u32     arr_str;
+        char*   stk_str;
         switch (this_->putval_type) {
             case DYNARR:
                 arr_str = this_->arr->len;
@@ -445,7 +392,7 @@ namespace print_n {
             default: assert(false);
         }
         
-        Base_Printer	sub_printer;
+        Base_Printer    sub_printer;
         sub_printer.printstr = nullptr; // we call printstr with the full printed string, so no printstr on the sub strings
         sub_printer.generic_putval = this_->generic_putval; // still print on either stack or dynarr, depending on where we are supposed to print to
         switch (this_->putval_type) {
