@@ -1,0 +1,347 @@
+#this line could tell the 'parser' how to format stuff it prints back out again
+#%var%								%cmd%								%cmd_i%								%exact_val%
+#										%val%								%val_i%
+
+vsync_swap_interval =					-1;
+
+controls = {
+	.cam_mouselook_sens =				v2( rad(PI / 1600.0) );
+	.cam_roll_vel =						45_deg;
+	
+	.cam_translate_vel =				2 ?
+											v3(0.05) :
+											v3(0.2) :
+											v3(0.8) :
+											v3(2.0);
+	.cam_translate_fast_mult =			0 ?
+											v3(4) :
+											v3(8);
+	
+	.cam_fov_control_vel =				10_deg;
+	.cam_fov_control_mw_vel =			10_deg / 4.0;
+	
+};
+
+camera = {
+	.pos_world =					#	v3(-29.2636, +5.4754, +0.1278)
+									$	v3(-0.4852, +10.6344, +4.9672)
+									$s	v3(-0.4852, +10.6344, +4.9672);
+	.aer =							#
+									$	deg(v3(+51.0632, +66.1500, +0.0000))
+									$s	deg(v3(+51.0632, +66.1500, +0.0000));
+	.base_ori =							quat(ident);
+	
+	.vfov =							#	+100_deg
+									$	+75.0000_deg
+									$i	+75.0000_deg;
+									
+	.clip_near =						1.0/16.0;
+	.clip_far =							4096;
+	
+};
+
+passes = {
+	.bloom_size = [3] {					1.0/8.0,	1.0/4.0,	1.0/0.5 };
+	.bloom_res_scale = [3] {			1,			2,			3 };
+	.bloom_coeff = [3] {				0.0,		0.0,		0.75 };
+	
+	.shadow_res =						256; # desktop 1024, notebook 256
+};
+
+env_viewer = {
+	.illuminance_res =					32;
+	.luminance_res =					512;
+	.luminance_prefilter_levels =		8;
+	.luminance_prefilter_base_samples =	256;
+	
+	.cur_humus_indx =					#112
+									$	8
+									$s	8;
+	## Favorites:
+	# 107 			Stairs					Green Djungle Temple Stairs			
+	# 13 			CoitTower2				
+	# 112			SwedishRoyalCastle		lots of little streetlights			
+	# 16			DallasW					hotel room							
+	# 17			Earth					
+	# 23			Footballfield2			Nice glass reflections				
+	
+	.cur_sibl_indx =				#	28
+									$	42
+									$s	42;
+	## Favorites:
+	# 30			PaperMill_Ruins_E		
+									
+	.sibl =							$s	false;
+};
+
+### Lighting stuffd
+lights = {
+	.lights =						[4] {
+		{ "Grey dim",	$s v3(-40.2091, -6.1239, +1.6402), quat(ident),	1, 0, srgb(225,228,230) * col(30) },
+		{ "Blue",		$s v3(-41.2435, -5.1956, +2.0644), quat(ident),	1, 0, srgb(29,54,252) * col(450) },
+		{ "Red bright",	$s v3(-42.3029, -5.7587, +1.0016), quat(ident),	1, 0, srgb(237,7,51) * col(750) },
+		{ "Sunlike",	$s v3(-40.7486, -6.1274, +2.8238), quat(ident),	1, 0, srgb(244,217,171) * col(1200) }
+	};
+	
+	{#
+	.lights =						[4] {
+		v3(+0.2100, +0.2250, +0.2784) * v3(550) },
+		v3(+0.0144, +0.0144, +1.2000) * v3(550) },
+		v3(+5.5000, +0.0660, +0.0660) * v3(550) },
+		v3(+10.3000, +6.3860, +5.4693) * v3(550) }
+	};
+	#}
+	
+	.select_radius =				[2]	{
+										1.0 / 4.0,	# Directional light
+										1.0 / 20.0,	# Point light
+	};
+};
+
+### Scene
+
+{#
+	.cube_rot_vel =						deg(0 ? +20 : 0);
+	.sphere_rot_vel =					-6_deg;
+#}
+
+showcase = {
+	
+	.grid_steps =						10;
+	
+	.materials = {
+		.pos_world =				$s	v3(-49.0546, -3.0716, +1.2679);
+		.ori_world =				$s	quat(v3(-0.0000, +0.0000, -0.0000), +1.0000);
+		.select_radius =				0.25;
+		.grid_offs =					0.65;
+	};
+	
+	.cerberus = {
+		.pos_world =				$s	v3(-47.0940, -3.0819, +1.8214);
+		.ori_world =				$s	quat(v3(+0.0009, +0.0058, +0.9878), +0.1555);
+		.select_radius =				0.15;
+	};
+	
+};
+
+material_showcase_grid_steps =			uv2(7, 3);
+material_showcase_grid_mat =			m2(	+1, 0,
+											 0,-1 );
+
+{#
+scenes =								[] {
+	{#Scene#}{	.name =							"shadow_test_0";
+		.pos =							$s	v3(-46.6174, +3.8187, +0.9977);
+		.ori =							$s	quat(v3(-0.0013, +0.0014, -0.7383), +0.6745);
+		.children =						[] {
+			
+			{#Light#}{	.type =		0;	.name =		"Test dir light";
+				.pos =						$s	v3(+5.4736, -1.8077, +2.4948);
+				.ori =						$s	quat(v3(+0.3753, +0.4900, +0.6247), +0.4784);
+				.power =						srgb(244,217,171) * col(2000);
+				.flags =						0;
+			},
+			
+			{#Mesh#}{	.name =						"shadow_test_0_mesh";
+				.pos =						$s	v3(0);
+				.ori =						$s	quat(ident);
+				.children =				[] {
+					
+					{#Light#}{	.type =		1;	.name =	"Test point light 1";
+						.pos =					$s	v3(+0.9410, +1.2415, +1.1063);
+						.ori =						quat(ident);
+						.power =					srgb(200,48,79) * col(100);
+						.flags =					2;
+					},
+					{#Light#}{	.type =		1;	.name =	"Test point light 2";
+						.pos =					$s	v3(+1.0914, +0.5582, +1.3377);
+						.ori =						quat(ident);
+						.power =					srgb(48,200,79) * col(100);
+						.flags =					2;
+					},
+					{#Light#}{	.type =		1;	.name =	"Test point light 3";
+						.pos =					$s	v3(+0.3245, +0.7575, +1.0226);
+						.ori =						quat(ident);
+						.power =					srgb(48,79,200) * col(100);
+						.flags =					2;
+					},
+					
+				};
+			},
+			{#Mesh#}{	.name =						"Window_Pillar";
+				.pos =						$s	v3(+3.7783, -5.7335, +0.0000);
+				.ori =						$s	quat(v3(+0.0005, -0.0004, -0.6161), +0.7877);
+				.children =				[] {
+					
+					{#Light#}{	.type =		1;	.name =	"Torch light L";
+						.pos =					$s	v3(+4.5799, -6.4858, +1.9066);
+						.ori =						quat(ident);
+						.power =					srgb(240,142,77) * col(60);
+						.flags =					2;
+					},                      
+					{#Light#}{	.type =		1;	.name =	"Torch light R";
+						.pos =					$s	v3(+4.1454, -4.6933, +1.8854);
+						.ori =						quat(ident);
+						.power =					srgb(240,142,77) * col(60);
+						.flags =					2;
+					},
+					
+				};
+			},
+			{#Mesh#}{	.name =						"Nanosuit";
+				.pos =						$s	v3(-0.6927, -1.1003, +0.5381);
+				.ori =						$s	quat(v3(+0.0049, -0.0048, -0.6973), +0.7167);
+			},	
+			
+		};
+	},
+};
+#}
+
+### Assets
+{# shaders = [] {
+	#???
+}; #}
+
+materials = [] { # enum map
+	#struct is  v3:albedo 	flt:metallic	flt:roughness	flt:IOR=1.5
+	#%name% # Autogenerated enum-map names
+	{# MAT_IDENTITY			#}			{ col(1),					1.0,	1.0 }, # since everything acts as a multipler for optional texture values, this makes it so that the material is controlled with textures (NOTE: IOR is default)
+	
+	{# MAT_WHITENESS		#}			{ col(0.920, 0.920, 0.920),	0.10,	0.50 }, # NOTE: default values are still not implemented, so if IOR is ever set here it will override the default permanetly
+	{# MAT_TERRAIN			#}			{ col(0.644, 0.770, 0.476),	0.00,	0.85 };
+	{# MAT_GLASS			#}			{ col(1.000, 1.000, 1.000),	0.00,	0.08 },
+	{# MAT_PLASTIC			#}			{ col(0.004, 0.005, 0.005),	0.00,	0.24 },
+	{# MAT_SHINY_PLATINUM	#}			{ col(0.300, 0.307, 0.307),	1.00,	0.08 },
+	{# MAT_GRASS			#}			{ col(1),					0.00,	0.55 },
+	{# MAT_RUSTY_METAL		#}			{ col(1),					0.50,	0.60 },
+	{# MAT_BLOTCHY_METAL	#}			{ col(1),					0.95,	0.34 },
+	{# MAT_GRIPPED_METAL	#}			{ col(1),					0.95,	0.34 },
+	{# MAT_DIRT				#}			{ col(1),					0.00,	0.70 },
+	{# MAT_TREE_BARK		#}			{ col(0.600, 0.513, 0.435), 0.00,	0.85 },
+	{# MAT_TREE_CUTS		#}			{ col(1.000, 0.855, 0.725), 0.00,	0.70 },
+	{# MAT_TREE_BLOSSOMS	#}			{ srgb(213,146,222),		0.00,	0.88 },
+	{# MAT_OBELISK			#}			{ col(1),					0.35,	0.70 },
+	{# MAT_MARBLE			#}			{ col(1),					0.0,	0.30 },
+	{# MAT_WOODEN_BEAM		#}			{ col(0.898, 0.741, 0.698),	0.0,	0.70 },
+	{# MAT_WOODEN_BEAM_CUTS	#}			{ col(0.878, 0.729, 0.690),	0.0,	0.60 },
+	{# MAT_LIGHTBULB		#}			{ col(0.400, 0.400, 0.400),	0.20,	0.08 },
+	
+	{# MAT_SHOW_PLASTIC		#}			{ srgb(236,44,130),			0.0,	0.24,	1.419 }, # IOR=1.419 -> F0=0.03
+	{# MAT_SHOW_GLASS		#}			{ srgb(0.04,0.07,0.02),		0.0,	0.08,	1.419 }, # IOR=1.419 -> F0=0.03
+	{# MAT_SHOW_PLASIC_H	#}			{ srgb(215,160,41),			0.0,	0.80,	1.576 }, # IOR=1.576 -> F0=0.05
+	{# MAT_SHOW_RUBY		#}			{ srgb(226,14,37),			0.0,	0.05,	1.789 }, # IOR=1.789 -> F0=0.08
+	{# MAT_SHOW_DIAMOND		#}			{ srgb(101,176,239),		0.0,	0.03,	2.403 }, # IOR=2.403 -> F0=0.17
+	{# MAT_SHOW_IRON		#}			{ col(0.56, 0.57, 0.58),	1.0,	0.18 };
+	{# MAT_SHOW_COPPER		#}			{ col(0.95, 0.64, 0.54),	1.0,	0.38 },
+	{# MAT_SHOW_GOLD		#}			{ col(1.00, 0.71, 0.29),	1.0,	0.28 },
+	{# MAT_SHOW_ALU			#}			{ col(0.91, 0.92, 0.92),	1.0,	0.24 },
+	{# MAT_SHOW_SILVER		#}			{ col(0.95, 0.93, 0.88),	1.0,	0.09 },
+};
+
+mesh_names = [] {
+	#%name%
+	{# nouv_AXIS_CROSS_PX_MSH			#}	"axis_cross_px.nouv",
+	{# nouv_AXIS_CROSS_NX_MSH			#}	"axis_cross_nx.nouv",
+	{# nouv_AXIS_CROSS_PY_MSH			#}	"axis_cross_py.nouv",
+	{# nouv_AXIS_CROSS_NY_MSH			#}	"axis_cross_ny.nouv",
+	{# nouv_AXIS_CROSS_PZ_MSH			#}	"axis_cross_pz.nouv",
+	{# nouv_AXIS_CROSS_NZ_MSH			#}	"axis_cross_nz.nouv",
+	{# nouv_AXIS_CROSS_PLANE_XY_MSH		#}	"axis_cross_plane_xy.nouv",
+	{# nouv__3D_LINE_COMPONENT_MSH		#}	"3d_line_component.nouv",
+	{# nouv_SPHERE_MSH					#}	"_unit_sphere.nouv",
+	
+	{# nouv_LIGHT_BULB_MSH				#}	"light_bulb.nouv",
+	{# nouv_MSH_SUN_LAMP_MSH			#}	"sun_lamp.nouv",
+	
+	{# nouv_STRUCTURE_RING_MSH			#}	"structure_ring.nouv",
+	{# nouv_TERRAIN_MSH					#}	"terrain.nouv",
+	{# nouv_MSH_UTAHTEAPOT				#}	"utahTeapot.nouv",
+	
+	{# nouv_PLANETARIUM_MSH				#}	"planetarium.nouv",
+	{# nouv_PLANETARIUM_PROJECTOR_MSH	#}	"planetarium_projector.nouv",
+	
+	{# nouv_MSH_ICO_SPHERE				#}	"_ico_sphere.nouv",
+	{# nouv_MSH_STFD_BUNNY				#}	"stanford/bunny.nouv",
+	{# nouv_MSH_STFD_BUDDHA				#}	"stanford/buddha.nouv",
+	{# nouv_MSH_STFD_DRAGON				#}	"stanford/dragon.nouv",
+	
+	{# nouv_MSH_WINDOW_PILLAR			#}	"window_pillar.nouv",
+	{# nouv_MSH_SHADOW_TEST_0			#}	"shadow_test_0.nouv",
+	
+	
+	{# uv_MSH_UNIT_PLANE				#}	"_unitPlane",
+	
+	{# uv_SCENE_GROUND0					#}	"scene_ground0",
+	{# uv_UGLY_MSH						#}	"ugly",
+	{# uv_TERRAIN_TREE_MSH				#}	"terrain_tree", # implement ternary
+	{# uv_TERRAIN_TREE_CUTS_MSH			#}	"terrain_tree_cuts",
+	{# uv_TERRAIN_TREE_BLOSSOMS_MSH		#}	"terrain_tree_blossoms",
+	{# uv_TERRAIN_CUBE_MSH				#}	"terrain_cube",
+	{# uv_TERRAIN_SPHERE_MSH			#}	"terrain_sphere",
+	{# uv_TERRAIN_OBELISK_MSH			#}	"terrain_obelisk",
+	{# uv_STRUCTURE_WALLS_MSH			#}	"structure_walls",
+	{# uv_STRUCTURE_GROUND_MSH			#}	"structure_ground",
+	{# uv_STRUCTURE_BLOCK1_MSH			#}	"structure_block1",
+	{# uv_STRUCTURE_BLOCK2_MSH			#}	"structure_block2",
+	{# uv_STRUCTURE_BLOCK3_MSH			#}	"structure_block3",
+	{# uv_STRUCTURE_BLOCK4_MSH			#}	"structure_block4",
+	{# uv_STRUCTURE_BEAM_MSH			#}	"structure_beam",
+	{# uv_STRUCTURE_BEAM_CUTS_MSH		#}	"structure_beam_cuts",
+	{# uv_PLANETARIUM_STAND_MSH			#}	"planetarium_stand",
+	
+	{# uv_tang_MSH_UNIT_PLANE			#}	"_unit_plane_tang.uv_tang",
+	
+	{# uv_tang_NANOSUIT_TORSO			#}	"nano_suit/nanosuit_torso.uv_tang",
+	{# uv_tang_NANOSUIT_LEGS			#}	"nano_suit/nanosuit_legs.uv_tang",
+	{# uv_tang_NANOSUIT_NECK			#}	"nano_suit/nanosuit_neck.uv_tang",
+	{# uv_tang_NANOSUIT_HELMET			#}	"nano_suit/nanosuit_helmet.uv_tang",
+	
+	{# uv_tang_NORM_TEST_00				#}	"norm_test/test_00.uv_tang",
+	
+	{# uv_tang_CERBERUS					#}	"cerberus/cerberus.uv_tang",
+};
+
+
+tex.names = [] {
+	#%name%
+	
+	{# MAT_ROUGHNESS_TEX							#}	"ugly_roughness.linear_r",
+	{# GRASS_TEX									#}	"grass_00",
+	{# TERRAIN_CUBE_DIFFUSE_TEX						#}	"terrain_cube_diffuse",
+	{# TERRAIN_SPHERE_DIFFUSE_TEX					#}	"terrain_sphere_diffuse",
+	{# TERRAIN_TREE_DIFFUSE_TEX						#}	"terrain_tree_diffuse",
+	{# TERRAIN_TREE_CUTS_DIFFUSE_TEX				#}	"terrain_tree_cuts_diffuse",
+	{# TERRAIN_OBELISK_DIFFUSE_TEX					#}	"obelisk_diffuse",
+	{# STRUCTURE_WALLS_TEX							#}	"structure_walls",
+	{# STRUCTURE_GROUND_TEX							#}	"structure_ground",
+	{# METAL_GRIPPED_DIFFUSE_TEX					#}	"metal_gripped_diffuse",
+	{# METAL_RUSTY_02_TEX							#}	"metal_rusty_02",
+	{# MARBLE_TEX									#}	"marble",
+	{# WOODEN_BEAM_TEX								#}	"wooden_beam",
+	
+	{# TEX_DIF_BRICK_00								#}	"brick_00_diff",
+	{# TEX_NRM_BRICK_00								#}	"brick_00.nrm",
+	{# TEX_DIF_BRICK_01								#}	"brick_01_diff",
+	{# TEX_NRM_BRICK_01								#}	"brick_01.nrm",
+	
+	{# NANOSUIT_BODY_DIFF_EMISS_TEX					#}	"nano_suit/nanosuit_body.sbgr_a",
+	{# NANOSUIT_BODY_SPEC_ROUGH_TEX					#}	"nano_suit/nanosuit_body_spec.sbgr_a",
+	{# NANOSUIT_BODY_NORM_TEX						#}	"nano_suit/nanosuit_body.nrm",
+	{# NANOSUIT_NECK_DIFF_TEX						#}	"nano_suit/nanosuit_neck",
+	{# NANOSUIT_NECK_SPEC_ROUGH_TEX					#}	"nano_suit/nanosuit_neck_spec.sbgr_a",
+	{# NANOSUIT_NECK_NORM_TEX						#}	"nano_suit/nanosuit_neck.nrm",
+	{# NANOSUIT_HELMET_DIFF_EMISS_TEX				#}	"nano_suit/nanosuit_helmet.sbgr_a",
+	{# NANOSUIT_HELMET_SPEC_ROUGH_TEX				#}	"nano_suit/nanosuit_helmet_spec.sbgr_a",
+	{# NANOSUIT_HELMET_NORM_TEX						#}	"nano_suit/nanosuit_helmet.nrm",
+	
+	{# NORM_TEST_00_TEX								#}	"norm_test/norm_00.nrm",
+	
+	{# TEX_CERBERUS_ALBEDO							#}	"cerberus/Textures/Cerberus_A",
+	{# TEX_CERBERUS_NORMAL							#}	"cerberus/Textures/Cerberus_N.nrm",
+	{# TEX_CERBERUS_METALLIC						#}	"cerberus/Textures/Cerberus_M.linear",
+	{# TEX_CERBERUS_ROUGHNESS						#}	"cerberus/Textures/Cerberus_R.linear",
+	
+};
+
+^EOF_MARKER^

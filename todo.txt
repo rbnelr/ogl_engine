@@ -1,0 +1,574 @@
+DONE:
+ 
+#2017.02.26 so. tag-abend
+ started rewrite of opengl project
+ -platform code done (mostly copied from graph project)
+ -somewhat changed shader loading code, now a mixture of graph and opengl code
+  -recursive inclusion of files with $include directive (fixed missing newline of $include line)
+   -	>>a
+        >>$include "b" (file with text b without final newline)
+        >>c
+        now becomes:
+        >>a
+        >>b
+        >>c
+  -full file gets queried back from ogl in case of error and written to zz_<filename>.with_error.tmp
+    to make finding of errors possible
+ 
+#2017.02.27-28 mo-di. abend-morgen
+ readded UBO communication
+ 
+ implemented matrix struct in vec
+ -matrix is still column mahor, but now indexed and constructed with 'row' and 'column' member functions
+   to make it crystal clear whats going on, indexing works like this:
+    m.row(indx) returns row vector by value
+    m.row(indx, v) sets a row vector
+   this avoids the have-to-return-wierd-proxy-to-make-c-syntax-possible issue
+   all swizzle operators except x/y/z/w (those are actual members) are handles this way too
+ 
+ implemented quaternion structure and operators
+ -doing azim elev roll to quat by rotation<axis>Quat and doing actual quat multiplications is easily optimized
+   because each axis results in a quat with only 2 non-zero values, so i added a compute_euler_angle_zxz_q function, which optimizes for this case
+ 
+ implemented vector/matrix printing (only floats for now, no idea how to implement a generic version of that)
+ 
+ mucked around with vector stuff
+ 
+ implemented a 'homogeneous' matrix that has the forth row implicit as 0,0,0,1
+  simply use this instead of m4's and it saves memory, performance and code size
+ 
+ reimplemented mouselook control (i think)
+ 
+#2017.02.03-04 fr-sa. nacht
+ readded mesh loading and drawing of simple meshes
+ readded lights and time of day control
+ 
+#2017.02.05 so. tag
+ messed around with vector implementation again, code using matricies and vectors should now do
+  way less copies of matricies and hold vectors in registers more
+ 
+#2017.03.10 fr. abend
+ 
+ rough file tokenizing
+ 
+ rewrote the code to do a recursive decent parser approach instead
+ -although without all the actual recursion and complexity will be in the parsing of expressions
+   the current parsing is very straightforward
+ 
+#2017.03.11-12 sa.-so. nacht
+
+ implement some sort of variable edit file that acts as both variable tweak file and save 
+ -only 'constants' for now
+ -simple syntax as in test.txt
+ -probably want to 'register' the vars over some alternate approach, since that's the quickest way to work with vars
+  -this CAN be done at compile time if c++ cooperates
+  -ie generate some mate-data structure instead of changing the whole structure of the variables just to allow this feature
+ 
+ rough value parsing, no expressions for now, but implement degree conversion, so types of vars have to exist already
+ 
+#2017.03.13 mo. tag
+ 
+ it would be convenient calculate the values immediately (ie. for ex calc addition in function plus())
+ -since the '+' is only reached after the lefthand has already been scanned, getting the left value is akward
+ -unless there is a trick, operator precedence makes this impossible
+   so we probably do need to keep some form of tree anyway
+ -> this is solved with the 'Precedence climbing' algo found here http://www.engr.mun.ca/~theo/Misc/exp_parsing.htm
+     everything can be calculated directly, this algo recurses intelligently so that
+     sub calculations (for ex '4 * 5' in '7 + 4 * 5') are handled at one level of recursion up the stack,
+     so even stacking the temporary values is handled implicitly by this algo by putting them on the stack
+ 
+ added all potential variables
+ 
+#2017.03.13 mo. tag
+ 
+ recursive structs with '= {4,5,6}' and '= {a=4,b=5,c=6}' syntax
+ 
+ first array implementation
+ 
+ cleanup the code and optimize it by moving the next_token() call so that we don't have to
+  call it in a chain of if-else-if's to determine the next token, but can instead be sure that
+  the char at *cur is always the first char of the next token, which allows us to branch on that with a switch
+  which is way more efficient, and probably makes it easier to generate basic error messages
+ -> done, this makes the code somewhat nicer in some places, assemblt probably is faster and smaller too
+ 
+#2017.03.18 sa. abend
+ 
+ file now actually puts the parsed values into memory
+ 
+ type checking of var expressions with the vars
+ -somewhat rough and untested
+ 
+ added triggering of reload by detecting filetime change
+ 
+#2017.03.21 di. tag
+ 
+ made it so that variables can also be function pointers that get called on parsing that variable
+ -for ex. vsync var calls a function which sets vsync, this prevents us having to check if a var changed in our main loop
+ 
+ added some array size checking
+ 
+#2017.03.23 do. tag
+
+ code probably has to be restructured a bit to properly allow recursive arrays and arrays of structs
+ -restructured, now allows recursive everything, and is cleaner in general
+ 
+ Added all current variables to the file
+ 
+#2017.03.23 do. tag
+ 
+ added $-control
+ 
+#2017.03.30 do. tag
+ 
+ fully implemented $-control except for $-ing whole structures
+ 
+#2017.03.30 do. tag
+ 
+ structures and array $-control implemented
+ 
+ messed around with 'optimizing' some math code in the parser (sse)
+ 
+ optimized m3*v3, m3*m3, hm*hv and hm (vectors passed in xmm0-3 and matricies passed as const ref)
+ 
+ added (in 3 lines of code!!) a save functionality that saves the current value of variables to the $i field in all.var
+ -> this replaces the old save state feature
+ -> this is very flexible, because anyone can simply add a $i field to the .var file to add a variable to the set of saved data
+ 
+#2017.04.01 sa. abend
+ 
+ add meshes names enum map functionality
+ -have to be able to read (and copy out (could skip this)) strings
+ -need some way to trigger mesh data reloading on changing a mesh name
+ -> can simply always reload on .var reload, but at the latest with textures we need some way to only trigger on actual variable change
+ 
+ did some testing with sse optimizing vector code where the vectors are still simple { x,y,z } C-structs and only get converted to sse registers in the functions
+ -> msvc (gcc does not) actually optimizes stores instantly followed by loads, which might make this approach possible in some cases, but it's probably not reasonable
+ 
+#2017.04.02 so. morgen
+ 
+ SOA syntax for AOS arrays
+ 
+ did some compatibility work to get the program working with gcc, still 2 issues with windows interfacing
+ 
+ finally made VARS constexpr by implementing unions with selective constructors
+ 
+ got it working with clang
+ -i had to add DECL everywhere because i can't figure out LTO and /Gv does not work either
+ -it seems to generate a .pdb but i only get function names in disasm and stack trace for external (non-static) functions
+ --O0 does not work atm because of missing stkchk and there seems to be no way to increase the stack size or stop stkchk from being inserted
+ -have not tested static allocation yet
+ 
+#2017.04.03 mo. morgen
+ 
+ On error (before all string vars are done) we currently keep (now) invalid string pointers in program memory
+ -> made a second (very simple) recursive member_list() that traverses all variables in VARS and zeros string variables in memory
+ -> runs every time before be start the real pass to make sure there are never cases where invalid string pointers can be kept in app memory
+ -> probably ok solution for now
+ 
+ made some lighting variables and tweaked colors for a bit
+ -> this variable file system is incredibly useful!
+ 
+#2017.04.04 di. tag
+ 
+ reimplemented the 'entity' system that allows to select and move the light path nodes and generic enitites
+  with the mouse
+ -> mostly implemented, rotation not implemented yet
+ 
+#2017.04.07 fr. nacht
+ 
+ changed the way tokenizing works as a test
+ 
+#2017.04.08 sa. tag
+ 
+ rethink type inferrance
+ -maybe parse literals that depend on type inferrance laziliy, ie when inferrance is known
+ -does not work, for ex. this case: 'flt = ---5 * 4' would need to have parsed the 5 when evaluating the '-' but because of the '* 4' we don't want type inferrance
+ -a seperate parse step (similar to PF_ONLY_SYNTAX_CHECK) would of course be able to solve this
+ -> leave it as is for now, even with ternary there is no ambiguous case, instead it will always error in the wrong cases,
+     it's just that error messages might be wierd
+ 
+#2017.04.09 so. tag
+ 
+ changed the whole parser to use the tokenize() system
+ 
+ implemented a multi line clang-like error reporting feature
+ -> this was suprizingly easy and works great
+ 
+ ternary (or n-nary)
+  t= 0/false ? a : b;
+  t= n ? 0 : 1 : 2 : ...; // where n is the ordinal of the n-nary, out of range (should probably default to the last case)
+ -> this was so easy, i even have full precedence and associativity options and even a smart warning to add parentheses because nobody actually knows the rules for ternary
+ -> no type checking between n-nary cases on purpose to increase flexibility
+ 
+ parser test proper type inferrance
+ -> implemented some ad-hoc type inferrance for only-unary-operators and n-nary cases
+ -> ad-hoc approach works for my current uses
+ 
+#2017.04.10-11 mo-di. nacht
+ 
+ entity rotation by converting quaternion to horizontal aer and doing rotation and then converting back
+ -implemented and experimented with quaternion->euler_angles->quaternion conversion
+ -quat->euler with my 'non-standart' axis order implemented according to http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/quat_2_euler_paper_ver2-1.pdf
+ -learned how quat->euler with gimbal locked rotations can produce degenerate cases including NaN and precision loss
+ -have two seperate quat->euler implementations (one seems to work with a few mul/adds and one inverse trig func for each angle)
+ 
+#2017.04.15 so. abend
+ 
+ dynamic mipmap loading works on my desktop machine (although you need a certain incantation to make it not produce opengl errors)
+ -but it does not work on my notebook, this might be caused by a unrelated problem with textures
+
+#2017.04.16-17. so-mo. nacht
+ 
+ tried to export tangents from blender with own export script
+ -no sucess in getting valid tangent data
+ 
+#2017.04.21-22 fr-sa. nacht-tag
+ 
+ calculate tangent vertex data myself and see if that produces any problems
+ 
+ started using a heap allocator based on win32's HeapAlloc
+ 
+ per triangle raycasting for diplaying debug info on meshes (for debugging tangent space)
+ 
+ got normal mapping working
+ 
+#2017.04.23-24 so-mo nacht-tag
+
+ implement loading of humus jpg cubemaps
+ -generate file list of humus cubemaps folder at start up
+ -stb image to load jpgs on demand
+ 
+ implemented humus loading
+ -async 'load' in worker thread and sync 'upload' in main thread
+  -communication over linked list of malloced blocks, malloc by producer, free by consumer, node is created and then, while the linked list is loked, linked in
+ -seperate loading of cubemap faces
+ -a configurable number of cubemaps after and before the current one are loaded so that you only see loading happen when going through the list fast
+ -loading is aborted in a 'smart' way when a image leaves the window of cubemaps that stays loaded
+ -the faces that are facing the camera the most are loaded first
+ 
+#2017.04.26-27 do-fr abend-tag
+ 
+ glass (or other translucent smooth materials) rendering by getting perfect reflection +refraction colors from env map
+  and scaling them by result of fresnel calculation
+ 
+#
+ Framebuffers
+ -color and kernel effects in framebuffers tutorial
+ -hdr
+ -bloom
+ -monster eye glow trail
+ 
+#2017.05.02 di. abend
+ experimented with the PBR formulas at https://learnopengl.com/#!PBR/Lighting
+ 
+ changed the materials to albedo/metallic/roughness for PBR
+ 
+#2017.05.03-04. di-mi. nacht
+ implemented PBR up to the complicated IBL reflections
+ 
+#2017.05.06. sa nacht
+ 
+ copied (and mostly understood) Epic Games importance sample based IBL PBR shader (SpecularIBL function in http://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf)
+ 
+ implement dynamic adjustment of amount of samples taken based on camera movement to make movement somewhat responsive
+ 
+ implement roughness of 'ugly' model
+ 
+ see if fixing the artefact that results from doing the '.z < 0.999 ? z-up : x-up' ternary is better if you interpolate instead of a hard cutoff
+ -> it's not, hairy ball theorem says that this will never work??
+ 
+ rewrote humus cubemap loader to be very simple and single threaded
+ 
+ implemented radiance prefiltering with adjustable resolution and sample count per .var file
+ 
+#2017.05.08. mo abend
+ finally implemented read PBR shader with implementation from https://learnopengl.com/#!PBR/IBL/Specular-IBL
+ -> i did not go in messing around with the final split sum approximation, so there are some things going on that i don't completely understand
+ 
+#2017.05.10. mi nacht
+ tried to get app working on my dad's old laptop
+ 
+ made window_placement save unique to machine (with pc name through GetComputerNameA)
+ 
+ use memory mapped file for windows placement save, so writing to it does not block when the file system is unresponsive (network shares or when currently loading textures for ex.)
+  so that in these cases our message thread does not block
+  -do memory mapped files actually work for this? are the writes nonblocking? does the lastest data get correctly writen to disk on exit (or crash)
+  -> they do perfectly, no blocking on slow network shares and still save when closing the app,
+      you don't need to call io functions, you just need to write to the in memory data structure
+      mem mapped files are perfect for this kind of state saving
+ 
+ implement the usage of the HDR enviroment maps found here: http://www.hdrlabs.com/sibl/archive.html
+ -control them like humus cubemaps, but have a toggle between humus and sHDRI 
+ -are they in units proportional to each other
+  -> they all seem to be roughly the same brightness scale
+ -how does having them be HDR affect PBR rendering?
+  -> having bright spots not clip to white reveals details in reflections of dark materials (black glass)
+ 
+#2017.05.18 do tag-abend
+ 
+ started on bloom
+ -got effect with dynamic sample count working, parameterized on res_scale (1->1/2 res, 2->1/4 res) and bloom_size (two pass kernel size in fraction of screen (vertical screen height, width is adjusted to aspect ratio to give circular bloom))
+ 
+#2017.05.
+
+ implemented crude shadow mapping for directional and point lights (single manually sized 2d/cubemap texture)
+  -no filtering for now other than using the shadow (which removes the hard edges, but still shows the pixels)
+ 
+#2017.05.27 sa tag
+ 
+#2017.05.28-29 so-mo nacht-tag
+ 
+ rendering of simple 2d debug lines in 3d space!
+ 
+ calculate AABBs for all meshes to be able to generate the shadow projections that are needed to fit all (or the desired) meshes
+ AABBs could also be used for culling of meshes in the camera passes or shadow passes
+ -display AABBs with line rendering
+ 
+#2017.06.02-03 fr-sa abend-nacht
+ 
+ rewrote .var parser to use linked list var registry (which has to be dynamic allocation now, for lack of reasonable compile-time data generation features)
+ 
+#2017.06.04 so abend-nacht
+ split member_list() into structure() and array() to simplify the code a little
+ -> dollar_cmd_list() function that calls member_value() for each value instance
+ 
+ tested for and found no memory leaks in current implementation with non-nested dyn_arrays
+ -> since i currently do not have dyn_arrays in dyn_arrays (which would create leaks when the outter array is shrunk)
+     so i will just leave it to be a potential leak source for now
+ 
+#2017.06.05 mo abend-nacht
+ implemented a non-component-based enitity system (entities are tagged inherited structs)
+ -drawing already working
+ -shadow mapping buggy
+ 
+#2017.06.08-09 do-fr abend-nacht
+ implement selecting of entities based on bounding box
+ -move entities in their parent space
+ -highlight hovered entity by showing bounding box instead of wierd spheres
+ 
+ rename dyn_array to dynarr
+ 
+#2017.06.09-10 fr-sa abend-nacht
+ debugged entity moving bug
+ 
+ completely implemented entity selection/moving/rotation
+ 
+#2017.06.12-13 mo-di abend-nacht
+ improve console printing
+ -instead of conout.print() have a 'conout = make_print(console_stdout)' line and conout() be callable
+   conout() should generate ONE set of code that prints into a dyn_array and calls a funcptr to output the generated string
+ -this should make useage like this possible: 'print = make_print([&] (lstr s) { str::append(working_stk, s); }); print("Hello %\n", "World");'
+ -> not sure i really improved anything
+ 
+#2017.06.23-24 fr-sa nacht-tag
+ refactored all code
+ -> is now longer libcless now, maybe make it libcless again later, but abstracted in a way, so that i can switch easily between the two
+  -> llvm and msvc in both unoptimized and optimized work again now (optimized did not work in libcless, because of a linker error that i could not figure out)
+
+#2017.07.05-06 mi-do abend-nacht
+ completely implement the scene concept in the engine
+ -global list of 'scenes' that are all drawn at once in different places in the world (scene has pos/ori/scale)
+ -scenes get drawn as seperate passes so no lighting/shadows takes effect across scenes
+ -each scene could have local instances of skybox with cubemap (far env ibl), time-of-day setting, etc.
+ -add at least a second scene, and try to implement skyboxes local to each scene with a cool effect
+ 
+#2017.07.10 mo. abend
+ refactored profiling code, so that it is possible to add gpu profiling samples to the profiling
+ 
+#2017.07.11 di. tag-abend
+ debugged refactored profiling code, problem was simply that i printed the frame and frame_end profiling block while they were still open
+ -> solution is simply to have the part of the code that prints to be not profiled
+ -> this could easily be added, though, by taking the measurements beforehand and adding the profiling block to the next frame, manually
+ 
+ add gpu profiling samples to profiling and see if the returned data makes any sense
+ -gpu samples get'ting should be offset by one frame according to docs, which should be easy to implement with this profiling system
+ -> was straightforward
+ 
+ ported flamegraph profiler visualizer (graph), to the new 'libraries'
+ 
+ outputted the profiling data to graph.exe, and data does seem to make sense
+ 
+#2017.07.12 mi. tag
+ BUG: close_application does not seem to be called on clicking the cross on the window or on alt-f4
+       or it stalls somehow, spamming the button makes it work after a second or two
+      -> moving the window and then clicking seemed to work also, at least sometimes
+ -> this was caused because we called the opengl profiling functions in the msg-thread instead of the ogl engine thread
+  -> made both threads exit via return from main, do the ogl profiling in the engine thread which gets triggered to exit via a mutexed bool
+      main threads also waits via WaitForSingleObject on the engine thread exiting
+ 
+#2017.07.13 do. abend
+ i just noticed that i have crashes due to multithreading, since i use 'print()' which depends on the working_stk from both threads
+ -so it probably makes sense now to have a way for stuff like print and alloc to be thread local, but how to do this in c++?
+ -> c++11's thread_local actually seems to work (even with win32 thread creation), so making things thread local should work perfectly 
+ -> things get printed to file or console in one function call, so every print() call is thread safe with other threads print() calls
+  -> console color probably is NOT safe, this would need a extra mutex
+ -> so it is enough to give every threads it's own working_stk and print structs (i could even have one print struct if i would not store a ptr to the working_stk in the struct (get the working_stk in the print function))
+ -> llvm does no longer seem to compile, though
+ 
+#2017.07.17 mo. tag
+ syncronize the gpu timestapt to the cpu ones somehow
+ - there is a way to get the 'current' timestamp with a call in opengl ( glGetInteger64v(GL_TIMESTAMP, &out) )
+    use that at the start of the program, later maybe every frame if the call does not impact performance
+ -> actually can't do at start of process, since gl context does not exist yet, i do it after context creation, and calculate the gpu timer process begin
+ -> data seems to make sense, but it is hard to tell, since gpu processing always happens later than cpu drawcalls by design, and they should never actually syncronize
+ 
+#2017.07.30 sa. tag
+ try making a github repo
+ -> already made a local git repo on my notebook last week
+ -> created a github repo and uploaded my local repo to it
+ -> fixed tabs with this: "https://stackoverflow.com/questions/2316677/can-git-automatically-switch-between-spaces-and-tabs"
+ 
+TODO
+-FEATURES:
+ 
+ implement real time frame profiling, where you always see the current frames graph
+ -should probably continue using a seperate flamegraph app and pipe the current data over, while also streaming into the file for later inspection
+  -can easily close the profiling drawing, just by closing the flamegraph app
+  -if flamegraph drawing has a performance inpact, i could even run the flamegraph app on a sperate machine and stream the data over the network
+ -always align the left side of the screen with the beginning of the frame, so you can see the flamegraph in 'real time'
+ 
+ experiment with new profiler (and improve it if needed)
+ -how stable is the graph if the framerate is stable?
+ -are at least the individual renderpasses constant time even if some are removed
+ -are there still cpu bottlenecks for some reason (maybe the cpu has to sync to gpu for some reason (maybe because vram is full))
+ 
+ quick and dirty instanced rendering for material showcase grid
+ -see if this has a noticable performance on the notebook
+ -make grid count x/y entity local
+ -does the profiler show the performance increase from instancing as expected?
+ 
+ finish converting the old scenes to the new entity tree
+ 
+ completely remove old drawing code
+ then clean up engine.h (all the drawing helper function etc. should now be not needed any more)
+ 
+ add local enviroment map to scenes
+ 
+ make enviroment mapping work on notebook
+ 
+ performance experimentation on notebook
+  what to do so that we can reliably get 60 fps on notebook?
+  -reduce renderpasses
+   -ditch 'seperate scenes as seperate drawpasses' concept ?
+    -maybe the concept does not have to be ditched, but instead i can restructure the code so that all shadow passes happen first, and then the lighting passes happen like one singe would, except for having to switch the shadow textures for objects of different scenes
+   -maybe have a simpler forward rendered dbg_line implementation
+   -do something about the amount of passes in the post pass
+    -settings for bloom, which allow it to be cheaper or be disabled
+  >what else?
+  
+ maybe time of day control (controls one directional light (maybe as pointer in scene struct))
+ 
+ triangle perfect mouse selection by doing triangle-ray intersection test of every tri in all meshes
+ -when the potential meshes are filtered by first doing a ray-AABB intersection this approach might be no performance concern at all
+ 
+ try variance shadow mapping
+ 
+ maybe port to android?
+ -> if i can figure out how to reliably debug (at least reliable print, but actual debug is supposed to be possible)
+ 
+ figure out how to support enitity trees with the .var file
+ 
+ maybe switch some things that use Stack to dyn_array or heap allocated
+ 
+ .var support for:
+ -default values (the last or last few values in a struct can have default values which get set if they are not specified in the .var file)
+  -default values have to be per struct, evaluation has to be per instance
+    have an extra pointer to a default instance
+    then simply copy the default instance into memory before doing the real parsing
+ -enums
+ -somehow being able to check which variables changed (leaf var changes carry up to their parent structure nodes)
+ 
+ maybe make shaders be controllable in the .var file?
+ 
+ add interesting scenes
+ -my house
+ -spaceship cockpit (maybe rip elite ship)
+ -desert?
+ -some bloom test scenes (direct light sources of varying brightness, emissive materials, etc.)
+ 
+ add debug overlays to help with debugging render passes
+ -be able to overlay (could even move with mouse)
+  -ideally in seperate 'debug' window along with other debug stuff (and some interface for the .var vars)
+    but it seems like having two windows is not a easy task in opengl
+ 
+ experiment with tonemapping (in the HDR env map enviroment) to complete the HDR pipeline
+ -> got some sort of automatic exposure working with simple exp() exposure formular
+  -> but brightness convolution was always majorly aliased (whole giant light sources not showing up on lower mipmaps) unless scaled to power-of-two texture while in high-res
+ -> wheight convolution with some mask that has less contribution at the corners and especially the edges of the screen
+     to prevent target exposure instantly changing once a bright light source enters the sceen by just a few pixels
+ -> find out how local exposure is done
+ 
+ bloom
+ -try non-power-of-two main-pass-color mipmap generation
+  -is a blit framebuffer with LINEAR parameter the same as a manual shader pass?
+   -> it seems like, yes
+  -can aliasing when bloom'ing lower mipmaps be improved by manually doing the mipmap generation with a shader
+    and adding a small gaussian blur on every mipmap generation level
+    -> seems to work like i thought it would
+   -if this works at all, can it help with the aliasing problems in brightness convolution?
+    -> yep
+ -> should probably test bloom generation further, test on varied set of scenes, and have all miplevels in debug view
+ 
+ clear up confusion about light falloff?
+ 
+ experiment with point light brightness (make them real world units that fit hdr env maps?)
+ 
+ 
+//// Scene ideas:
+ -outdoors:
+  -aztec temple?
+  
+ -indoors
+  -my house?
+ 
+ -big scenery:
+  -desert
+   -standing on big machine moving through desert
+ 
+ -space ship/station?
+ 
+//// General ideas:
+ profile why we get sub 1 fps on notebook with 2000ms cpu time (cpu bottleneck)
+ -am i reading something over network share?
+ 
+ implement simple pack file format that allows virtual filesystem in one file, to make moving the app folder around faster
+ -try very simple lz compression myself a-la casey
+ 
+ make var file work in read only enviroment (give a warning if it can't be opened with write permissions and reopen without)
+  and just don't try to write to it in that case
+ 
+//// Vars file
+ 
+ implement default values
+ 
+ look into autogenerating the VARS structure in a somewhat hirachical way
+ -how should i implement sparse-tree-ness ie. 2 global structs result in a few entries for the struct and it's members and 2 entries that point to that struct definition
+ 
+ enum/enum flags
+  e= ON;
+  ef= STATE(4)|FOO(BAR)|ENABLED(0); // Struct like syntax below is probably preferable
+  ef= { 4, BAR, 0 }
+  ef= { .STATE=4, .FOO=BAR, .ENABLED=false }
+ 
+ add enum array functionality
+ -automaticly insert {#  #} comments with name of index enum
+ 
+ Track names of variables to be able to print them with names in the member_parsed() function
+  (only print the changed variables instead of what were are doing currently)
+ 
+ Double and non assignment tracking with bit array
+ 
+ smarter formatting of values written into .var by (try to) respecting the %% at the top of the file
+ 
+ test if exact values are useful (is 'float -> printf -> scanf -> float' deterministic or does is change significandly after a lot of cycles)
+ 
+ maybe implement exact values at least for $i values
+ 
+ look at file change notifications again,
+ -try to implement file reloading on overwrite of individual shader files
+ 
+-BUGS:
+ I keep heavily freezing/crashing the display driver?
+ ->not happened since i reimplemented normal mesh drawing
+ 
+ Materials seem be all metallic when compiling with llvm ? bug in var file parsing ?

@@ -1,0 +1,51 @@
+<NotepadPlus>
+    <Session activeView="1">
+        <mainView activeIndex="5">
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="738" startPos="0" endPos="0" selMode="0" lang="Batch" encoding="-1" filename="D:\Cproj\ogl_engine\build.bat" backupFilePath="" originalFileLastModifTimestamp="1501437229" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="876" startPos="0" endPos="0" selMode="0" lang="Normal Text" encoding="-1" filename="D:\Cproj\ogl_engine\todo.txt" backupFilePath="" originalFileLastModifTimestamp="1501437229" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="1212" startPos="0" endPos="0" selMode="0" lang="Normal Text" encoding="-1" filename="D:\Cproj\ogl_engine\notes.txt" backupFilePath="" originalFileLastModifTimestamp="1501437229" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="714" startPos="171" endPos="171" selMode="0" lang="Normal Text" encoding="-1" filename="D:\Cproj\ogl_engine\all.var" backupFilePath="" originalFileLastModifTimestamp="1501437941" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="696" startPos="680" endPos="680" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\ogl_engine\src\global_includes.h" backupFilePath="" originalFileLastModifTimestamp="1501437229" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="3014" startPos="1271" endPos="1271" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\graph\src\flamegraph_data_file.h" backupFilePath="" originalFileLastModifTimestamp="1487542390" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="1224" startPos="5810" endPos="5810" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\ogl_engine\src\profile.h" backupFilePath="" originalFileLastModifTimestamp="1501437229" />
+        </mainView>
+        <subView activeIndex="2">
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="780" startPos="0" endPos="0" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\ogl_engine\src\ogl.cpp" backupFilePath="" originalFileLastModifTimestamp="1501437229" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="1026" startPos="972" endPos="972" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\ogl_engine\src\platform.h" backupFilePath="" originalFileLastModifTimestamp="1501437229">
+                <Fold line="11" />
+                <Fold line="72" />
+                <Fold line="106" />
+                <Fold line="153" />
+                <Fold line="160" />
+                <Fold line="164" />
+                <Fold line="195" />
+                <Fold line="215" />
+                <Fold line="235" />
+                <Fold line="295" />
+                <Fold line="302" />
+                <Fold line="570" />
+                <Fold line="600" />
+                <Fold line="624" />
+                <Fold line="654" />
+                <Fold line="662" />
+                <Fold line="666" />
+                <Fold line="668" />
+                <Fold line="674" />
+                <Fold line="745" />
+                <Fold line="930" />
+                <Fold line="1011" />
+                <Fold line="1019" />
+                <Fold line="1035" />
+                <Fold line="1049" />
+                <Fold line="1132" />
+                <Fold line="1138" />
+                <Fold line="1203" />
+                <Fold line="1212" />
+                <Fold line="1239" />
+                <Fold line="1777" />
+                <Fold line="1916" />
+            </File>
+            <File firstVisibleLine="520" xOffset="0" scrollWidth="1428" startPos="17362" endPos="17362" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\ogl_engine\src\engine.h" backupFilePath="" originalFileLastModifTimestamp="1501437229" />
+        </subView>
+    </Session>
+</NotepadPlus>
