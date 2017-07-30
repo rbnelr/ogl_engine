@@ -4,35 +4,36 @@
     color 07
     
     
-    rem just for notebook for now
-    set CPROJ=C:/Cproj/
-    set MSVC_DIR=C:/Program Files (x86)/Microsoft Visual Studio/2017/
+rem     rem just for notebook for now
+rem     set CPROJ=C:/Cproj/
+rem     set MSVC_DIR=C:/Program Files (x86)/Microsoft Visual Studio/2017/
+rem     
+rem     call :vcvars
+rem     goto :vcvars_end
+rem     
+rem :vcvars
+rem     !MSVC_DIR!Community/VC/Auxiliary/Build/vcvarsall.bat x86_amd64 >NUL
+rem :vcvars_end
+rem     
+rem     set path=!CPROJ!_mybin;!CPROJ!_llvm4.0/bin;!path!
+rem     
+rem     rem
     
-    call :vcvars
-    goto :vcvars_end
-    
-:vcvars
-    !MSVC_DIR!Community/VC/Auxiliary/Build/vcvarsall.bat x86_amd64 >NUL
-:vcvars_end
-    
-    set path=!CPROJ!_mybin;!CPROJ!_llvm4.0/bin;!path!
-    
-    rem
-    
+    set CPROJ=D:/Cproj/
     
     set froot=%~dp0
     set fCproj=!CPROJ!
     set fsrc=!f_root!src/
     
     set func=vs
-    if not [%1] == []		set func=%1
+    if not [%1] == []       set func=%1
     
     set release=0
-    if [%2] == [dbg]		set release=0
-    if [%2] == [release]	set release=1
+    if [%2] == [dbg]        set release=0
+    if [%2] == [release]    set release=1
     
     set project=ogl
-    if not [%3] == []		set project=%3
+    if not [%3] == []       set project=%3
     
     set succ=0
     call :%func%
@@ -97,8 +98,8 @@ rem /a
     rem -fmax-errors=5
     rem -Wno-unused-variable
     rem -Wno-unused-function
-    rem -Wtautological-compare		constant if statements
-    rem -Wno-invalid-offsetof		offsetof on non-POD structs (structs with inheritance in my case, i use inheritance for a simple enitity system, which does not use any virtual functions, nor will i ever use those, so this is OK)
+    rem -Wtautological-compare      constant if statements
+    rem -Wno-invalid-offsetof       offsetof on non-POD structs (structs with inheritance in my case, i use inheritance for a simple enitity system, which does not use any virtual functions, nor will i ever use those, so this is OK)
     rem -fmax-errors=5
 
     set cmd=clang++ -std=c++11 -m64 -D_PLATF=1 -D_ARCH=1 !opt! !warn! -I!fsrc!/include -o !froot!!project!.exe !fsrc!!project!.cpp -Wl,/SUBSYSTEM:CONSOLE,/OPT:REF -lUSER32 -lGDI32 -lOPENGL32
@@ -142,12 +143,12 @@ rem /a
                 
                 set /a count+=1
                 
-                echo %%a	!fpType!
+                echo %%a    !fpType!
             ) else (
                 
                 rem echo #define %%a^(...^) CALL_OGL_FUNC^(%%a, __VA_ARGS__^)>> !fsrc!\oglInterface_funcWrappers.h
                 
-                echo %%a	non-funcptr
+                echo %%a    non-funcptr
             )
         )
     )

@@ -1,37 +1,37 @@
         
-    #include "C:/Cproj/graph/src/flamegraph_data_file.h"
+    #include "../flamegraph/src/flamegraph_data_file.h"
     
     #define NOINLINE_
     
 namespace profile {
     
     struct Sample {
-        u64			qpc;
-        GLuint		gpu;
+        u64         qpc;
+        GLuint      gpu;
         
-        u32			index; // generic integer data
-        cstr		name;
+        u32         index; // generic integer data
+        cstr        name;
         
     };
     
-    DECLD constexpr u32		FRAME_BUFFER_COUNT =		2; // How many frames to wait to process the data (0 is between the measured frame and the next, etc.) (because gpu samples need to become avalible)
-    DECLD constexpr u32		MAX_SAMPLES =				4096;
+    DECLD constexpr u32     FRAME_BUFFER_COUNT =        2; // How many frames to wait to process the data (0 is between the measured frame and the next, etc.) (because gpu samples need to become avalible)
+    DECLD constexpr u32     MAX_SAMPLES =               4096;
     
-    DECLD constexpr u32		THREAD_COUNT =				2; // engine and gpu
-    DECLD constexpr cstr 	LATEST_FILE_FILENAME =		"profiling/latest.profile";
+    DECLD constexpr u32     THREAD_COUNT =              2; // engine and gpu
+    DECLD constexpr cstr    LATEST_FILE_FILENAME =      "profiling/latest.profile";
     
-    DECLD sync::Mutex		mutex;
+    DECLD sync::Mutex       mutex;
     
-    DECLD Sample			samples[MAX_SAMPLES] = {}; // zero
-    DECLD Sample*			cur_sample; // next to be written
-    DECLD u32				samples_remain;
+    DECLD Sample            samples[MAX_SAMPLES] = {}; // zero
+    DECLD Sample*           cur_sample; // next to be written
+    DECLD u32               samples_remain;
     
-    DECLD u32				dropped_samples;
+    DECLD u32               dropped_samples;
     
-    DECLD u64				qpc_zerotime;
-    DECLD u64				rdtsc_zerotime;
+    DECLD u64               qpc_zerotime;
+    DECLD u64               rdtsc_zerotime;
     
-    DECLD HANDLE			latest_file;
+    DECLD HANDLE            latest_file;
     
     void init_file ();
     
@@ -99,8 +99,8 @@ namespace profile {
         using namespace flamegraph_data_file;
         
         struct Header {
-            File_Header	header;
-            Thread		threads[THREAD_COUNT];
+            File_Header header;
+            Thread      threads[THREAD_COUNT];
         };
         
         DEFER_POP(&working_stk);
@@ -109,21 +109,21 @@ namespace profile {
         dynarr<char> thr_name_str_tbl (64);
         defer { thr_name_str_tbl.free(); };
         
-        header->threads[0].sec_per_unit =	time::QPC::inv_freq;
-        header->threads[0].name_tbl_offs =	push_str(&thr_name_str_tbl, "engine_game_loop");
-        header->threads[0].event_count =	0;
-        header->threads[1].sec_per_unit =	nano<f32>(1);
-        header->threads[1].name_tbl_offs =	push_str(&thr_name_str_tbl, "gpu_measurement");
-        header->threads[1].event_count =	0;
+        header->threads[0].sec_per_unit =   time::QPC::inv_freq;
+        header->threads[0].name_tbl_offs =  push_str(&thr_name_str_tbl, "engine_game_loop");
+        header->threads[0].event_count =    0;
+        header->threads[1].sec_per_unit =   nano<f32>(1);
+        header->threads[1].name_tbl_offs =  push_str(&thr_name_str_tbl, "gpu_measurement");
+        header->threads[1].event_count =    0;
         
-        header->header.id =						FILE_ID;
-        header->header.file_size =				sizeof(Header) +thr_name_str_tbl.len;
-        header->header.total_event_count =		0;
-        header->header.thr_name_str_tbl_size =	thr_name_str_tbl.len;
-        header->header.thread_count =			THREAD_COUNT;
-        header->header.chunks_count =			0;
+        header->header.id =                     FILE_ID;
+        header->header.file_size =              sizeof(Header) +thr_name_str_tbl.len;
+        header->header.total_event_count =      0;
+        header->header.thr_name_str_tbl_size =  thr_name_str_tbl.len;
+        header->header.thread_count =           THREAD_COUNT;
+        header->header.chunks_count =           0;
         
-        cmemcpy(	working_stk.pushArr<char>(thr_name_str_tbl.len),
+        cmemcpy(    working_stk.pushArr<char>(thr_name_str_tbl.len),
                     thr_name_str_tbl.arr, thr_name_str_tbl.len );
         
         assert(!win32::overwrite_file_rw(LATEST_FILE_FILENAME, &latest_file)); // overwrite the foe that always saves the newest profile
@@ -139,8 +139,8 @@ namespace profile {
         dropped_samples = 0;
         
         struct Header {
-            File_Header	header;
-            Thread		threads[THREAD_COUNT];
+            File_Header header;
+            Thread      threads[THREAD_COUNT];
         };
         Header header;
         
@@ -159,11 +159,11 @@ namespace profile {
         
         DEFER_POP(&working_stk);
         Chunk* chunk = working_stk.pushNoAlign<Chunk>();
-        //chunk.offs_to_next;	// write later
-        chunk->event_count =	0;
-        chunk->index =			index;
-        chunk->ts_begin =		qpc_begin -time::qpc_process_begin;
-        chunk->ts_length =		qpc_end -qpc_begin;
+        //chunk.offs_to_next;   // write later
+        chunk->event_count =    0;
+        chunk->index =          index;
+        chunk->ts_begin =       qpc_begin -time::qpc_process_begin;
+        chunk->ts_length =      qpc_end -qpc_begin;
         
         str::append_term(&working_stk, lstr::count_cstr(name));
         
@@ -232,9 +232,9 @@ namespace profile {
         
         cstr date_f_filename;
         {
-            lstr exe_path =			win32::get_exe_path(&working_stk);
-            lstr exe_filename =		win32::find_exe_filename(exe_path);
-            lstr pc_name =			win32::get_pc_name(&working_stk);
+            lstr exe_path =         win32::get_exe_path(&working_stk);
+            lstr exe_filename =     win32::find_exe_filename(exe_path);
+            lstr pc_name =          win32::get_pc_name(&working_stk);
             
             SYSTEMTIME loc;
             GetLocalTime(&loc);
@@ -258,13 +258,13 @@ namespace profile {
         qpc_zerotime = qpc;
     }
     
-    #define PROFILE_BEGIN(thr, name, ...)			profile::record_sample(thr "{" name, __VA_ARGS__)
-    #define PROFILE_END(thr, name, ...)				profile::record_sample(thr "}" name, __VA_ARGS__)
-    #define PROFILE_STEP(thr, name, ...)			profile::record_sample(thr "|" name, __VA_ARGS__)
+    #define PROFILE_BEGIN(thr, name, ...)           profile::record_sample(thr "{" name, __VA_ARGS__)
+    #define PROFILE_END(thr, name, ...)             profile::record_sample(thr "}" name, __VA_ARGS__)
+    #define PROFILE_STEP(thr, name, ...)            profile::record_sample(thr "|" name, __VA_ARGS__)
     
-    #define PROFILE_BEGIN_M(thr, qpc, name, ...)	profile::record_sample(qpc, thr "{" name, __VA_ARGS__)
-    #define PROFILE_END_M(thr, qpc, name, ...)		profile::record_sample(qpc, thr "}" name, __VA_ARGS__)
-    #define PROFILE_STEP_M(thr, qpc, name, ...)		profile::record_sample(qpc, thr "|" name, __VA_ARGS__)
+    #define PROFILE_BEGIN_M(thr, qpc, name, ...)    profile::record_sample(qpc, thr "{" name, __VA_ARGS__)
+    #define PROFILE_END_M(thr, qpc, name, ...)      profile::record_sample(qpc, thr "}" name, __VA_ARGS__)
+    #define PROFILE_STEP_M(thr, qpc, name, ...)     profile::record_sample(qpc, thr "|" name, __VA_ARGS__)
     
     #define PROFILE_SCOPED(thr, name, ...) \
             profile::record_sample(thr "{" name, __VA_ARGS__); \
