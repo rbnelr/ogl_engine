@@ -1,3 +1,4 @@
+*.ctm
 *.asm
 wierd_file_parse_error.txt
 shaders/zz_*
@@ -10,7 +11,6 @@ textures/
 textures_lowres/
 textures_fullsize/
 env_maps/
-BACKUP/
 .vs/
 msvc/
 *.sln
