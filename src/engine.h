@@ -2658,7 +2658,7 @@ namespace engine {
 	DECLD GLuint dbg_tex_0 = 0;
 	DECLD GLuint dbg_tex_1 = 0;
 	
-	#define DISABLE_POST 1
+	#define DISABLE_POST 0
 	
 	struct Passes {
 		
@@ -2961,7 +2961,7 @@ namespace engine {
 			
 			glBindVertexArray(VAOs[VAO_FULLSCREEN_QUAD]);
 			
-			#if 0
+			#if 1
 			{
 				PROFILE_SCOPED(THR_ENGINE, "prev_frame_luminance_convolution_result_get");
 				

@@ -665,6 +665,7 @@ namespace platform {
 	}
 	
 	DECL void setup_renderer_context () {
+		PROFILE_SCOPED(THR_ENGINE, "setup_renderer_context");
 		
 		{
 			PROFILE_SCOPED(THR_ENGINE, "real window GetDC()");
