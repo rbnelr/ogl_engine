@@ -225,7 +225,7 @@ namespace input {
 		DECLM void process_button_binding_input (buttons::button_e button, bool down) {
 			using namespace button_bindings;
 			
-			print("button % (%) %\n", buttons::buttonCStrs[button], (u32)button, down? "down":"up");
+			//print("button % (%) %\n", buttons::buttonCStrs[button], (u32)button, down? "down":"up");
 			
 			auto binding = getButtonBinding(button);
 			if (binding.group == UNBOUND) {

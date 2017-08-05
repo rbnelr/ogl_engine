@@ -1,50 +1,99 @@
 <NotepadPlus>
     <Session activeView="0">
-        <mainView activeIndex="1">
+        <mainView activeIndex="4">
             <File firstVisibleLine="0" xOffset="0" scrollWidth="1624" startPos="460" endPos="460" selMode="0" lang="Batch" encoding="-1" filename="D:\Cproj\ogl_engine\build.bat" backupFilePath="" originalFileLastModifTimestamp="1501442257" />
-            <File firstVisibleLine="390" xOffset="0" scrollWidth="1876" startPos="20549" endPos="20549" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\ogl_engine\todo.txt" backupFilePath="" originalFileLastModifTimestamp="1501453847" />
+            <File firstVisibleLine="390" xOffset="72" scrollWidth="1876" startPos="20385" endPos="20385" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\ogl_engine\todo.txt" backupFilePath="" originalFileLastModifTimestamp="1501453847" />
             <File firstVisibleLine="0" xOffset="0" scrollWidth="1212" startPos="0" endPos="0" selMode="0" lang="Normal Text" encoding="-1" filename="D:\Cproj\ogl_engine\notes.txt" backupFilePath="" originalFileLastModifTimestamp="1501437229" />
-            <File firstVisibleLine="0" xOffset="0" scrollWidth="833" startPos="768" endPos="768" selMode="0" lang="rz_var" encoding="-1" filename="D:\Cproj\ogl_engine\all.var" backupFilePath="" originalFileLastModifTimestamp="1501454406" />
-            <File firstVisibleLine="0" xOffset="0" scrollWidth="696" startPos="680" endPos="680" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\ogl_engine\src\global_includes.h" backupFilePath="" originalFileLastModifTimestamp="1501437229" />
-            <File firstVisibleLine="0" xOffset="0" scrollWidth="1428" startPos="132" endPos="132" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\ogl_engine\src\profile.h" backupFilePath="" originalFileLastModifTimestamp="1501444912" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="833" startPos="768" endPos="768" selMode="0" lang="rz_var" encoding="-1" filename="D:\Cproj\ogl_engine\all.var" backupFilePath="" originalFileLastModifTimestamp="1501468266" />
+            <File firstVisibleLine="11" xOffset="0" scrollWidth="812" startPos="1102" endPos="1102" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\ogl_engine\src\global_includes.h" backupFilePath="" originalFileLastModifTimestamp="1501471046" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="1428" startPos="132" endPos="132" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\ogl_engine\src\profile.h" backupFilePath="" originalFileLastModifTimestamp="1501466624" />
+            <File firstVisibleLine="9" xOffset="0" scrollWidth="707" startPos="475" endPos="475" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\ogl_engine\src\input.h" backupFilePath="" originalFileLastModifTimestamp="1501467886" />
         </mainView>
-        <subView activeIndex="2">
+        <subView activeIndex="1">
             <File firstVisibleLine="0" xOffset="0" scrollWidth="910" startPos="540" endPos="540" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\ogl_engine\src\ogl.cpp" backupFilePath="" originalFileLastModifTimestamp="1501439668" />
-            <File firstVisibleLine="0" xOffset="0" scrollWidth="1026" startPos="972" endPos="972" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\ogl_engine\src\platform.h" backupFilePath="" originalFileLastModifTimestamp="1501437229">
+            <File firstVisibleLine="226" xOffset="0" scrollWidth="1463" startPos="50387" endPos="50387" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\ogl_engine\src\platform.h" backupFilePath="" originalFileLastModifTimestamp="1501468048">
                 <Fold line="11" />
+                <Fold line="42" />
                 <Fold line="72" />
                 <Fold line="106" />
-                <Fold line="153" />
-                <Fold line="160" />
-                <Fold line="164" />
-                <Fold line="195" />
-                <Fold line="215" />
+                <Fold line="156" />
+                <Fold line="163" />
+                <Fold line="197" />
                 <Fold line="235" />
+                <Fold line="244" />
+                <Fold line="257" />
+                <Fold line="264" />
                 <Fold line="295" />
                 <Fold line="302" />
                 <Fold line="570" />
+                <Fold line="583" />
+                <Fold line="588" />
                 <Fold line="600" />
+                <Fold line="606" />
+                <Fold line="615" />
                 <Fold line="624" />
+                <Fold line="637" />
                 <Fold line="654" />
                 <Fold line="662" />
                 <Fold line="666" />
-                <Fold line="668" />
-                <Fold line="674" />
+                <Fold line="696" />
+                <Fold line="703" />
+                <Fold line="724" />
+                <Fold line="731" />
+                <Fold line="738" />
                 <Fold line="745" />
+                <Fold line="837" />
+                <Fold line="844" />
+                <Fold line="866" />
                 <Fold line="930" />
-                <Fold line="1011" />
-                <Fold line="1019" />
-                <Fold line="1035" />
-                <Fold line="1049" />
-                <Fold line="1132" />
-                <Fold line="1138" />
-                <Fold line="1203" />
-                <Fold line="1212" />
-                <Fold line="1239" />
-                <Fold line="1777" />
-                <Fold line="1916" />
+                <Fold line="958" />
+                <Fold line="964" />
+                <Fold line="989" />
+                <Fold line="996" />
+                <Fold line="1012" />
+                <Fold line="1020" />
+                <Fold line="1036" />
+                <Fold line="1050" />
+                <Fold line="1057" />
+                <Fold line="1082" />
+                <Fold line="1104" />
+                <Fold line="1118" />
+                <Fold line="1133" />
+                <Fold line="1139" />
+                <Fold line="1146" />
+                <Fold line="1153" />
+                <Fold line="1158" />
+                <Fold line="1163" />
+                <Fold line="1180" />
+                <Fold line="1185" />
+                <Fold line="1190" />
+                <Fold line="1194" />
+                <Fold line="1204" />
+                <Fold line="1213" />
+                <Fold line="1243" />
+                <Fold line="1262" />
+                <Fold line="1267" />
+                <Fold line="1309" />
+                <Fold line="1377" />
+                <Fold line="1390" />
+                <Fold line="1398" />
+                <Fold line="1443" />
+                <Fold line="1458" />
+                <Fold line="1463" />
+                <Fold line="1489" />
+                <Fold line="1773" />
+                <Fold line="1779" />
+                <Fold line="1809" />
+                <Fold line="1813" />
+                <Fold line="1845" />
+                <Fold line="1850" />
+                <Fold line="1871" />
+                <Fold line="1876" />
+                <Fold line="1881" />
+                <Fold line="1918" />
+                <Fold line="1931" />
             </File>
-            <File firstVisibleLine="520" xOffset="0" scrollWidth="1428" startPos="16884" endPos="16884" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\ogl_engine\src\engine.h" backupFilePath="" originalFileLastModifTimestamp="1501437229" />
+            <File firstVisibleLine="520" xOffset="0" scrollWidth="1428" startPos="16884" endPos="16884" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\ogl_engine\src\engine.h" backupFilePath="" originalFileLastModifTimestamp="1501465457" />
         </subView>
     </Session>
 </NotepadPlus>

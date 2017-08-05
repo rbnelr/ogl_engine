@@ -259,17 +259,17 @@ namespace profile {
 		qpc_zerotime = qpc;
 	}
 	
-	#define PROFILE_BEGIN(thr, name, ...)			profile::record_sample(thr "{" name, __VA_ARGS__)
-	#define PROFILE_END(thr, name, ...)				profile::record_sample(thr "}" name, __VA_ARGS__)
-	#define PROFILE_STEP(thr, name, ...)			profile::record_sample(thr "|" name, __VA_ARGS__)
+	#define PROFILE_BEGIN(thr, name, ...)			profile::record_sample("{" name, __VA_ARGS__)
+	#define PROFILE_END(thr, name, ...)				profile::record_sample("}" name, __VA_ARGS__)
+	#define PROFILE_STEP(thr, name, ...)			profile::record_sample("|" name, __VA_ARGS__)
 	
-	#define PROFILE_BEGIN_M(thr, qpc, name, ...)	profile::record_sample(qpc, thr "{" name, __VA_ARGS__)
-	#define PROFILE_END_M(thr, qpc, name, ...)		profile::record_sample(qpc, thr "}" name, __VA_ARGS__)
-	#define PROFILE_STEP_M(thr, qpc, name, ...)		profile::record_sample(qpc, thr "|" name, __VA_ARGS__)
+	#define PROFILE_BEGIN_M(thr, qpc, name, ...)	profile::record_sample(qpc, "{" name, __VA_ARGS__)
+	#define PROFILE_END_M(thr, qpc, name, ...)		profile::record_sample(qpc, "}" name, __VA_ARGS__)
+	#define PROFILE_STEP_M(thr, qpc, name, ...)		profile::record_sample(qpc, "|" name, __VA_ARGS__)
 	
 	#define PROFILE_SCOPED(thr, name, ...) \
-			profile::record_sample(thr "{" name, __VA_ARGS__); \
-			defer_by_val { profile::record_sample(thr "}" name, __VA_ARGS__); } // defer by value (capture)
+			profile::record_sample("{" name, __VA_ARGS__); \
+			defer_by_val { profile::record_sample("}" name, __VA_ARGS__); } // defer by value (capture)
 	
 }
 	
