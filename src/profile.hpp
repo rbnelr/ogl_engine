@@ -35,6 +35,8 @@ namespace profile {
 	
 	DECLD HANDLE			latest_file;
 	
+	DECLD streaming::Client	stream;
+	
 	void init_file ();
 	
 	void init () {
@@ -45,7 +47,7 @@ namespace profile {
 		dropped_samples = 0;
 		
 		winsock::init();
-		winsock::client_test();
+		stream.connect_to_server();
 		
 		init_file();
 	}
@@ -136,12 +138,8 @@ namespace profile {
 		u64 size = ptr_sub((byte*)header, working_stk.getTop());
 		win32::write_file(latest_file, header, size);
 		
-		#if 0
-		if (stream_pipe.handle != INVALID_HANDLE_VALUE) {
-			print(">> writing header\n");
-			win32::write_file(stream_pipe.handle, header, size);
-		}
-		#endif
+		print(">> writing header\n");
+		stream.write(header, size);
 		
 	}
 	
