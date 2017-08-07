@@ -128,6 +128,8 @@ namespace platform {
 	};
 	
 ////
+DECLD constexpr cstr		WINDOW_TITLE =							"OpenGL \"Engine\"";
+
 DECLD constexpr lstr		SHADERS_DIR =							"shaders/";
 DECLD constexpr char const*	MESHES_FILENAME =						"all.meshes";
 DECLD constexpr char const*	TEXTURES_FILENAME =						"all.textures";
@@ -1800,7 +1802,7 @@ namespace platform {
 			wndClass.hInstance =		hInstance;
 			wndClass.hIcon = 			hIcon;
 			wndClass.hCursor = 			hCursor;
-			wndClass.lpszClassName =	"space_rocks gl window";
+			wndClass.lpszClassName =	win32::get_exe_path(&working_stk).str;
 			
 			cursor_handle = hCursor;
 			
@@ -1840,7 +1842,7 @@ namespace platform {
 			bool save_loaded = init_window_placement_save();
 			
 			hWnd = CreateWindowExA(
-					windowExStyle, reinterpret_cast<LPCTSTR>(wndClassAtom), "OpenGL Tutorial",
+					windowExStyle, reinterpret_cast<LPCTSTR>(wndClassAtom), WINDOW_TITLE,
 					windowStyle & ~WS_VISIBLE,
 					rect.x, rect.y, rect.w, rect.h,
 					NULL, NULL, hInstance, NULL);
