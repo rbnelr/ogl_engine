@@ -138,7 +138,6 @@ namespace profile {
 		u64 size = ptr_sub((byte*)header, working_stk.getTop());
 		win32::write_file(latest_file, header, size);
 		
-		print(">> writing header\n");
 		stream.write(header, size);
 		
 	}
@@ -170,11 +169,11 @@ namespace profile {
 		
 		DEFER_POP(&working_stk);
 		Chunk* chunk = working_stk.pushNoAlign<Chunk>();
-		//chunk.offs_to_next;	// write later
-		chunk->event_count =	0;
-		chunk->index =			index;
-		chunk->ts_begin =		qpc_begin -time::qpc_process_begin;
-		chunk->ts_length =		qpc_end -qpc_begin;
+		//chunk.event_data_size;	// write later
+		chunk->event_count =		0;
+		chunk->index =				index;
+		chunk->ts_begin =			qpc_begin -time::qpc_process_begin;
+		chunk->ts_length =			qpc_end -qpc_begin;
 		
 		str::append_term(&working_stk, lstr::count_cstr(name));
 		
@@ -213,13 +212,7 @@ namespace profile {
 			samples_remain += events_to_process_count;
 		}
 		
-		u64 chunk_size = ptr_sub((byte*)chunk, working_stk.getTop());
-		chunk->offs_to_next = chunk_size;
-		
-		if (0) {
-			auto b = units::Bytes(chunk_size);
-			print(">>> chunk % %%\n", chunk_size, b.val,b.unit);
-		}
+		chunk->chunk_size = ptr_sub((byte*)chunk, working_stk.getTop());
 		
 		u64 old_filesize = header.header.file_size;
 		
@@ -231,9 +224,11 @@ namespace profile {
 		assert(!win32::write_file(latest_file, &header, sizeof(header)));
 		
 		win32::set_filepointer(latest_file, old_filesize);
-		assert(!win32::write_file(latest_file, chunk, chunk_size));
+		assert(!win32::write_file(latest_file, chunk, chunk->chunk_size));
 		
-		header.header.file_size = old_filesize +chunk_size;
+		stream.write(chunk, chunk->chunk_size);
+		
+		header.header.file_size = old_filesize +chunk->chunk_size;
 		u64 filesize = win32::get_filepointer(latest_file);
 		assert(filesize == header.header.file_size);
 		
