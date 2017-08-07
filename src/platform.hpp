@@ -127,19 +127,29 @@ namespace platform {
 		CH_BGRA =	4,
 	};
 	
+////
+DECLD constexpr lstr		SHADERS_DIR =							"shaders/";
+DECLD constexpr char const*	MESHES_FILENAME =						"all.meshes";
+DECLD constexpr char const*	TEXTURES_FILENAME =						"all.textures";
+#define						WINDOW_PLACEMENT_SAVE_FILENAME			"saves/window_placement_%.save\\0" // % is some unique computer identifier
+DECLD constexpr char const*	ALL_VAR_FILENAME =						"all.var";
+DECLD constexpr char const*	CMD_PIPE_NAME =							"\\\\.\\pipe\\ogl_engine_cmd";
+DECLD constexpr lstr		ENV_MAPS_HUMUS_DIR =					"env_maps/humus/";
+DECLD constexpr lstr		ENV_MAPS_SIBL_DIR =						"env_maps/sibl/";
+
 //// profiling
-	#include "profile.hpp"
-	
+#include "profile.hpp"
+
 namespace profile {
 	DECLD constexpr u32 THR_ENGINE = 0;
 	
 }
-	
+
 ////// 
-	DECLD f64					dt64;
-	DECLD f32					dt;
-	DECLD u32					frame_number = 0;
-	
+DECLD f64					dt64;
+DECLD f32					dt;
+DECLD u32					frame_number = 0;
+
 //// Time
 namespace time {
 	
@@ -201,15 +211,6 @@ namespace time {
 }
 	
 ////
-	DECLD constexpr lstr		SHADERS_DIR =							"shaders/";
-	DECLD constexpr char const*	MESHES_FILENAME =						"all.meshes";
-	DECLD constexpr char const*	TEXTURES_FILENAME =						"all.textures";
-	#define						WINDOW_PLACEMENT_SAVE_FILENAME			"saves/window_placement_%.save\\0" // % is some unique computer identifier
-	DECLD constexpr char const*	ALL_VAR_FILENAME =						"all.var";
-	DECLD constexpr char const*	CMD_PIPE_NAME =							"\\\\.\\pipe\\ogl_engine_cmd";
-	DECLD constexpr lstr		ENV_MAPS_HUMUS_DIR =					"env_maps/humus/";
-	DECLD constexpr lstr		ENV_MAPS_SIBL_DIR =						"env_maps/sibl/";
-	
 	typedef s32							resolution_t;
 	typedef tv2<resolution_t>			resolution_v;
 	

@@ -1,8 +1,10 @@
-		
-	#include "../../flamegraph/src/flamegraph_data_file.hpp" // we are in Cproj/<project>/src/ so this is Cproj/flamegraph/src/...
-	
-	#define NOINLINE_
-	
+
+// we are in Cproj/<project>/src/ so this is Cproj/flamegraph/src/...
+#include "../../flamegraph/src/flamegraph_data_file.hpp"
+#include "../../flamegraph/src/streaming.hpp"
+
+#define NOINLINE_
+
 namespace profile {
 	
 	struct Sample {
@@ -41,6 +43,9 @@ namespace profile {
 		cur_sample = &samples[0];
 		samples_remain = MAX_SAMPLES;
 		dropped_samples = 0;
+		
+		winsock::init();
+		winsock::client_test();
 		
 		init_file();
 	}
@@ -127,8 +132,16 @@ namespace profile {
 					thr_name_str_tbl.arr, thr_name_str_tbl.len );
 		
 		assert(!win32::overwrite_file_rw(LATEST_FILE_FILENAME, &latest_file)); // overwrite the foe that always saves the newest profile
-		u64 test = win32::get_filepointer(latest_file);
-		win32::write_file(latest_file, header, ptr_sub((byte*)header, working_stk.getTop()));
+		
+		u64 size = ptr_sub((byte*)header, working_stk.getTop());
+		win32::write_file(latest_file, header, size);
+		
+		#if 0
+		if (stream_pipe.handle != INVALID_HANDLE_VALUE) {
+			print(">> writing header\n");
+			win32::write_file(stream_pipe.handle, header, size);
+		}
+		#endif
 		
 	}
 	
@@ -205,6 +218,11 @@ namespace profile {
 		u64 chunk_size = ptr_sub((byte*)chunk, working_stk.getTop());
 		chunk->offs_to_next = chunk_size;
 		
+		if (0) {
+			auto b = units::Bytes(chunk_size);
+			print(">>> chunk % %%\n", chunk_size, b.val,b.unit);
+		}
+		
 		u64 old_filesize = header.header.file_size;
 		
 		header.header.file_size = -1; // write invalid filesize now, so that incomplete file updates maybe can be detected
@@ -272,4 +290,3 @@ namespace profile {
 			defer_by_val { profile::record_sample("}" name, __VA_ARGS__); } // defer by value (capture)
 	
 }
-	
