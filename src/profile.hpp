@@ -266,6 +266,10 @@ namespace profile {
 			auto ret = CopyFile(LATEST_FILE_FILENAME, date_f_filename, FALSE);
 			assert(ret != 0, "[%]", GetLastError());
 		}
+		
+		stream.disconnect_from_server();
+		winsock::cleanup();
+		
 	}
 	
 	void record_zerotime () {
