@@ -2,7 +2,7 @@
 #%var%								%cmd%								%cmd_i%								%exact_val%
 #										%val%								%val_i%
 
-vsync_swap_interval =					-1;
+vsync_swap_interval =					1 ? 0 : -1;
 
 controls = {
 	.cam_mouselook_sens =				v2( rad(PI / 1600.0) );

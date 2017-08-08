@@ -226,7 +226,12 @@ namespace profile {
 		win32::set_filepointer(latest_file, old_filesize);
 		assert(!win32::write_file(latest_file, chunk, chunk->chunk_size));
 		
-		stream.write(chunk, chunk->chunk_size);
+		if (stream.poll_write_avail()) { // drop frame data chunks if our write operation would block, so we don't stall our framerate
+			//print(">>> chunk '%' %, size %\n", name, index, chunk->chunk_size);
+			stream.write(chunk, chunk->chunk_size);
+		} else {
+			print(">>> chunk '%' % dropped\n", name, index);
+		}
 		
 		header.header.file_size = old_filesize +chunk->chunk_size;
 		u64 filesize = win32::get_filepointer(latest_file);

@@ -989,6 +989,11 @@ namespace platform {
 			
 			engine::frame();
 			
+			if (0) { // Artificially slow down to test stuff
+				PROFILE_SCOPED(THR_ENGINE, "WAIT:Sleep");
+				Sleep(200);
+			}
+			
 			time::cpu_work_done();
 			
 			#if 0
