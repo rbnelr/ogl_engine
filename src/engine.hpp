@@ -3209,7 +3209,7 @@ namespace engine {
 			glGenBuffers(1, &VBO);
 			glGenVertexArrays(1, &VAO);
 			
-			buf.init(0, tri_per_line * 128);
+			buf.alloc(0, tri_per_line * 128);
 			
 			{
 				glBindVertexArray(VAO);
@@ -4175,7 +4175,7 @@ struct Entities {
 		auto* ret = make_entity<Scene, ET_SCENE>(name, pos, ori);
 		
 		ret->draw = draw;
-		ret->lights.init(0, 8);
+		ret->lights.alloc(0, 8);
 		
 		return ret;
 	}

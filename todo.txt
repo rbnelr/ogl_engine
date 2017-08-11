@@ -421,12 +421,6 @@ DONE:
 TODO
 -FEATURES:
  
- implement real time frame profiling, where you always see the current frames graph
- -should probably continue using a seperate flamegraph app and pipe the current data over, while also streaming into the file for later inspection
-  -can easily close the profiling drawing, just by closing the flamegraph app
-  -if flamegraph drawing has a performance inpact, i could even run the flamegraph app on a sperate machine and stream the data over the network
- -always align the left side of the screen with the beginning of the frame, so you can see the flamegraph in 'real time'
- 
  experiment with new profiler (and improve it if needed)
  -how stable is the graph if the framerate is stable?
  -are at least the individual renderpasses constant time even if some are removed

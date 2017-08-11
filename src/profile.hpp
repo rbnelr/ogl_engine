@@ -133,12 +133,19 @@ namespace profile {
 		cmemcpy(	working_stk.pushArr<char>(thr_name_str_tbl.len),
 					thr_name_str_tbl.arr, thr_name_str_tbl.len );
 		
-		assert(!win32::overwrite_file_rw(LATEST_FILE_FILENAME, &latest_file)); // overwrite the foe that always saves the newest profile
+		if (win32::overwrite_file_rw(LATEST_FILE_FILENAME, &latest_file)) {; // overwrite the foe that always saves the newest profile
+			warning("'%' not created, won't save profiling data!", LATEST_FILE_FILENAME);
+		}
 		
 		u64 size = ptr_sub((byte*)header, working_stk.getTop());
-		win32::write_file(latest_file, header, size);
 		
-		stream.write(header, size);
+		if (latest_file != INVALID_HANDLE_VALUE) {
+			win32::write_file(latest_file, header, size);
+		}
+		
+		if (stream.connected()) {
+			stream.write(header, size);
+		}
 		
 	}
 	
@@ -152,10 +159,12 @@ namespace profile {
 			File_Header	header;
 			Thread		threads[THREAD_COUNT];
 		};
-		Header header;
+		Header header = {};
 		
-		win32::set_filepointer(latest_file, 0);
-		assert(!win32::read_file(latest_file, &header, sizeof(header)));
+		if (latest_file != INVALID_HANDLE_VALUE) {
+			win32::set_filepointer(latest_file, 0);
+			assert(!win32::read_file(latest_file, &header, sizeof(header)));
+		}
 		
 		u32 events_to_process_indx;
 		u32 events_to_process_count;
@@ -220,54 +229,61 @@ namespace profile {
 		header.header.total_event_count += chunk->event_count;
 		header.header.chunks_count += 1; 
 		
-		win32::set_filepointer(latest_file, 0);
-		assert(!win32::write_file(latest_file, &header, sizeof(header)));
-		
-		win32::set_filepointer(latest_file, old_filesize);
-		assert(!win32::write_file(latest_file, chunk, chunk->chunk_size));
-		
-		if (stream.poll_write_avail()) { // drop frame data chunks if our write operation would block, so we don't stall our framerate
-			//print(">>> chunk '%' %, size %\n", name, index, chunk->chunk_size);
-			stream.write(chunk, chunk->chunk_size);
-		} else {
-			print(">>> chunk '%' % dropped\n", name, index);
+		if (latest_file != INVALID_HANDLE_VALUE) {
+			win32::set_filepointer(latest_file, 0);
+			assert(!win32::write_file(latest_file, &header, sizeof(header)));
+			
+			win32::set_filepointer(latest_file, old_filesize);
+			assert(!win32::write_file(latest_file, chunk, chunk->chunk_size));
+			
+			header.header.file_size = old_filesize +chunk->chunk_size;
+			u64 filesize = win32::get_filepointer(latest_file);
+			assert(filesize == header.header.file_size);
+			
+			win32::set_filepointer(latest_file, 0);
+			assert(!win32::write_file(latest_file, &header, sizeof(header)));
 		}
 		
-		header.header.file_size = old_filesize +chunk->chunk_size;
-		u64 filesize = win32::get_filepointer(latest_file);
-		assert(filesize == header.header.file_size);
-		
-		win32::set_filepointer(latest_file, 0);
-		assert(!win32::write_file(latest_file, &header, sizeof(header)));
-		
+		if (stream.connected()) {
+			if (stream.poll_write_avail()) { // drop frame data chunks if our write operation would block, so we don't stall our framerate
+				//print(">>> chunk '%' %, size %\n", name, index, chunk->chunk_size);
+				stream.write(chunk, chunk->chunk_size);
+			} else {
+				print(">>> chunk '%' % dropped\n", name, index);
+			}
+		}
 	}
 	
 	void finish_file () {
 		
-		win32::close_handle(latest_file);
-		
-		cstr date_f_filename;
-		{
-			lstr exe_path =			win32::get_exe_path(&working_stk);
-			lstr exe_filename =		win32::find_exe_filename(exe_path);
-			lstr pc_name =			win32::get_pc_name(&working_stk);
+		if (latest_file != INVALID_HANDLE_VALUE) {
+			win32::close_handle(latest_file);
 			
-			SYSTEMTIME loc;
-			GetLocalTime(&loc);
+			cstr date_f_filename;
+			{
+				lstr exe_path =			win32::get_exe_path(&working_stk);
+				lstr exe_filename =		win32::find_exe_filename(exe_path);
+				lstr pc_name =			win32::get_pc_name(&working_stk);
+				
+				SYSTEMTIME loc;
+				GetLocalTime(&loc);
+				
+				date_f_filename = print_working_stk("profiling/%.%.%-%.%.%_%_%.profile\\0",
+					loc.wYear, loc.wMonth, loc.wDay,
+					loc.wHour, loc.wMinute, loc.wSecond,
+					exe_filename, pc_name ).str;
+				
+			}
 			
-			date_f_filename = print_working_stk("profiling/%.%.%-%.%.%_%_%.profile\\0",
-				loc.wYear, loc.wMonth, loc.wDay,
-				loc.wHour, loc.wMinute, loc.wSecond,
-				exe_filename, pc_name ).str;
-			
+			{
+				auto ret = CopyFile(LATEST_FILE_FILENAME, date_f_filename, FALSE);
+				assert(ret != 0, "[%]", GetLastError());
+			}
 		}
 		
-		{
-			auto ret = CopyFile(LATEST_FILE_FILENAME, date_f_filename, FALSE);
-			assert(ret != 0, "[%]", GetLastError());
+		if (stream.connected()) {
+			stream.disconnect_from_server();
 		}
-		
-		stream.disconnect_from_server();
 		winsock::cleanup();
 		
 	}
