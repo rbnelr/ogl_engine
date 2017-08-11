@@ -143,7 +143,7 @@ namespace profile {
 			win32::write_file(latest_file, header, size);
 		}
 		
-		if (stream.connected()) {
+		if (stream.connected) {
 			stream.write(header, size);
 		}
 		
@@ -244,12 +244,16 @@ namespace profile {
 			assert(!win32::write_file(latest_file, &header, sizeof(header)));
 		}
 		
-		if (stream.connected()) {
+		if (stream.connected) {
 			if (stream.poll_write_avail()) { // drop frame data chunks if our write operation would block, so we don't stall our framerate
 				//print(">>> chunk '%' %, size %\n", name, index, chunk->chunk_size);
 				stream.write(chunk, chunk->chunk_size);
 			} else {
-				print(">>> chunk '%' % dropped\n", name, index);
+				if (!stream.connected) {
+					stream.disconnect_from_server();
+				} else {
+					print(">>> chunk '%' % dropped\n", name, index);
+				}
 			}
 		}
 	}
@@ -281,7 +285,7 @@ namespace profile {
 			}
 		}
 		
-		if (stream.connected()) {
+		if (stream.connected) {
 			stream.disconnect_from_server();
 		}
 		winsock::cleanup();
