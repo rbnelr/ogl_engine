@@ -16,7 +16,7 @@ namespace profile {
 		
 	};
 	
-	DECLD constexpr u32		FRAME_BUFFER_COUNT =		2; // How many frames to wait to process the data (0 is between the measured frame and the next, etc.) (because gpu samples need to become avalible)
+	//DECLD constexpr u32		FRAME_BUFFER_COUNT =		0; // How many frames to wait to process the data (0 is between the measured frame and the next, etc.) (because gpu samples need to become avalible)
 	DECLD constexpr u32		MAX_SAMPLES =				4096;
 	
 	DECLD constexpr u32		THREAD_COUNT =				2; // engine and gpu
@@ -27,6 +27,9 @@ namespace profile {
 	DECLD Sample			samples[MAX_SAMPLES] = {}; // zero
 	DECLD Sample*			cur_sample; // next to be written
 	DECLD u32				samples_remain;
+	
+	DECLD u32				prev_chunk_count = 0;
+	DECLD flamegraph_data_file::Chunk	prev_chunk;
 	
 	DECLD u32				dropped_samples;
 	
@@ -149,6 +152,7 @@ namespace profile {
 		
 	}
 	
+	DECLD u32 chunk_i = 0;
 	NOINLINE_ void process_chunk (u64 qpc_begin, u64 qpc_end, cstr name, u32 index=0) {
 		using namespace flamegraph_data_file;
 		
@@ -170,19 +174,28 @@ namespace profile {
 		u32 events_to_process_count;
 		{ // Get all written samples
 			SYNC_SCOPED_MUTEX_LOCK(&mutex);
-			events_to_process_count = MAX_SAMPLES -samples_remain;
+			u32 events_buffered = MAX_SAMPLES -samples_remain;
+			
+			events_to_process_count = prev_chunk_count;
 			events_to_process_indx = ((u32)(cur_sample -&samples[0]) +samples_remain) % MAX_SAMPLES;
+			
+			prev_chunk_count = events_buffered -events_to_process_count;
+			
 		}
-		
-		u32 output_events_count = events_to_process_count * 2; // split single Event into samples of cpu and gpu thread
 		
 		DEFER_POP(&working_stk);
 		Chunk* chunk = working_stk.pushNoAlign<Chunk>();
-		//chunk.event_data_size;	// write later
-		chunk->event_count =		0;
-		chunk->index =				index;
-		chunk->ts_begin =			qpc_begin -time::qpc_process_begin;
-		chunk->ts_length =			qpc_end -qpc_begin;
+		*chunk = prev_chunk;
+		
+		{
+			//prev_chunk.event_data_size;	// write later
+			prev_chunk.event_count =		0;
+			prev_chunk.index =				index;
+			prev_chunk.ts_begin =			qpc_begin -time::qpc_process_begin;
+			prev_chunk.ts_length =			qpc_end -qpc_begin;
+		}
+		
+		if (chunk_i++ == 0) return;
 		
 		str::append_term(&working_stk, lstr::count_cstr(name));
 		

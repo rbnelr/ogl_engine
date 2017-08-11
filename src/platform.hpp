@@ -179,8 +179,18 @@ namespace time {
 	
 	DECL void frame_end () {
 		u64	this_frame_end = time::QPC::get_time();
+		auto _begin_fe = time::QPC::get_time();
 		
-		profile::process_chunk(qpc_prev_frame_end, this_frame_end, "frame", frame_number -1);
+		{
+			auto _begin = time::QPC::get_time();
+			profile::process_chunk(qpc_prev_frame_end, this_frame_end, "frame", frame_number);
+			
+		PROFILE_BEGIN_M(THR_ENGINE, _begin_fe, "frame_end()");
+			
+			PROFILE_BEGIN_M(THR_ENGINE, _begin, "profile.process_chunk");
+			PROFILE_END(THR_ENGINE, "profile.process_chunk");
+		}
+		defer { PROFILE_END(THR_ENGINE, "frame_end()"); };
 		
 		qpc_frame_period =				this_frame_end					-qpc_prev_frame_end;
 		u64	qpc_this_frame_work_diff =	qpc_this_frame_work_end		-qpc_prev_frame_end;
