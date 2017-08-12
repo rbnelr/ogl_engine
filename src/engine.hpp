@@ -1345,7 +1345,7 @@ struct Entities {
 		return ret;
 	}
 	
-	Scene* scene (char const* name, v3 vp pos, quat vp ori, bool draw=false) {
+	Scene* scene (char const* name, v3 vp pos, quat vp ori, bool draw=true) {
 		auto* ret = make_entity<Scene, ET_SCENE>(name, pos, ori);
 		
 		ret->draw = draw;
@@ -1418,7 +1418,7 @@ struct Entities {
 		auto shadow_test_dl = LF_DISABLED;
 		
 		auto* scn = scene("shadow_test_0",
-				v3(-6.19f, +12.07f, +1.00f), quat::ident(), true);
+				v3(-6.19f, +12.07f, +1.00f), quat::ident());
 			
 			auto* lgh0 = dir_light("Test dir light",
 					v3(+1.21f, -2.92f, +3.51f), quat(v3(+0.61f, +0.01f, +0.01f), +0.79f),
@@ -1459,7 +1459,7 @@ struct Entities {
 				auto* nano3 = mesh("Helmet",	v3(0), quat::ident(), uv_tang_NANOSUIT_HELMET);
 			
 		auto* scn1 = scene("tree_scene",
-				v3(-5.13f, -14.30f, +0.94f), quat(v3(-0.00f, -0.00f, +0.00f), +1.00f), true);
+				v3(-5.13f, -14.30f, +0.94f), quat(v3(-0.00f, -0.00f, +0.00f), +1.00f));
 			
 			auto* lgh10 = dir_light("Sun",
 					v3(+0.06f, -2.76f, +4.53f), quat(v3(+0.31f, +0.01f, +0.04f), +0.95f),
@@ -1498,7 +1498,7 @@ struct Entities {
 						nouv_MSH_UTAHTEAPOT);
 			
 		auto* scn2 = scene("ugly_scene",
-				v3(+3.70f, -10.70f, +0.94f), quat(v3(-0.00f, -0.00f, +0.00f), +1.00f), true);
+				v3(+3.70f, -10.70f, +0.94f), quat(v3(-0.00f, -0.00f, +0.00f), +1.00f));
 			
 			auto* lgh20 = dir_light("Sun",
 					v3(-1.83f, +1.37f, +2.05f), quat(v3(+0.21f, -0.45f, -0.78f), +0.37f),
@@ -1508,7 +1508,7 @@ struct Entities {
 					uv_MSH_UGLY);
 			
 		auto* scn3 = scene("structure_scene",
-				v3(0), quat::ident(), true);
+				v3(0), quat::ident());
 			
 			auto* lgh30 = dir_light("Sun",
 					v3(-2.84f, +4.70f, +4.90f), quat(v3(+0.15f, -0.12f, -0.62f), +0.76f),
@@ -1546,7 +1546,7 @@ struct Entities {
 						uv_MSH_STRUCTURE_BEAM_CUTS);
 			
 		auto* scn4 = scene("normals",
-				v3(-8.62f, +1.19f, +0.48f), quat(v3(-0.00f, -0.00f, +0.00f), +1.00f), false);
+				v3(-8.62f, +1.19f, +0.48f), quat(v3(-0.00f, -0.00f, +0.00f), +1.00f));
 			
 			auto* lgh40 = dir_light("Sun",
 					v3(+2.29f, -0.11f, +2.77f), quat(v3(+0.17f, +0.27f, +0.80f), +0.51f),
@@ -1559,7 +1559,7 @@ struct Entities {
 					uv_tang_NORM_TEST_00);
 			
 		auto* scn5 = scene("showcase",
-				v3(+8.19f, +3.45f, +0.00f), quat(v3(-0.00f, -0.00f, +0.71f), +0.71f), false);
+				v3(+8.19f, +3.45f, +0.00f), quat(v3(-0.00f, -0.00f, +0.71f), +0.71f));
 			
 			auto* lgh50 = dir_light("Sun",
 					v3(+2.86f, +0.17f, +3.35f), quat(v3(+0.06f, +0.49f, +0.86f), +0.11f),
@@ -2336,7 +2336,7 @@ struct Passes {
 			GLint mip=0;
 			for (;; ++mip) {
 				
-				glTexImage2D(GL_TEXTURE_2D, mip, GL_RGBA32F, r.x,r.y,
+				glTexImage2D(GL_TEXTURE_2D, mip, GL_RGBA16F, r.x,r.y,
 						0, GL_RGBA, GL_FLOAT, NULL);
 				
 				if (r.x == 1 && r.y == 1) {
@@ -2496,24 +2496,12 @@ struct Passes {
 				avg_log_luminance = 0.0f;
 			} else {
 				
-				v4 convolved;
-				#if 0
-				{
-					GLint w, h;
-					
-					glGetTexLevelParameteriv(GL_TEXTURE_2D, render_res_mips -1, GL_TEXTURE_WIDTH, &w);
-					glGetTexLevelParameteriv(GL_TEXTURE_2D, render_res_mips -1, GL_TEXTURE_HEIGHT, &h);
-					
-					assert(w == 1 && h == 1, "% % %", w, h, render_res_mips);
-				}
-				
-				glGetTexImage(GL_TEXTURE_2D, render_res_mips -1, GL_RGBA, GL_FLOAT, &convolved);
-				#else
 				glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, convolved_pbo);
 				
 				v4* data = (v4*)glMapBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
 				assert(data);
 				
+				v4 convolved;
 				if (data) {
 					
 					convolved = *data;
@@ -2521,11 +2509,11 @@ struct Passes {
 					glUnmapBuffer(GL_PIXEL_PACK_BUFFER_ARB);
 					
 				} else {
+					assert(false);
 					convolved = v4(0);
 				}
 				
 				glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, 0);
-				#endif
 				
 				auto luminance = [] (v3 vp linear_col) -> f32 {
 					static constexpr v3 weights = v3(0.2126f, 0.7152f, 0.0722f);
@@ -2568,22 +2556,28 @@ struct Passes {
 				
 				auto prev_res = r;
 				
-				if (mip == 1) {
-					glBindTexture(GL_TEXTURE_2D, convolved_tex);
+				{
+					PROFILE_SCOPED(THR_ENGINE, "setup", (u32)mip);
+					if (mip == 1) {
+						glBindTexture(GL_TEXTURE_2D, convolved_tex);
+					}
+					if (mip >= 1) {
+						glTexParameteri(GL_TEXTURE_2D,	GL_TEXTURE_BASE_LEVEL, mip -1);	// read from prev mip level
+						glTexParameteri(GL_TEXTURE_2D,	GL_TEXTURE_MAX_LEVEL, mip -1);	// 
+					}
+					
+					glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, convolved_tex, mip);
+					glViewport(0,0, r.x,r.y);
+					
+					v2 blur_dist = v2(blur_dist_factor) / cast_v2<v2>(r);
+					glUniform1ui(unif_pass, mip);
+					glUniform2fv(unif_bd, 1, &blur_dist.x);
 				}
-				if (mip >= 1) {
-					glTexParameteri(GL_TEXTURE_2D,	GL_TEXTURE_BASE_LEVEL, mip -1);	// read from prev mip level
-					glTexParameteri(GL_TEXTURE_2D,	GL_TEXTURE_MAX_LEVEL, mip -1);	// 
+				
+				{
+					PROFILE_SCOPED(THR_ENGINE, "glDrawArrays", (u32)mip);
+					glDrawArrays(GL_TRIANGLES, 0, 6);
 				}
-				
-				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, convolved_tex, mip);
-				glViewport(0,0, r.x,r.y);
-				
-				v2 blur_dist = v2(blur_dist_factor) / cast_v2<v2>(r);
-				glUniform1ui(unif_pass, mip);
-				glUniform2fv(unif_bd, 1, &blur_dist.x);
-				
-				glDrawArrays(GL_TRIANGLES, 0, 6);
 				
 				if (r.x == 1 && r.y == 1) {
 					break;
@@ -2595,6 +2589,8 @@ struct Passes {
 			
 			#if !DISABLE_CONVOLUTION_GET
 			{
+				PROFILE_SCOPED(THR_ENGINE, "read_luminance_convolve_for_next_frame", (u32)mip);
+				
 				glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, convolved_pbo); // dst pbo
 				glReadBuffer(GL_COLOR_ATTACHMENT0); // src framebuffer color
 				
@@ -2660,7 +2656,7 @@ struct Passes {
 				{
 					PROFILE_SCOPED(THR_ENGINE, "A", pass);
 					
-					glUniform1f(unif_res, (f32)res.x);
+					glUniform1ui(unif_res, res.x);
 					
 					glUniform1ui(unif_axis, 0);
 					glUniform1f(unif_size, size * window_aspect_ratio.y);
@@ -2677,7 +2673,7 @@ struct Passes {
 				{
 					PROFILE_SCOPED(THR_ENGINE, "B", pass);
 					
-					glUniform1f(unif_res, (f32)res.y);
+					glUniform1ui(unif_res, res.y);
 					
 					glUniform1ui(unif_axis, 1);
 					glUniform1f(unif_size, size);
@@ -2692,6 +2688,8 @@ struct Passes {
 			}
 		}
 		#endif
+		
+		dbg_tex_0 = convolved_tex;
 		
 		{
 			PROFILE_SCOPED(THR_ENGINE, "post_combine");
@@ -3573,7 +3571,7 @@ DECL void frame () {
 								
 								passes.shadow_pass_directional(shadow_tex, light_projection, world_to_light, light_to_world, draw_scene);
 								
-								dbg_tex_0 = shadow_tex;
+								//dbg_tex_0 = shadow_tex;
 							} else {
 								dbg_tex_0 = 0;
 							}

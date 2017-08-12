@@ -8,7 +8,7 @@ in Vs_Out {
 uniform	sampler2D	main_pass_lumi_tex;
 uniform	sampler1D	gaussian_LUT_tex;
 
-uniform	flt			gauss_res;
+uniform	ui			gauss_res;
 
 uniform	ui			gauss_axis;
 uniform	flt			gauss_kernel_size;
@@ -66,9 +66,9 @@ void main () {
 	//}
 	flt	kernel_dist = gauss_kernel_size_ * 0.5;
 	
-	ui	half_samples = ui(max(gauss_res * kernel_dist, 0.0) +1.0); // round up always so that we never get 0
+	ui	half_samples = ui(max(flt(gauss_res) * kernel_dist, 0.0) +1.0); // round up always so that we never get 0
 	
-	kernel_dist = flt(half_samples) / gauss_res;
+	kernel_dist = flt(half_samples) / flt(gauss_res);
 	
 	v3	col = texture(main_pass_lumi_tex, vs_interp_uv).rgb;
 	
@@ -78,7 +78,11 @@ void main () {
 	
 	col = max( col*v3(texture(gaussian_LUT_tex, 0.0).r), v3(0) );
 	
-	for (ui i=ui(1); i<half_samples; ++i) {
+	ui	required_samples = min(half_samples, gauss_res -1); // To reduce wasted samples outside the src framebuffer, to reduce cost of very large bloom blurs
+															//  Could be done exact, TODO: improve when overhauling shader
+	
+	// TODO: could be split into two loops, where the second one only does one samples, for very large blurs at a edge of the framebuffer (one samples would always return the border color (black))
+	for (ui i=ui(1); i<required_samples; ++i) {
 		flt	u = flt(i)/flt(half_samples -ui(1));
 		v2	uv = v2(u * kernel_dist) * axis;
 		

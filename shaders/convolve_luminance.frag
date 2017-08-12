@@ -25,7 +25,7 @@ const flt	GAUSS_KERNEL[3*3] = flt[](
 	1.0/16.0,	1.0/ 8.0,	1.0/16.0
 );
 
-#define NO_BLUR 0
+#define NO_BLUR 1
 
 void main () {
 	

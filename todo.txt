@@ -426,10 +426,13 @@ DONE:
  -are there still cpu bottlenecks for some reason (maybe the cpu has to sync to gpu for some reason (maybe because vram is full))
  -> cpu had to wait for gpu timer queries -> fixed
  
+#2017.08.12 sa. tag
+ working on getting a bloom test setting (settings of bloom passes) to be able to determine how my bloom response curve should look
+ 
 TODO
 -FEATURES:
  
- working on getting a bloom test setting (settings of bloom passes) to be able to determine how my bloom response curve should look
+ 
  
  rework input system
  -> go for a event based system
