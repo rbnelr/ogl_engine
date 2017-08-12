@@ -19,9 +19,12 @@ flt luminance (v3 col) {
 }
 
 flt my_curve (flt x) {
-	flt	a = 0.95;
+	//flt	a = 0.95;
+	//flt	b = 1.3;
+	//flt	s = 0.5;
+	flt	a = 0.85;
 	flt	b = 1.3;
-	flt	s = 0.5;
+	flt	s = 0.25;
 	
 	if (x <= a) {
 		return 0.0;
@@ -37,9 +40,9 @@ flt my_curve (flt x) {
 
 v3 curve (v3 luminance) {
 	
-	v3	col = luminance * v3(0.2);
+	v3	col = luminance * v3(1);
 	
-	flt	intens = dot(col, v3(0.3));
+	flt	intens = dot(col, v3(0.3333));
 	
 	flt	bloom = my_curve(intens);
 	
@@ -48,6 +51,8 @@ v3 curve (v3 luminance) {
 	//}
 	
 	return col * v3(bloom / (intens +0.00001));
+	
+	return v3(bloom);
 }
 
 void main () {

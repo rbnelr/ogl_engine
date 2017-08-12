@@ -365,6 +365,15 @@ namespace var {
 			VAR(		Showcase::Grid_Obj, grid_offs,						VT_F32)
 		);
 		
+		auto strct_camera = STRUCT(
+			VAR(		Camera,				pos_world,							VT_F32V3),
+			VAR(		Camera,				aer,								VT_F32V3|VT_ANGLE),
+			VAR(		Camera,				base_ori,							VT_F32QUAT),
+			VAR(		Camera,				vfov,								VT_F32|VT_ANGLE),
+			VAR(		Camera,				clip_near,							VT_F32),
+			VAR(		Camera,				clip_far,							VT_F32)
+		);
+		
 		#if 0
 		auto entity = STRUCT(
 			VAR(		Entity,				name,							VT_CSTR),
@@ -396,8 +405,10 @@ namespace var {
 				VAR(		Controls,			cam_fov_control_mw_vel,				VT_F32|VT_ANGLE)
 			)),
 			GBL_VAR(						passes,								STRUCT(
+				VAR(		Passes,				main_pass_clear_col,				VT_F32V3|VT_COLOR),
+				VAR(		Passes,				bloom_intensity,					VT_F32),
 				ARRAY(		Passes,				bloom_size,			sizeof(f32),	VT_F32),
-				ARRAY(		Passes,				bloom_res_scale,	sizeof(f32),	VT_F32),
+				ARRAY(		Passes,				bloom_res_scale,	sizeof(f32),	VT_U32),
 				ARRAY(		Passes,				bloom_coeff,		sizeof(f32),	VT_F32),
 				VAR(		Passes,				shadow_res,							VT_U32)
 			)),
@@ -410,14 +421,8 @@ namespace var {
 				VAR(		Env_Viewer,			cur_sibl_indx,						VT_U32),
 				VAR(		Env_Viewer,			sibl,								VT_BOOL)
 			)),
-			GBL_VAR(						camera,								STRUCT(
-				VAR(		Camera,				pos_world,							VT_F32V3),
-				VAR(		Camera,				aer,								VT_F32V3|VT_ANGLE),
-				VAR(		Camera,				base_ori,							VT_F32QUAT),
-				VAR(		Camera,				vfov,								VT_F32|VT_ANGLE),
-				VAR(		Camera,				clip_near,							VT_F32),
-				VAR(		Camera,				clip_far,							VT_F32)
-			)),
+			GBL_VAR(						camera,								strct_camera),
+			GBL_ARRAY(						saved_cameras,		sizeof(Camera),	strct_camera),
 			GBL_VAR(						lights,								STRUCT(
 				DYNARR(		Lights,				lights,				sizeof(Light),	strct_light),
 				ARRAY(		Lights,				select_radius,		sizeof(f32),	VT_F32)
@@ -2889,16 +2894,11 @@ namespace var {
 				
 				push_str("[%] {\n%", arr_len, repeat("\t", depth +1));
 				
-				for (uptr member_i=0;; ++member_i) {
+				for (u32 i=0;;) {
 					
-					insert_val(member_var, pdata, depth +1);
+					insert_val(member_var, ptr_add(pdata, i*arr_stride), depth +1);
 					
-					pdata = ptr_add(pdata, arr_stride);
-					
-					member_var = member_var->next;
-					if (!member_var) {
-						break;
-					}
+					if (++i == arr_len) break;
 					
 					push_str(",\n%", repeat("\t", depth +1));
 				}
@@ -2919,14 +2919,11 @@ namespace var {
 				
 				push_str("[%] {\n%", arr_len, repeat("\t", depth +1));
 				
-				for (u32 member_i=0;;) {
+				for (u32 i=0;;) {
 					
-					insert_val(member_var, arr->arr +(member_i*arr_stride), depth +1);
+					insert_val(member_var, arr->arr +(i*arr_stride), depth +1);
 					
-					member_var = member_var->next;
-					if (!member_var) {
-						break;
-					}
+					if (++i == arr_len) break;
 					
 					push_str(",\n%", repeat("\t", depth +1));
 				}

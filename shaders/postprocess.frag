@@ -9,9 +9,13 @@ uniform	sampler2D		main_pass_lumi_tex;
 uniform	sampler2D		main_pass_bloom_0_tex;
 uniform	sampler2D		main_pass_bloom_1_tex;
 uniform	sampler2D		main_pass_bloom_2_tex;
+uniform	sampler2D		main_pass_bloom_3_tex;
+uniform	sampler2D		main_pass_bloom_4_tex;
 uniform	sampler2D		dbg_line_pass;
 uniform	sampler2D		dbg_tex_0;
 uniform	samplerCube		dbg_tex_1;
+
+uniform	flt				bloom_intensity;
 
 const v2 kernel_offs[3*3] = v2[] (
 	v2(-1,-1), v2( 0,-1), v2(+1,-1),
@@ -34,9 +38,11 @@ v3 uv_to_cubemap_dir (v2 uv) { // u 0/0.25/0.5/0.75 -> -y/-x/+y/+x   v 0/1 -> -z
 void main () {
 	
 	v3	luminance =	texture(main_pass_lumi_tex, vs_interp_uv).rgb;
-	//v3 bloom_0 =	texture(main_pass_bloom_0_tex, vs_interp_uv).rgb;
-	//v3 bloom_1 =	texture(main_pass_bloom_1_tex, vs_interp_uv).rgb;
-	//v3 bloom_2 =	texture(main_pass_bloom_2_tex, vs_interp_uv).rgb;
+	v3 bloom_0 =	texture(main_pass_bloom_0_tex, vs_interp_uv).rgb;
+	v3 bloom_1 =	texture(main_pass_bloom_1_tex, vs_interp_uv).rgb;
+	v3 bloom_2 =	texture(main_pass_bloom_2_tex, vs_interp_uv).rgb;
+	v3 bloom_3 =	texture(main_pass_bloom_3_tex, vs_interp_uv).rgb;
+	v3 bloom_4 =	texture(main_pass_bloom_4_tex, vs_interp_uv).rgb;
 	
 	#if 0
 	v3	col;
@@ -67,7 +73,12 @@ void main () {
 		v2 coord = gl_FragCoord.xy / g_target_res;
 		if ( all(not(lessThan(coord, v2(1.0 -ratio)))) ) {
 			v2 uv = (coord -v2(1.0 -ratio)) / v2(ratio);
-			DBG_COL(map(texture(dbg_tex_0, uv).r, 0.0, 1.0));
+			v3	val = texture(main_pass_bloom_0_tex, uv).rgb;
+				val += texture(main_pass_bloom_1_tex, uv).rgb;
+				val += texture(main_pass_bloom_2_tex, uv).rgb;
+				val += texture(main_pass_bloom_3_tex, uv).rgb;
+				val += texture(main_pass_bloom_4_tex, uv).rgb;
+			DBG_COL(map(val, 0.0, 1.0));
 		}
 	}
 	#elif 0
@@ -82,8 +93,10 @@ void main () {
 	#endif
 	
 	v4 dbg_line = texture(dbg_line_pass, vs_interp_uv);
-	col = v3(1.0 -dbg_line.a)*col +v3(dbg_line.a)*dbg_line.rgb;
+	col += (bloom_0 + bloom_1 + bloom_2 + bloom_3 + bloom_4) * bloom_intensity;
+	//col = v3(1.0 -dbg_line.a)*col +v3(dbg_line.a)*dbg_line.rgb;
 	
+	//col = bloom_0;
 	FRAG_DONE(v4(col, 1))
 	
 }

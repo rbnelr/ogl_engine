@@ -64,6 +64,7 @@ namespace input {
 			MISC,
 			MOUSELOOK,
 			FREECAM,
+			CAMSAVE,
 			FOV_CONTROL,
 			TIME_CONTROL,
 			GRAPHICS,
@@ -81,6 +82,17 @@ namespace input {
 			FREECAM_DOWN,
 			FREECAM_UP,
 			FREECAM_FAST,
+			CAMSAVE_RESTORE_SAVE,
+			CAMSAVE_SLOT_0,
+			CAMSAVE_SLOT_1,
+			CAMSAVE_SLOT_2,
+			CAMSAVE_SLOT_3,
+			CAMSAVE_SLOT_4,
+			CAMSAVE_SLOT_5,
+			CAMSAVE_SLOT_6,
+			CAMSAVE_SLOT_7,
+			CAMSAVE_SLOT_8,
+			CAMSAVE_SLOT_9,
 			FOV_CONTROL_LOWER=0,
 			FOV_CONTROL_MW,
 			FOV_CONTROL_RAISE,
@@ -104,32 +116,43 @@ namespace input {
 		};
 		
 		#define BUTTON_BINDINGS \
-				X( C,		MISC,			RELOAD_SHADERS ) \
-				X( B,		MISC,			SAVE_STATE ) \
-				X( RMB,		MOUSELOOK,		ENABLE_IN_GUI ) \
-				X( A,		FREECAM,		LEFT ) \
-				X( D,		FREECAM,		RIGHT ) \
-				X( S,		FREECAM,		BACKWARD ) \
-				X( W,		FREECAM,		FORWARD ) \
-				X( L_CTRL,	FREECAM,		DOWN ) \
-				X( SPACE,	FREECAM,		UP ) \
-				X( L_SHIFT,	FREECAM,		FAST ) \
-				X( NP_7,	FOV_CONTROL,	LOWER ) \
-				X( NP_8,	FOV_CONTROL,	MW ) \
-				X( NP_9,	FOV_CONTROL,	RAISE ) \
-				X( U,		TIME_CONTROL,	TOGGLE_LIGHTS_PAUSE ) \
-				X( I,		TIME_CONTROL,	TOGGLE_TOD_PAUSE ) \
-				X( O,		TIME_CONTROL,	DECELERATE ) \
-				X( P,		TIME_CONTROL,	ACCELERATE ) \
-				X( K,		TIME_CONTROL,	MANUAL_BACKWARD ) \
-				X( L,		TIME_CONTROL,	MANUAL_FORWARD ) \
-				X( T,		GRAPHICS,		SWITCH_ENV_DECREASE ) \
-				X( Y,		GRAPHICS,		SWITCH_ENV_INCREASE ) \
-				X( R,		GRAPHICS,		TOGGLE_ENV ) \
-				X( E,		GRAPHICS,		POST_EXPOSURE_MW ) \
-				X( F,		GRAPHICS,		POST_MANUAL_EXPOSURE_TOGGLE ) \
-				X( LMB,		EDITOR,			CLICK_SELECT ) \
-				X( H,		EDITOR,			ENTITY_CONTROL )
+				X( C,			MISC,			RELOAD_SHADERS ) \
+				X( B,			MISC,			SAVE_STATE ) \
+				X( RMB,			MOUSELOOK,		ENABLE_IN_GUI ) \
+				X( A,			FREECAM,		LEFT ) \
+				X( D,			FREECAM,		RIGHT ) \
+				X( S,			FREECAM,		BACKWARD ) \
+				X( W,			FREECAM,		FORWARD ) \
+				X( L_CTRL,		FREECAM,		DOWN ) \
+				X( SPACE,		FREECAM,		UP ) \
+				X( L_SHIFT,		FREECAM,		FAST ) \
+				X( TABULATOR,	CAMSAVE,		RESTORE_SAVE ) \
+				X( N_0,			CAMSAVE,		SLOT_0 ) \
+				X( N_1,			CAMSAVE,		SLOT_1 ) \
+				X( N_2,			CAMSAVE,		SLOT_2 ) \
+				X( N_3,			CAMSAVE,		SLOT_3 ) \
+				X( N_4,			CAMSAVE,		SLOT_4 ) \
+				X( N_5,			CAMSAVE,		SLOT_5 ) \
+				X( N_6,			CAMSAVE,		SLOT_6 ) \
+				X( N_7,			CAMSAVE,		SLOT_7 ) \
+				X( N_8,			CAMSAVE,		SLOT_8 ) \
+				X( N_9,			CAMSAVE,		SLOT_9 ) \
+				X( NP_7,		FOV_CONTROL,	LOWER ) \
+				X( NP_8,		FOV_CONTROL,	MW ) \
+				X( NP_9,		FOV_CONTROL,	RAISE ) \
+				X( U,			TIME_CONTROL,	TOGGLE_LIGHTS_PAUSE ) \
+				X( I,			TIME_CONTROL,	TOGGLE_TOD_PAUSE ) \
+				X( O,			TIME_CONTROL,	DECELERATE ) \
+				X( P,			TIME_CONTROL,	ACCELERATE ) \
+				X( K,			TIME_CONTROL,	MANUAL_BACKWARD ) \
+				X( L,			TIME_CONTROL,	MANUAL_FORWARD ) \
+				X( T,			GRAPHICS,		SWITCH_ENV_DECREASE ) \
+				X( Y,			GRAPHICS,		SWITCH_ENV_INCREASE ) \
+				X( R,			GRAPHICS,		TOGGLE_ENV ) \
+				X( E,			GRAPHICS,		POST_EXPOSURE_MW ) \
+				X( F,			GRAPHICS,		POST_MANUAL_EXPOSURE_TOGGLE ) \
+				X( LMB,			EDITOR,			CLICK_SELECT ) \
+				X( H,			EDITOR,			ENTITY_CONTROL )
 		
 		DECL Binding getButtonBinding (buttons::button_e button) {
 			using namespace buttons;
@@ -190,6 +213,11 @@ namespace input {
 		si				fov_control_dir;
 		bool			fov_control_mw;
 		
+		bool			camsave_restore_save;
+		u32				camsave_num_counter;
+		bool			camsave_num_state;
+		u32				camsave_slot;
+		
 		ui				lights_pause_toggle_counter;
 		ui				time_of_day_pause_toggle_counter;
 		si				time_of_day_log_accel_dir;
@@ -211,6 +239,8 @@ namespace input {
 			
 			mouselook_accum =					resolution_v(0);
 			mouse_wheel_accum =					0;
+			
+			camsave_num_counter =				0;
 			
 			lights_pause_toggle_counter =		0;
 			time_of_day_pause_toggle_counter =	0;
@@ -313,6 +343,33 @@ namespace input {
 						
 						case FREECAM_FAST: {
 							freecam_fast = down;
+						} break;
+						
+						default: assert(false);
+					}
+				} break;
+				
+				case CAMSAVE: {
+					
+					si thing = down ? +1 : -1;
+					switch (binding.function) {
+						
+						case CAMSAVE_RESTORE_SAVE: {
+							camsave_restore_save = down;
+						} break;
+						case CAMSAVE_SLOT_0:
+						case CAMSAVE_SLOT_1:
+						case CAMSAVE_SLOT_2:
+						case CAMSAVE_SLOT_3:
+						case CAMSAVE_SLOT_4:
+						case CAMSAVE_SLOT_5:
+						case CAMSAVE_SLOT_6:
+						case CAMSAVE_SLOT_7:
+						case CAMSAVE_SLOT_8:
+						case CAMSAVE_SLOT_9: {
+							++camsave_num_counter;
+							camsave_num_state = down;
+							camsave_slot = binding.function -CAMSAVE_SLOT_0;
 						} break;
 						
 						default: assert(false);

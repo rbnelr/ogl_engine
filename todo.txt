@@ -418,13 +418,21 @@ DONE:
  -> created a github repo and uploaded my local repo to it
  -> fixed tabs with this: "https://stackoverflow.com/questions/2316677/can-git-automatically-switch-between-spaces-and-tabs"
  
+#2017.08.11 fr. tag
+ experiment with new profiler (and improve it if needed)
+ -how stable is the graph if the framerate is stable?
+ -> stable enough to make out bottlenecks
+ -are at least the individual renderpasses constant time even if some are removed
+ -are there still cpu bottlenecks for some reason (maybe the cpu has to sync to gpu for some reason (maybe because vram is full))
+ -> cpu had to wait for gpu timer queries -> fixed
+ 
 TODO
 -FEATURES:
  
- experiment with new profiler (and improve it if needed)
- -how stable is the graph if the framerate is stable?
- -are at least the individual renderpasses constant time even if some are removed
- -are there still cpu bottlenecks for some reason (maybe the cpu has to sync to gpu for some reason (maybe because vram is full))
+ working on getting a bloom test setting (settings of bloom passes) to be able to determine how my bloom response curve should look
+ 
+ rework input system
+ -> go for a event based system
  
  quick and dirty instanced rendering for material showcase grid
  -see if this has a noticable performance on the notebook
