@@ -54,6 +54,7 @@ DEFINE_ENUM_ITER_OPS(tex_unit_e, tex_unit_t)
 	X(	SHAD_PBR_DEV_NOTEX ) \
 	X(	SHAD_PBR_DEV_TEX ) \
 	X(	SHAD_PBR_DEV_NORMAL_MAPPED ) \
+	X(	SHAD_PBR_DEV_NOTEX_INST ) \
 	X(	SHAD_PBR_DEV_CERBERUS ) \
 	X(	SHAD_PBR_DEV_UGLY ) \
 	X(	SHAD_PBR_DEV_NANOSUIT )
@@ -175,6 +176,13 @@ namespace shaders_n {
 		/* SHAD_PBR_DEV_NORMAL_MAPPED */	{	{ "_pbr_dev_normal_mapped.vert", "_pbr_dev_normal_mapped.frag" }, {
 													{ TEX_UNIT_ALBEDO,				"albedo_tex" },
 													{ NORMAL_TEX_UNIT,				"normal_tex" },
+													{ ENV_LUMINANCE_TEX_UNIT,		"env_luminance_tex" },
+													{ ENV_ILLUMINANCE_TEX_UNIT,		"env_illuminance_tex" },
+													{ TEX_UNIT_PBR_BRDF_LUT,		"brdf_lut_tex" },
+													{ TEX_UNITS_SHADOW_FIRST,		(char const*)1 } } // Special case to generate all 
+											},
+		/* SHAD_PBR_DEV_NOTEX_INST */		{	{ "_pbr_dev_notex_inst.vert",		"_pbr_dev_notex_inst.frag" }, {
+													{ TEX_UNIT_ALBEDO,				"albedo_tex" },
 													{ ENV_LUMINANCE_TEX_UNIT,		"env_luminance_tex" },
 													{ ENV_ILLUMINANCE_TEX_UNIT,		"env_illuminance_tex" },
 													{ TEX_UNIT_PBR_BRDF_LUT,		"brdf_lut_tex" },

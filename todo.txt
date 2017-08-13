@@ -429,10 +429,10 @@ DONE:
 #2017.08.12 sa. tag
  working on getting a bloom test setting (settings of bloom passes) to be able to determine how my bloom response curve should look
  
+ reimplemented material showcase, with instanced drawing (at least in the main pass)
+ 
 TODO
 -FEATURES:
- 
- 
  
  rework input system
  -> go for a event based system

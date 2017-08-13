@@ -374,6 +374,48 @@ void main () {
 }
 /*----------------------------------------------------*/ )_SHAD" } )
 
+/*-----------*/ _SOURCE_SHADER("_pbr_dev_notex_inst.vert", { R"_SHAD(
+$include "_glsl_version.h.glsl"
+$include "_global_include.h.vert"
+
+ATTRIB(0)	v3		attrib_pos_model;
+ATTRIB(1)	v3		attrib_norm_model;
+
+uniform		uv2		unif_grid_steps;
+uniform		v2		unif_grid_offs;
+uniform		m2		unif_grid_offs_mat;
+
+out Vs_Out {
+	smooth	v3		vs_interp_pos_cam;
+	smooth	v3		vs_interp_norm_cam;
+	
+	flat	flt		vs_metallic;
+	flat	flt		vs_roughness;
+};
+
+void main () {
+	
+	v2 indx = v2(	flt( ui(gl_InstanceID) % unif_grid_steps.x ),
+					flt( ui(gl_InstanceID) / unif_grid_steps.x ) );
+	
+	v2 offs = unif_grid_offs_mat * (indx * unif_grid_offs);
+	
+	flt roughness =	mix(0.00, 1.0,	indx.x / flt(unif_grid_steps.x -1));
+	flt metallic =	mix(0.01, 1.0,	indx.y / flt(unif_grid_steps.y -1));
+	
+	v4 pos_cam = g_transforms.model_to_cam * v4(attrib_pos_model +v3(offs, 0), 1);
+	v4 pos_clip = g_cam_to_clip * pos_cam;
+	
+	gl_Position = pos_clip;
+	
+	vs_interp_pos_cam =			v3(pos_cam);
+	vs_interp_norm_cam =		g_transforms.normal_model_to_cam * attrib_norm_model;
+	vs_metallic =				metallic;
+	vs_roughness =				roughness;
+}
+/*----------------------------------------------------*/ )_SHAD" } )
+
+
 /*-----------*/ _SOURCE_SHADER("_fullscreen_quad.vert", { R"_SHAD(
 $include "_glsl_version.h.glsl"
 $include "_global_include.h.vert"
@@ -668,6 +710,27 @@ void main () {
 	
 	FRAG_DONE(col)
 	
+}
+/*----------------------------------------------------*/ )_SHAD" } )
+
+/*-----------*/ _SOURCE_SHADER("_pbr_dev_notex_inst.frag", { R"_SHAD(
+$include "_glsl_version.h.glsl"
+$include "pbr.h.frag"
+
+in Vs_Out {
+	smooth	v3		vs_interp_pos_cam;
+	smooth	v3		vs_interp_norm_cam;
+	
+	flat	flt		vs_metallic;
+	flat	flt		vs_roughness;
+};
+
+void main () {
+	
+	v4 col = brfd_test(vs_interp_pos_cam, normalize(vs_interp_norm_cam),
+			g_mat.albedo, vs_metallic, vs_roughness, g_mat.IOR);
+	
+	FRAG_DONE(col)
 }
 /*----------------------------------------------------*/ )_SHAD" } )
 

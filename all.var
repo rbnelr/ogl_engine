@@ -24,11 +24,11 @@ controls = {
 
 camera = {
 	.pos_world =					#	v3(-29.2636, +5.4754, +0.1278)
-									$	v3(+6.2340, -2.8879, +1.8953)
-									$s	v3(+6.2340, -2.8879, +1.8953);
+									$	v3(+5.6778, -3.3362, +2.7755)
+									$s	v3(+5.6778, -3.3362, +2.7755);
 	.aer =							#
-									$	deg(v3(+335.9243, +60.6375, +0.0000))
-									$s	deg(v3(+335.9243, +60.6375, +0.0000));
+									$	deg(v3(+300.9345, +58.9500, +0.0000))
+									$s	deg(v3(+300.9345, +58.9500, +0.0000));
 	.base_ori =							quat(ident);
 	
 	.vfov =							#	+100_deg
@@ -137,8 +137,8 @@ showcase = {
 };
 
 material_showcase_grid_steps =			uv2(7, 3);
-material_showcase_grid_mat =			m2(	+1, 0,
-											 0,-1 );
+#material_showcase_grid_mat =			m2(	+1, 0,
+#											 0,-1 ); # !!!!!!! BROKEN because var_file.hpp has not implemented matrix handling yet
 
 {#
 scenes =								[] {

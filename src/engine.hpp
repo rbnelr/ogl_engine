@@ -1137,7 +1137,8 @@ namespace entities_n {
 	};
 	
 	DECLD v2u32		material_showcase_grid_steps;
-	DECLD m2		material_showcase_grid_mat;
+	DECLD m2		material_showcase_grid_mat = m2::row(	+1, 0,
+															 0,-1 );
 	
 	struct Material_Showcase_Grid : public Entity {
 		mesh_id_e		mesh_id;
@@ -1270,10 +1271,10 @@ namespace entities_n {
 		mesh_id_e mesh_id = m->mesh_id;
 		AABB aabb_mesh = meshes_aabb[mesh_id];
 		
-		aabb_mesh.xh += (f32)(material_showcase_grid_steps.x -1) * m->grid_offs.x;
-		aabb_mesh.yh += (f32)(material_showcase_grid_steps.y -1) * m->grid_offs.y;
+		auto mat = translate_h(v3( material_showcase_grid_mat * (cast_v2<v2>(material_showcase_grid_steps -v2u32(1)) * m->grid_offs), 0.0f ));
+		auto aabb_outter = mat * aabb_mesh.box_corners();
 		
-		return aabb_mesh;
+		return aabb_mesh.minmax(aabb_outter);
 	}
 };
 using namespace entities_n;
@@ -1413,10 +1414,6 @@ struct Entities {
 		auto OFF = LF_DISABLED;
 		auto NOSHAD = LF_NO_SHADOW;
 		
-		auto shadow_test_pl = 1 ? (light_flags_e)0 : LF_NO_SHADOW;
-		auto shadow_test_pl2 = 0 ? (light_flags_e)0 : LF_NO_SHADOW;
-		auto shadow_test_dl = LF_DISABLED;
-		
 		auto* scn = scene("shadow_test_0",
 				v3(-6.19f, +12.07f, +1.00f), quat::ident());
 			
@@ -1463,8 +1460,7 @@ struct Entities {
 			
 			auto* lgh10 = dir_light("Sun",
 					v3(+0.06f, -2.76f, +4.53f), quat(v3(+0.31f, +0.01f, +0.04f), +0.95f),
-					(light_flags_e)0,
-					//LF_NO_SHADOW,
+					ON,
 					srgb(244.0f,217.0f,171.0f) * col(2000.0f));
 			auto* msh10 = mesh("terrain",
 					v3(0), quat::ident(),
@@ -1502,7 +1498,7 @@ struct Entities {
 			
 			auto* lgh20 = dir_light("Sun",
 					v3(-1.83f, +1.37f, +2.05f), quat(v3(+0.21f, -0.45f, -0.78f), +0.37f),
-					(light_flags_e)0, srgb(244.0f,217.0f,171.0f) * col(2000.0f));
+					ON, srgb(244.0f,217.0f,171.0f) * col(2000.0f));
 			auto* msh20 = mesh("ugly",
 					v3(0), quat::ident(),
 					uv_MSH_UGLY);
@@ -1512,7 +1508,7 @@ struct Entities {
 			
 			auto* lgh30 = dir_light("Sun",
 					v3(-2.84f, +4.70f, +4.90f), quat(v3(+0.15f, -0.12f, -0.62f), +0.76f),
-					(light_flags_e)0, srgb(244.0f,217.0f,171.0f) * col(2000.0f));
+					ON, srgb(244.0f,217.0f,171.0f) * col(2000.0f));
 			auto* msh30 = mesh("ring",
 					v3(0), quat::ident(),
 					nouv_MSH_STRUCTURE_RING);
@@ -1550,7 +1546,7 @@ struct Entities {
 			
 			auto* lgh40 = dir_light("Sun",
 					v3(+2.29f, -0.11f, +2.77f), quat(v3(+0.17f, +0.27f, +0.80f), +0.51f),
-					(light_flags_e)0, srgb(244.0f,217.0f,171.0f) * col(2000.0f));
+					ON, srgb(244.0f,217.0f,171.0f) * col(2000.0f));
 			auto* msh40 = mesh("brick_wall",
 					v3(+0.00f, +1.15f, +0.77f), quat(v3(+0.61f, +0.36f, +0.36f), +0.61f),
 					uv_tang_MSH_UNIT_PLANE);
@@ -1559,25 +1555,25 @@ struct Entities {
 					uv_tang_NORM_TEST_00);
 			
 		auto* scn5 = scene("showcase",
-				v3(+8.19f, +3.45f, +0.00f), quat(v3(-0.00f, -0.00f, +0.71f), +0.71f));
+				v3(+9.67f, +0.16f, +0.00f), quat(v3(-0.00f, -0.00f, +0.71f), +0.71f));
 			
 			auto* lgh50 = dir_light("Sun",
-					v3(+2.86f, +0.17f, +3.35f), quat(v3(+0.06f, +0.49f, +0.86f), +0.11f),
-					(light_flags_e)0, srgb(244.0f,217.0f,171.0f) * col(2000.0f));
+					v3(-4.91f, +2.46f, +3.35f), quat(v3(+0.05f, -0.22f, -0.95f), +0.21f),
+					ON, srgb(244.0f,217.0f,171.0f) * col(2000.0f));
 			auto* msh50 = material_showcase_grid("ico_sphere",
 					v3(-4.84f, -1.52f, +0.00f), quat::ident(), v3(0.3f),
 					nouv_MSH_ICO_SPHERE, v2(2.5f));
 			auto* msh51 = material_showcase_grid("bunny",
-					v3(+2.39f, +0.00f, +0.00f), quat::ident(), v3(2.0f),
+					v3(+0.38f, -1.69f, +0.00f), quat::ident(), v3(2.0f),
 					nouv_MSH_STFD_BUNNY, v2(0.375f));
 			auto* msh52 = material_showcase_grid("buddha",
-					v3(+5.00f, +0.00f, +0.00f), quat::ident(), v3(1),
+					v3(+1.25f, -4.38f, +0.00f), quat::ident(), v3(1),
 					nouv_MSH_STFD_BUDDHA, v2(0.85f));
 			auto* msh53 = material_showcase_grid("dragon",
-					v3(+0.04f, +7.95f, +0.00f), quat::ident(), v3(1),
+					v3(-3.41f, +1.48f, +0.00f), quat::ident(), v3(1),
 					nouv_MSH_STFD_DRAGON, v2(0.65f));
 			auto* msh54 = material_showcase_grid("teapot",
-					v3(+2.09f, +7.92f, +0.00f), quat::ident(), v3(2.5f),
+					v3(+2.09f, +1.42f, +0.00f), quat::ident(), v3(2.5f),
 					nouv_MSH_UTAHTEAPOT, v2(0.3f));
 			
 		tree(&root,
@@ -3468,6 +3464,105 @@ DECL void frame () {
 				//print("Drawing scene #%\n", scn_i);
 				//entities.test_enumerate(p_scn);
 				
+				auto draw_mesh = [] (Mesh const* msh, hm mp to_cam, hm mp from_cam) {
+					PROFILE_SCOPED(THR_ENGINE, "mesh");
+					
+					glUseProgram(shaders[SHAD_PBR_DEV_NOTEX]);
+					
+					auto id = msh->mesh_id;
+					if (		id >= NOUV_MSH_FIRST && id < NOUV_MSH_END ) {
+						glBindVertexArray(VAOs[NO_UV_VAO]);
+					} else if (	id >= UV_MSH_FIRST && id < UV_MSH_END ) {
+						glBindVertexArray(VAOs[UV_VAO]);
+					} else if (	id >= UV_TANG_MSH_FIRST && id < UV_TANG_MSH_END ) {
+						glBindVertexArray(VAOs[UV_TANG_VAO]);
+					} else {
+						assert(false, "unknown mesh type (id: %)", (u32)id);
+					}
+					
+					//print(">>> draw '%' at %\n", msh->name, (to_world * hv(0)).xyz());
+					
+					GLOBAL_UBO_WRITE_VAL( std140::uint_, lightbulb_indx, -1);
+					
+					draw(id, to_cam, from_cam, &materials[MAT_WHITENESS]);
+					
+				};
+				auto draw_mesh_shadow = [] (Mesh const* msh, hm mp to_light, hm mp from_light) {
+					PROFILE_SCOPED(THR_ENGINE, "mesh");
+					
+					auto id = msh->mesh_id;
+					if (		id >= NOUV_MSH_FIRST && id < NOUV_MSH_END ) {
+						glBindVertexArray(VAOs[NO_UV_VAO]);
+					} else if (	id >= UV_MSH_FIRST && id < UV_MSH_END ) {
+						glBindVertexArray(VAOs[UV_VAO]);
+					} else if (	id >= UV_TANG_MSH_FIRST && id < UV_TANG_MSH_END ) {
+						glBindVertexArray(VAOs[UV_TANG_VAO]);
+					} else {
+						assert(false, "unknown mesh type (id: %)", (u32)id);
+					}
+					
+					draw_keep_mat(id, to_light, from_light);
+					
+				};
+				
+				auto unif_steps = glGetUniformLocation(shaders[SHAD_PBR_DEV_NOTEX_INST], "unif_grid_steps");
+				auto unif_offs = glGetUniformLocation(shaders[SHAD_PBR_DEV_NOTEX_INST], "unif_grid_offs");
+				auto unif_offs_mat = glGetUniformLocation(shaders[SHAD_PBR_DEV_NOTEX_INST], "unif_grid_offs_mat");
+				
+				auto draw_material_showcase_grid = [&] (Material_Showcase_Grid const* e, hm mp to_cam, hm mp from_cam) {
+					PROFILE_SCOPED(THR_ENGINE, "material_showcase_grid");
+					
+					auto steps = material_showcase_grid_steps;
+					if (steps.x < 2 || steps.y < 2) {
+						warning("material_showcase_grid_steps xy needs to be at least 2 each");
+						steps = MIN_v(steps, v2u32(2));
+					}
+					
+					std140_Material mat;
+					mat.albedo.set(v3(0.91f, 0.92f, 0.92f)); // aluminium
+					
+					glUseProgram(shaders[SHAD_PBR_DEV_NOTEX_INST]);
+					glBindVertexArray(VAOs[NO_UV_VAO]);
+					
+					glUniform2uiv(unif_steps, 1, &steps.x);
+					glUniform2fv(unif_offs, 1, &e->grid_offs.x);
+					glUniformMatrix2fv(unif_offs_mat, 1, GL_FALSE, &material_showcase_grid_mat.arr[0].x);
+					
+					auto& mesh = meshes[e->mesh_id];
+					
+					set_transforms_and_mat(to_cam, from_cam, &mat);
+					GLOBAL_UBO_WRITE_VAL( std140::uint_, lightbulb_indx, -1);
+					
+					auto inst_count = safe_cast_assert(GLsizei, steps.x*steps.y);
+					
+					glDrawElementsInstancedBaseVertex(GL_TRIANGLES, mesh.indx_count, GL_UNSIGNED_SHORT,
+							mesh.indx_offsets, inst_count, mesh.base_vertecies);
+					
+				};
+				auto draw_material_showcase_grid_shadow = [&] (Material_Showcase_Grid const* e, hm mp to_light, hm mp from_light) {
+					PROFILE_SCOPED(THR_ENGINE, "material_showcase_grid");
+					
+					auto steps = material_showcase_grid_steps;
+					if (steps.x < 2 || steps.y < 2) {
+						warning("material_showcase_grid_steps xy needs to be at least 2 each");
+						steps = MIN_v(steps, v2u32(2));
+					}
+					
+					glBindVertexArray(VAOs[NO_UV_VAO]);
+					
+					for (u32 j=0; j<steps.y; ++j) {
+						for (u32 i=0; i<steps.x; ++i) {
+							
+							v2 offs = material_showcase_grid_mat * (v2(e->grid_offs) * cast_v2<v2>(v2u32(i, j)));
+							
+							draw_keep_mat(e->mesh_id,
+									to_light * translate_h(v3(offs, 0)), translate_h(v3(-offs, 0)) * from_light);
+						}
+					}
+					
+				};
+				
+				
 				{ ////// Shadow pass
 					PROFILE_SCOPED(THR_ENGINE, "scene_shadow_lights", scn_i);
 					
@@ -3475,29 +3570,33 @@ DECL void frame () {
 					
 					glCullFace(GL_FRONT);
 					
+					auto draw_entity = [&] (Entity const* e, hm mp to_light, hm mp from_light, hm mp paren_to_cam) -> void {
+						switch (e->tag) {
+							
+							case ET_MESH:
+								draw_mesh_shadow((Mesh*)e, to_light, from_light);
+								break;
+								
+							case ET_LIGHT:
+								break;
+								
+							case ET_MATERIAL_SHOWCASE_GRID:
+								draw_material_showcase_grid_shadow((Material_Showcase_Grid*)e, to_light, from_light);
+								break;
+								
+							case ET_GROUP:
+							case ET_SCENE:
+								break;
+							
+							case ET_ROOT:
+							default: assert(false);
+						}
+					};
+					
 					auto draw_scene = [&] (hm mp world_to_light, hm mp light_to_world) -> void {
+						PROFILE_SCOPED(THR_ENGINE, "draw_scene_shadow");
 						
-						auto draw_mesh = [] (Entity const* e, hm mp to_light, hm mp from_light, hm mp paren_to_cam) -> void {
-							
-							if (e->tag != ET_MESH) return;
-							auto* msh = (Mesh*)e;
-							
-							auto id = msh->mesh_id;
-							if (		id >= NOUV_MSH_FIRST && id < NOUV_MSH_END ) {
-								glBindVertexArray(VAOs[NO_UV_VAO]);
-							} else if (	id >= UV_MSH_FIRST && id < UV_MSH_END ) {
-								glBindVertexArray(VAOs[UV_VAO]);
-							} else if (	id >= UV_TANG_MSH_FIRST && id < UV_TANG_MSH_END ) {
-								glBindVertexArray(VAOs[UV_TANG_VAO]);
-							} else {
-								assert(false, "unknown mesh type (id: %)", (u32)id);
-							}
-							
-							draw_keep_mat(id, to_light, from_light);
-							
-						};
-						
-						for_entity_subtree_mat(scn, world_to_light, light_to_world, draw_mesh);
+						for_entity_subtree_mat(scn, world_to_light, light_to_world, draw_entity);
 					};
 					
 					std140_Shading temp = {};
@@ -3655,41 +3754,24 @@ DECL void frame () {
 				}
 				
 				{ ////// Main pass
-					PROFILE_SCOPED(THR_ENGINE, "scene_forw_lighting_pass", scn_i);
-					
-					passes.main_pass();
-					
-					GLOBAL_UBO_WRITE_VAL( std140::mat4, cam_to_clip, cam_to_clip );
-					
-					env_viewer.set_env_map();
-					
 					{
-						glUseProgram(shaders[SHAD_PBR_DEV_NOTEX]);
+						PROFILE_SCOPED(THR_ENGINE, "draw_scene_forw_setup", scn_i);
 						
-						auto draw_mesh = [] (Mesh const* msh, hm mp to_cam, hm mp from_cam) {
-							
-							auto id = msh->mesh_id;
-							if (		id >= NOUV_MSH_FIRST && id < NOUV_MSH_END ) {
-								glBindVertexArray(VAOs[NO_UV_VAO]);
-							} else if (	id >= UV_MSH_FIRST && id < UV_MSH_END ) {
-								glBindVertexArray(VAOs[UV_VAO]);
-							} else if (	id >= UV_TANG_MSH_FIRST && id < UV_TANG_MSH_END ) {
-								glBindVertexArray(VAOs[UV_TANG_VAO]);
-							} else {
-								assert(false, "unknown mesh type (id: %)", (u32)id);
-							}
-							
-							//print(">>> draw '%' at %\n", msh->name, (to_world * hv(0)).xyz());
-							
-							GLOBAL_UBO_WRITE_VAL( std140::uint_, lightbulb_indx, -1);
-							
-							draw(id, to_cam, from_cam, &materials[MAT_WHITENESS]);
-							
-						};
+						passes.main_pass();
+						
+						GLOBAL_UBO_WRITE_VAL( std140::mat4, cam_to_clip, cam_to_clip );
+						
+						env_viewer.set_env_map();
+					}
+					{
+						PROFILE_SCOPED(THR_ENGINE, "draw_scene_forw");
 						
 						u32 enabled_light_indx =	0;
 						
 						auto draw_light_bulb = [&] (Light_ const* l, hm mp to_cam, hm mp from_cam) {
+							PROFILE_SCOPED(THR_ENGINE, "light_bulb");
+							
+							glUseProgram(shaders[SHAD_PBR_DEV_NOTEX]);
 							
 							if (!(inp.mouselook & FPS_MOUSELOOK)) {
 								
@@ -3707,40 +3789,6 @@ DECL void frame () {
 								}
 								
 							}
-						};
-						
-						//print(">>>> % \n", material_showcase_grid_mat);
-						
-						auto draw_material_showcase_grid = [] (Material_Showcase_Grid const* e, hm mp to_cam, hm mp from_cam) {
-							
-							auto steps = material_showcase_grid_steps;
-							assert(steps.x >= 2 && steps.y >= 2);
-							
-							v2 inv_range = v2(1) / cast_v2<v2>(steps -v2u32(1));
-							
-							std140_Material mat;
-							mat.albedo.set(v3(0.91f, 0.92f, 0.92f)); // aluminium
-							
-							glBindVertexArray(VAOs[NO_UV_VAO]);
-							
-							for (u32 j=0; j<steps.y; ++j) {
-								
-								mat.metallic.set( fp::lerp(0.0f, 1.0f, (f32)j * inv_range.y) );
-								
-								for (u32 i=0; i<steps.x; ++i) {
-									
-									mat.roughness.set( fp::lerp(0.01f, 1.0f, (f32)i * inv_range.x) );
-									
-									v2 offs = v2(e->grid_offs) * cast_v2<v2>(v2u32(i, j));
-									
-									draw(e->mesh_id,
-											to_cam * translate_h(v3(offs, 0)), translate_h(v3(-offs, 0)) * from_cam,
-											//&mat
-											&materials[MAT_LIGHTBULB] 
-											);
-								}
-							}
-							
 						};
 						
 						auto draw_entity = [&] (Entity const* e, hm mp to_cam, hm mp from_cam, hm mp paren_to_cam) -> void {

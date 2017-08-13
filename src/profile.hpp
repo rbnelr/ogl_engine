@@ -211,7 +211,7 @@ namespace profile {
 			++chunk->event_count;
 			++header.threads[0].event_count;
 			
-			if (cur->gpu != 0) {
+			if ((chunk_i -1) > 1) {
 				Event* gpu = working_stk.pushNoAlign<Event>();
 				
 				glGetQueryObjectui64v(cur->gpu, GL_QUERY_RESULT, &gpu->ts);

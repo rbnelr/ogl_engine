@@ -312,13 +312,12 @@ v4 brfd_test (	v3 pos_cam, v3 normal_dir, v3 albedo, flt metallic, flt roughness
 	v3 luminance = v3(0);
 	
 	#if 1
-	if (g_lights_count == ui(0)) DBG_COL(v3(0,1,0));
 	for (ui i=ui(0); i<g_lights_count; ++i) {
 		luminance += brfd_analytical_light(	pos_cam, view, norm, dvn,  albedo, metallic, roughness,  IORs, IORd, i );
 	}
 	#endif
 	
-	#if 1
+	#if 0
 	luminance += brfd_IBL(	view, norm, dvn,  albedo, metallic, roughness,  IORs, IORd);
 	#endif
 	

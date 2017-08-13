@@ -710,21 +710,24 @@ union AABB {
 		return ret;
 	}
 	
-	void minmax (v3 vp v) {
+	AABB& minmax (v3 vp v) {
 		xl = MIN(xl, v.x);
 		xh = MAX(xh, v.x);
 		yl = MIN(yl, v.y);
 		yh = MAX(yh, v.y);
 		zl = MIN(zl, v.z);
 		zh = MAX(zh, v.z);
+		return *this;
 	}
-	void minmax (Box_Corners cr box) {
+	AABB& minmax (Box_Corners cr box) {
 		for (u32 i=0; i<8; ++i) {
 			minmax(box.arr[i]);
 		}
+		return *this;
 	}
-	void minmax (AABB cr aabb) {
+	AABB& minmax (AABB cr aabb) {
 		minmax(aabb.box_corners());
+		return *this;
 	}
 	
 	static AABB from_obb (Box_Corners cr obb) {
