@@ -246,103 +246,6 @@ void main () {
 }
 /*----------------------------------------------------*/ )_SHAD" } )
 
-/*-----------*/ _SOURCE_SHADER("_sky_transform.vert", { R"_SHAD(
-$include "_glsl_version.h.glsl"
-$include "_global_include.h.vert"
-
-ATTRIB(0)	v3		attrib_pos_model;
-
-void main () {
-	v3 pos_cam = m3(g_transforms.model_to_cam) * attrib_pos_model;
-	
-	v4 pos_clip = g_cam_to_clip * v4(pos_cam, 0);
-	
-	pos_clip.x = pos_cam.x * g_cam_to_clip[0][0];
-	pos_clip.y = pos_cam.y * g_cam_to_clip[1][1];
-	pos_clip.z = -(pos_cam.z * 2.0); // after the persp divide the depth value will be 1 which is the far plane so it will be behind eveything
-	pos_clip.w = -pos_cam.z;
-	
-	gl_Position = pos_clip;
-}
-/*----------------------------------------------------*/ )_SHAD" } )
-
-/*-----------*/ _SOURCE_SHADER("_env_dome.vert", { R"_SHAD(
-$include "_glsl_version.h.glsl"
-$include "_global_include.h.vert"
-
-ATTRIB(0)	v3		attrib_pos_model;
-ATTRIB(1)	v3		attrib_norm_model;
-
-out Vs_Out {
-	smooth	v3		vs_interp_pos_cam;
-	//smooth	v3		vs_interp_norm_cam;
-	//smooth	v3		vs_interp_pos_model;
-};
-
-void main () {
-	
-	v4 pos_cam = g_transforms.model_to_cam * v4(attrib_pos_model, 1);
-	v4 pos_clip = g_cam_to_clip * pos_cam;
-	
-	gl_Position = pos_clip;
-	
-	vs_interp_pos_cam =		vec3(pos_cam);
-	//vs_interp_norm_cam =	g_transforms.normal_model_to_cam * attrib_norm_model;
-	//vs_interp_pos_model =	attrib_pos_model;
-}
-/*----------------------------------------------------*/ )_SHAD" } )
-
-/*-----------*/ _SOURCE_SHADER("_pbr_dev_notex.vert", { R"_SHAD(
-$include "_glsl_version.h.glsl"
-$include "_global_include.h.vert"
-
-ATTRIB(0)	v3		attrib_pos_model;
-ATTRIB(1)	v3		attrib_norm_model;
-
-out Vs_Out {
-	smooth	v3		vs_interp_pos_cam;
-	smooth	v3		vs_interp_norm_cam;
-};
-
-void main () {
-	
-	v4 pos_cam = g_transforms.model_to_cam * v4(attrib_pos_model, 1);
-	v4 pos_clip = g_cam_to_clip * pos_cam;
-	
-	gl_Position = pos_clip;
-	
-	vs_interp_pos_cam =				v3(pos_cam);
-	vs_interp_norm_cam =		g_transforms.normal_model_to_cam * attrib_norm_model;
-}
-/*----------------------------------------------------*/ )_SHAD" } )
-
-/*-----------*/ _SOURCE_SHADER("_pbr_dev_tex.vert", { R"_SHAD(
-$include "_glsl_version.h.glsl"
-$include "_global_include.h.vert"
-
-ATTRIB(0)	v3		attrib_pos_model;
-ATTRIB(1)	v3		attrib_norm_model;
-ATTRIB(3)	v2		attrib_uv;
-
-out Vs_Out {
-	smooth	v3		vs_interp_pos_cam;
-	smooth	v3		vs_interp_norm_cam;
-	smooth	v2		vs_interp_uv;
-};
-
-void main () {
-	
-	v4 pos_cam = g_transforms.model_to_cam * v4(attrib_pos_model, 1);
-	
-	v4 pos_clip = g_cam_to_clip * pos_cam;
-	gl_Position = pos_clip;
-	
-	vs_interp_pos_cam =			pos_cam.xyz;
-	vs_interp_norm_cam =	g_transforms.normal_model_to_cam * attrib_norm_model;
-	vs_interp_uv =				attrib_uv;
-}
-/*----------------------------------------------------*/ )_SHAD" } )
-
 /*-----------*/ _SOURCE_SHADER("_pbr_dev_normal_mapped.vert", { R"_SHAD(
 $include "_glsl_version.h.glsl"
 $include "_global_include.h.vert"
@@ -669,77 +572,6 @@ void main () {
 }
 /*----------------------------------------------------*/ )_SHAD" } )
 
-/*-----------*/ _SOURCE_SHADER("_pbr_dev_notex.frag", { R"_SHAD(
-$include "_glsl_version.h.glsl"
-$include "pbr.h.frag"
-
-in Vs_Out {
-	smooth				v3	vs_interp_pos_cam;
-	smooth				v3	vs_interp_norm_cam;
-};
-
-void main () {
-	
-	v4 col = brfd_test(vs_interp_pos_cam, normalize(vs_interp_norm_cam),
-			g_mat.albedo, g_mat.metallic, g_mat.roughness, g_mat.IOR);
-	
-	FRAG_DONE(col)
-}
-/*----------------------------------------------------*/ )_SHAD" } )
-
-/*-----------*/ _SOURCE_SHADER("_pbr_dev_albedo.frag", { R"_SHAD(
-$include "_glsl_version.h.glsl"
-$include "pbr.h.frag"
-
-in Vs_Out {
-	smooth	v3		vs_interp_pos_cam;
-	smooth	v3		vs_interp_norm_cam;
-	smooth	v2		vs_interp_uv;
-};
-
-uniform	sampler2D			albedo_tex;
-
-void main () {
-	
-	v3	albedo_sample = texture(albedo_tex, vs_interp_uv).rgb;
-	v3	albedo =		g_mat.albedo * albedo_sample;
-	
-	v4 col = brfd_test(vs_interp_pos_cam, normalize(vs_interp_norm_cam),
-			albedo, g_mat.metallic, g_mat.roughness, g_mat.IOR);
-	
-	FRAG_DONE(col)
-}
-/*----------------------------------------------------*/ )_SHAD" } )
-
-/*-----------*/ _SOURCE_SHADER("_pbr_dev_normal_mapped.frag", { R"_SHAD(
-$include "_glsl_version.h.glsl"
-$include "pbr.h.frag"
-
-in Vs_Out {
-	smooth	v3	vs_interp_pos_cam;
-	smooth	v3	vs_interp_norm_cam;
-	smooth	v4	vs_interp_tang_cam;
-	smooth	v2	vs_interp_uv;
-};
-
-uniform	sampler2D			albedo_tex;
-uniform	sampler2D			normal_tex;
-
-void main () {
-	
-	v3	albedo_sample = texture(albedo_tex, vs_interp_uv).rgb;
-	v3	albedo =		g_mat.albedo * albedo_sample;
-	
-	v3	normal_dir_cam = normal_mapping(vs_interp_pos_cam, vs_interp_tang_cam, vs_interp_norm_cam, vs_interp_uv, normal_tex);
-	
-	v4 col = brfd_test(vs_interp_pos_cam, normal_dir_cam,
-			albedo, g_mat.metallic, g_mat.roughness, g_mat.IOR);
-	
-	FRAG_DONE(col)
-	
-}
-/*----------------------------------------------------*/ )_SHAD" } )
-
 /*-----------*/ _SOURCE_SHADER("_pbr_dev_notex_inst.frag", { R"_SHAD(
 $include "_glsl_version.h.glsl"
 $include "pbr.h.frag"
@@ -781,7 +613,7 @@ void main () {
 /*----------------------------------------------------*/ )_SHAD" } )
 
 
-/*-----------*/ _SOURCE_SHADER("_pbr_dev_cerberus.frag", { R"_SHAD(
+/*-----------*/ _SOURCE_SHADER("_pbr_dev_common.frag", { R"_SHAD(
 $include "_glsl_version.h.glsl"
 $include "pbr.h.frag"
 
@@ -807,33 +639,6 @@ void main () {
 	
 	v4 col = brfd_test(vs_interp_pos_cam, normal_dir_cam,
 			albedo, metallic, roughness, g_mat.IOR);
-	
-	FRAG_DONE(col)
-	
-}
-/*----------------------------------------------------*/ )_SHAD" } )
-
-/*-----------*/ _SOURCE_SHADER("_pbr_dev_ugly.frag", { R"_SHAD(
-$include "_glsl_version.h.glsl"
-$include "pbr.h.frag"
-
-in Vs_Out {
-	smooth	v3	vs_interp_pos_cam;
-	smooth	v3	vs_interp_norm_cam;
-	smooth	v2	vs_interp_uv;
-};
-
-uniform	sampler2D			roughness_tex;
-
-void main () {
-	
-	flt	roughness =	g_mat.roughness *	texture(roughness_tex, vs_interp_uv).r;
-	roughness = pow(roughness, 1.0/2.2);
-	
-	//DBG_COL(roughness);
-	
-	v4 col = brfd_test(vs_interp_pos_cam, normalize(vs_interp_norm_cam),
-			g_mat.albedo, g_mat.metallic, roughness, g_mat.IOR);
 	
 	FRAG_DONE(col)
 	

@@ -24,11 +24,11 @@ controls = {
 
 camera = {
 	.pos_world =					#	v3(-29.2636, +5.4754, +0.1278)
-									$	v3(+9.6864, -8.8238, +1.7983)
-									$s	v3(+3.4003, +0.2742, +3.0064);
+									$	v3(+13.3441, +7.5536, +10.0961)
+									$s	v3(+13.3441, +7.5536, +10.0961);
 	.aer =							#
-									$	deg(v3(+281.1361, +51.6373, +0.0000))
-									$s	deg(v3(+175.6120, +64.5750, +0.0000));
+									$	deg(v3(+118.9121, +48.3750, +0.0000))
+									$s	deg(v3(+118.9121, +48.3750, +0.0000));
 	.base_ori =							quat(ident);
 	
 	.vfov =							#	+100_deg
@@ -220,6 +220,11 @@ materials = [] { # enum map
 
 mesh_names = [] {
 	#%name%
+####
+	{# MSH_nouv_col_LIGHT_BULB			#}	"light_bulb.nouv_vcol",
+	{# MSH_nouv_col_SUN_LAMP			#}	"sun_lamp.nouv_vcol",
+	
+####
 	{# MSH_nouv_AXIS_CROSS_PX			#}	"axis_cross_px.nouv",
 	{# MSH_nouv_AXIS_CROSS_NX			#}	"axis_cross_nx.nouv",
 	{# MSH_nouv_AXIS_CROSS_PY			#}	"axis_cross_py.nouv",
@@ -244,40 +249,36 @@ mesh_names = [] {
 	{# MSH_nouv_WINDOW_PILLAR			#}	"window_pillar.nouv",
 	{# MSH_nouv_SHADOW_TEST_0			#}	"shadow_test_0.nouv",
 	
+####
+	{# MSH_UNIT_PLANE					#}	"_unit_plane",
 	
-	{# MSH_nouv_col_LIGHT_BULB			#}	"light_bulb.nouv_vcol",
-	{# MSH_nouv_col_SUN_LAMP			#}	"sun_lamp.nouv_vcol",
+	{# MSH_SCENE_GROUND0				#}	"scene_ground0",
+	{# MSH_UGLY							#}	"ugly",
+	{# MSH_TERRAIN_TREE					#}	"terrain_tree", # implement ternary
+	{# MSH_TERRAIN_TREE_CUTS			#}	"terrain_tree_cuts",
+	{# MSH_TERRAIN_TREE_BLOSSOMS		#}	"terrain_tree_blossoms",
+	{# MSH_TERRAIN_CUBE					#}	"terrain_cube",
+	{# MSH_TERRAIN_SPHERE				#}	"terrain_sphere",
+	{# MSH_TERRAIN_OBELISK				#}	"terrain_obelisk",
+	{# MSH_STRUCTURE_WALLS				#}	"structure_walls",
+	{# MSH_STRUCTURE_GROUND				#}	"structure_ground",
+	{# MSH_STRUCTURE_BLOCK1				#}	"structure_block1",
+	{# MSH_STRUCTURE_BLOCK2				#}	"structure_block2",
+	{# MSH_STRUCTURE_BLOCK3				#}	"structure_block3",
+	{# MSH_STRUCTURE_BLOCK4				#}	"structure_block4",
+	{# MSH_STRUCTURE_BEAM				#}	"structure_beam",
+	{# MSH_STRUCTURE_BEAM_CUTS			#}	"structure_beam_cuts",
 	
+	{# MSH_NANOSUIT_TORSO				#}	"nano_suit/nanosuit_torso",
+	{# MSH_NANOSUIT_LEGS				#}	"nano_suit/nanosuit_legs",
+	{# MSH_NANOSUIT_NECK				#}	"nano_suit/nanosuit_neck",
+	{# MSH_NANOSUIT_HELMET				#}	"nano_suit/nanosuit_helmet",
 	
-	{# MSH_uv_tang_UNIT_PLANE			#}	"_unit_plane.uv_tang",
+	{# MSH_NORM_TEST_00					#}	"norm_test/test_00",
 	
-	{# MSH_uv_tang_SCENE_GROUND0		#}	"scene_ground0.uv_tang",
-	{# MSH_uv_tang_UGLY					#}	"ugly.uv_tang",
-	{# MSH_uv_tang_TERRAIN_TREE			#}	"terrain_tree.uv_tang", # implement ternary
-	{# MSH_uv_tang_TERRAIN_TREE_CUTS	#}	"terrain_tree_cuts.uv_tang",
-	{# MSH_uv_tang_TERRAIN_TREE_BLOSSOMS	#}	"terrain_tree_blossoms.uv_tang",
-	{# MSH_uv_tang_TERRAIN_CUBE			#}	"terrain_cube.uv_tang",
-	{# MSH_uv_tang_TERRAIN_SPHERE		#}	"terrain_sphere.uv_tang",
-	{# MSH_uv_tang_TERRAIN_OBELISK		#}	"terrain_obelisk.uv_tang",
-	{# MSH_uv_tang_STRUCTURE_WALLS		#}	"structure_walls.uv_tang",
-	{# MSH_uv_tang_STRUCTURE_GROUND		#}	"structure_ground.uv_tang",
-	{# MSH_uv_tang_STRUCTURE_BLOCK1		#}	"structure_block1.uv_tang",
-	{# MSH_uv_tang_STRUCTURE_BLOCK2		#}	"structure_block2.uv_tang",
-	{# MSH_uv_tang_STRUCTURE_BLOCK3		#}	"structure_block3.uv_tang",
-	{# MSH_uv_tang_STRUCTURE_BLOCK4		#}	"structure_block4.uv_tang",
-	{# MSH_uv_tang_STRUCTURE_BEAM		#}	"structure_beam.uv_tang",
-	{# MSH_uv_tang_STRUCTURE_BEAM_CUTS	#}	"structure_beam_cuts.uv_tang",
+	{# MSH_CERBERUS						#}	"cerberus/cerberus",
 	
-	{# MSH_uv_tang_NANOSUIT_TORSO		#}	"nano_suit/nanosuit_torso.uv_tang",
-	{# MSH_uv_tang_NANOSUIT_LEGS		#}	"nano_suit/nanosuit_legs.uv_tang",
-	{# MSH_uv_tang_NANOSUIT_NECK		#}	"nano_suit/nanosuit_neck.uv_tang",
-	{# MSH_uv_tang_NANOSUIT_HELMET		#}	"nano_suit/nanosuit_helmet.uv_tang",
-	
-	{# MSH_uv_tang_NORM_TEST_00			#}	"norm_test/test_00.uv_tang",
-	
-	{# MSH_uv_tang_CERBERUS				#}	"cerberus/cerberus.uv_tang",
-	
-	{# MSH_uv_tang_PG_DAVID				#}	"photogr/david.uv_tang",
+	{# MSH_PG_DAVID						#}	"photogr/david",
 };
 
 

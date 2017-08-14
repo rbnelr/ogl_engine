@@ -1,16 +1,15 @@
 
 typedef GLint tex_unit_t;
 enum tex_unit_e : tex_unit_t {
+	// Common
 	TEX_UNIT_ALBEDO =					6,//0,
+	TEX_UNIT_NORMAL =					1,
+	TEX_UNIT_ROUGHNESS =				2,
+	TEX_UNIT_METALLIC =					3,
 	// Nanosuit
 	TEX_UNIT_NANO_DIFFUSE_EMISSIVE =	6,//0,
 	TEX_UNIT_NANO_NORMAL =				1,
 	TEX_UNIT_NANO_SPECULAR_ROUGHNESS =	2,
-	// Cerberus
-	TEX_UNIT_CERB_ALBEDO =				6,//0,
-	TEX_UNIT_CERB_NORMAL =				1,
-	TEX_UNIT_CERB_ROUGHNESS =			2,
-	TEX_UNIT_CERB_METALLIC =			3,
 	// PBR global
 	ENV_LUMINANCE_TEX_UNIT =			4,
 	ENV_ILLUMINANCE_TEX_UNIT =			5,
@@ -46,18 +45,13 @@ DEFINE_ENUM_ITER_OPS(tex_unit_e, tex_unit_t)
 	X(	SHAD_POSTPROCESS ) \
 	X(	SHAD_CAM_ALPHA_COL ) \
 	X(	SHAD_TINT_AS_FRAG_COL ) \
-	X(	SHAD_SKY ) \
 	X(	SHAD_RENDER_IBL_ILLUMINANCE ) \
 	X(	SHAD_RENDER_IBL_LUMINANCE_PREFILTER ) \
 	X(	SHAD_RENDER_IBL_BRDF_LUT ) \
 	X(	SHAD_RENDER_EQUIRECTANGULAR_TO_CUBEMAP ) \
-	X(	SHAD_PBR_DEV_NOTEX ) \
-	X(	SHAD_PBR_DEV_TEX ) \
-	X(	SHAD_PBR_DEV_NORMAL_MAPPED ) \
 	X(	SHAD_PBR_DEV_NOTEX_INST ) \
 	X(	SHAD_PBR_DEV_LIGHTBULB ) \
-	X(	SHAD_PBR_DEV_CERBERUS ) \
-	X(	SHAD_PBR_DEV_UGLY ) \
+	X(	SHAD_PBR_DEV_COMMON ) \
 	X(	SHAD_PBR_DEV_NANOSUIT )
 
 #define X0(id)	id=0,
@@ -145,9 +139,6 @@ namespace shaders_n {
 		/* SHAD_TINT_AS_FRAG_COL */			{	{ "_model_pos.vert",			"_solid_color.frag" }, {
 													}
 											},
-		/* SHAD_SKY */						{	{ "_sky_transform.vert",		"_solid_color.frag" }, {
-													}
-											},
 		/* SHAD_RENDER_IBL_ILLUMINANCE */	{	{ "_render_cubemap.vert",		"_render_ibl_illuminance.frag" }, {
 													{ ENV_LUMINANCE_TEX_UNIT,		"env_luminance_tex" } }
 											},
@@ -159,28 +150,6 @@ namespace shaders_n {
 											},
 		/* SHAD_RENDER_EQUIRECTANGULAR_TO_CUBEMAP */{ { "_render_cubemap.vert",		"_render_equirectangular_to_cubemap.frag" }, {
 													{ ENV_LUMINANCE_TEX_UNIT,		"env_luminance_tex" } }
-											},
-		/* SHAD_PBR_DEV_NOTEX */			{	{ "_pbr_dev_notex.vert",		"_pbr_dev_notex.frag" }, {
-													{ TEX_UNIT_ALBEDO,				"albedo_tex" },
-													{ ENV_LUMINANCE_TEX_UNIT,		"env_luminance_tex" },
-													{ ENV_ILLUMINANCE_TEX_UNIT,		"env_illuminance_tex" },
-													{ TEX_UNIT_PBR_BRDF_LUT,		"brdf_lut_tex" },
-													{ TEX_UNITS_SHADOW_FIRST,		(char const*)1 } } // Special case to generate all 
-											},
-		/* SHAD_PBR_DEV_TEX */				{	{ "_pbr_dev_tex.vert",			"_pbr_dev_albedo.frag" }, {
-													{ TEX_UNIT_ALBEDO,				"albedo_tex" },
-													{ ENV_LUMINANCE_TEX_UNIT,		"env_luminance_tex" },
-													{ ENV_ILLUMINANCE_TEX_UNIT,		"env_illuminance_tex" },
-													{ TEX_UNIT_PBR_BRDF_LUT,		"brdf_lut_tex" },
-													{ TEX_UNITS_SHADOW_FIRST,		(char const*)1 } } // Special case to generate all 
-											},
-		/* SHAD_PBR_DEV_NORMAL_MAPPED */	{	{ "_pbr_dev_normal_mapped.vert", "_pbr_dev_normal_mapped.frag" }, {
-													{ TEX_UNIT_ALBEDO,				"albedo_tex" },
-													{ TEX_UNIT_CERB_NORMAL,			"normal_tex" },
-													{ ENV_LUMINANCE_TEX_UNIT,		"env_luminance_tex" },
-													{ ENV_ILLUMINANCE_TEX_UNIT,		"env_illuminance_tex" },
-													{ TEX_UNIT_PBR_BRDF_LUT,		"brdf_lut_tex" },
-													{ TEX_UNITS_SHADOW_FIRST,		(char const*)1 } } // Special case to generate all 
 											},
 		/* SHAD_PBR_DEV_NOTEX_INST */		{	{ "_pbr_dev_notex_inst.vert",		"_pbr_dev_notex_inst.frag" }, {
 													{ TEX_UNIT_ALBEDO,				"albedo_tex" },
@@ -196,18 +165,11 @@ namespace shaders_n {
 													{ TEX_UNIT_PBR_BRDF_LUT,		"brdf_lut_tex" },
 													{ TEX_UNITS_SHADOW_FIRST,		(char const*)1 } } // Special case to generate all 
 											},
-		/* SHAD_PBR_DEV_CERBERUS */			{	{ "_pbr_dev_normal_mapped.vert", "_pbr_dev_cerberus.frag" }, {
-													{ TEX_UNIT_CERB_ALBEDO,			"albedo_tex" },
-													{ TEX_UNIT_CERB_NORMAL,			"normal_tex" },
-													{ TEX_UNIT_CERB_ROUGHNESS,		"roughness_tex" },
-													{ TEX_UNIT_CERB_METALLIC,		"metallic_tex" },
-													{ ENV_LUMINANCE_TEX_UNIT,		"env_luminance_tex" },
-													{ ENV_ILLUMINANCE_TEX_UNIT,		"env_illuminance_tex" },
-													{ TEX_UNIT_PBR_BRDF_LUT,		"brdf_lut_tex" },
-													{ TEX_UNITS_SHADOW_FIRST,		(char const*)1 } } // Special case to generate all 
-											},
-		/* SHAD_PBR_DEV_UGLY */				{	{ "_pbr_dev_tex.vert", 			"_pbr_dev_ugly.frag" }, {
-													{ TEX_UNIT_CERB_ROUGHNESS,		"roughness_tex" },
+		/* SHAD_PBR_DEV_COMMON */			{	{ "_pbr_dev_normal_mapped.vert", "_pbr_dev_common.frag" }, {
+													{ TEX_UNIT_ALBEDO,				"albedo_tex" },
+													{ TEX_UNIT_NORMAL,				"normal_tex" },
+													{ TEX_UNIT_ROUGHNESS,			"roughness_tex" },
+													{ TEX_UNIT_METALLIC,			"metallic_tex" },
 													{ ENV_LUMINANCE_TEX_UNIT,		"env_luminance_tex" },
 													{ ENV_ILLUMINANCE_TEX_UNIT,		"env_illuminance_tex" },
 													{ TEX_UNIT_PBR_BRDF_LUT,		"brdf_lut_tex" },

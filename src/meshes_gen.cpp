@@ -231,12 +231,7 @@ meshes_file_n::format_e processFile (byte * fileData, uptr fileSize, meshes_file
 		if (!ext1.str) {
 			
 			auto form = INTERLEAVED|INDEX_USHORT|POS_XYZ|NORM_XYZ|UV_UV;
-			assert(format == form, "mesh type mismatch", bin(format), bin(form));
-			
-		} else if (ext1.str && str::comp(ext1, "uv_tang")) {
-			
-			auto form = INTERLEAVED|INDEX_USHORT|POS_XYZ|NORM_XYZ|UV_UV;
-			assert(format == form, "mesh type mismatch", bin(format), bin(form));
+			assert(format == form, "mesh type mismatch have % should be %", bin(format), bin(form));
 			
 			format |= TANG_XYZW;
 			
