@@ -45,6 +45,7 @@ DEFINE_ENUM_ITER_OPS(tex_unit_e, tex_unit_t)
 	X(	SHAD_POSTPROCESS ) \
 	X(	SHAD_CAM_ALPHA_COL ) \
 	X(	SHAD_TINT_AS_FRAG_COL ) \
+	X(	SHAD_SKY_DRAW_COL ) \
 	X(	SHAD_RENDER_IBL_ILLUMINANCE ) \
 	X(	SHAD_RENDER_IBL_LUMINANCE_PREFILTER ) \
 	X(	SHAD_RENDER_IBL_BRDF_LUT ) \
@@ -137,6 +138,9 @@ namespace shaders_n {
 													{ TEX_UNIT_MAIN_PASS_DEPTH,		"main_pass_depth_tex" } }
 											},
 		/* SHAD_TINT_AS_FRAG_COL */			{	{ "_model_pos.vert",			"_solid_color.frag" }, {
+													}
+											},
+		/* SHAD_SKY_DRAW_COL */				{	{ "_skybox_transform.vert",		"_sky_test.frag" }, {
 													}
 											},
 		/* SHAD_RENDER_IBL_ILLUMINANCE */	{	{ "_render_cubemap.vert",		"_render_ibl_illuminance.frag" }, {

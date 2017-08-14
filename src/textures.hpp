@@ -35,7 +35,10 @@
 		X(	TEX_CERBERUS_ALBEDO			) \
 		X(	TEX_CERBERUS_NORMAL			) \
 		X(	TEX_CERBERUS_METALLIC		) \
-		X(	TEX_CERBERUS_ROUGHNESS		)
+		X(	TEX_CERBERUS_ROUGHNESS		) \
+		 \
+		X(	TEX_PG_DAVID_ALBEDO		) \
+		X(	TEX_PG_DAVID_NORMAL		)
 
 #define X0(id)				id=0,
 #define X(id)				id,

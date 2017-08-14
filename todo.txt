@@ -431,42 +431,36 @@ DONE:
  
  reimplemented material showcase, with instanced drawing (at least in the main pass)
  
+ finish converting the old scenes to the new entity tree
+ 
+#2017.08.14 mo. tag
+ completely remove old drawing code
+  then clean up engine.h (all the drawing helper function etc. should now be not needed any more)
+ 
+ got david bust photogrammetry'ed and into the engine with albedo and normal textures
+ 
 TODO
 -FEATURES:
  
- rework input system
- -> go for a event based system
- 
- quick and dirty instanced rendering for material showcase grid
- -see if this has a noticable performance on the notebook
- -make grid count x/y entity local
- -does the profiler show the performance increase from instancing as expected?
- 
- finish converting the old scenes to the new entity tree
- 
- completely remove old drawing code
- then clean up engine.h (all the drawing helper function etc. should now be not needed any more)
+ investigate if gamma (srgb) on textures is correct (normal maps and roughness/metallic should be in linear space)
  
  add local enviroment map to scenes
+ -just draw a inverted box at the bounding box (or whatever works artisticly) as 'skybox'
+ -need to be able to have seperate loaded (and processed) ibl maps
+ -think a little about what the best architecture for this is
+  -ibl can only ever be loaded or not, no async stuff, if ibl processing is too slow, then reduce quality (or optimize)
+  -simple shared cache (maybe with fixed amount of slots (dynarr)) that simply keeps a filename list to check if ibl is loaded every frame and loads if it is not
+  -one IBL struct that contains all ibl state, so that multiple can easiliy be created
  
- make enviroment mapping work on notebook
- 
- performance experimentation on notebook
-  what to do so that we can reliably get 60 fps on notebook?
-  -reduce renderpasses
-   -ditch 'seperate scenes as seperate drawpasses' concept ?
-	-maybe the concept does not have to be ditched, but instead i can restructure the code so that all shadow passes happen first, and then the lighting passes happen like one singe would, except for having to switch the shadow textures for objects of different scenes
-   -maybe have a simpler forward rendered dbg_line implementation
-   -do something about the amount of passes in the post pass
-	-settings for bloom, which allow it to be cheaper or be disabled
-  >what else?
-  
  maybe time of day control (controls one directional light (maybe as pointer in scene struct))
+ 
+ try variance shadow mapping
  
  triangle perfect mouse selection by doing triangle-ray intersection test of every tri in all meshes
  -when the potential meshes are filtered by first doing a ray-AABB intersection this approach might be no performance concern at all
  
- try variance shadow mapping
+ rework input system
+ -> go for a event based system
  
  maybe port to android?
  -> if i can figure out how to reliably debug (at least reliable print, but actual debug is supposed to be possible)

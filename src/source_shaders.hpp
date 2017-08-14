@@ -246,6 +246,27 @@ void main () {
 }
 /*----------------------------------------------------*/ )_SHAD" } )
 
+/*-----------*/ _SOURCE_SHADER("_skybox_transform.vert", { R"_SHAD(
+$include "_glsl_version.h.glsl"
+$include "_global_include.h.vert"
+
+out Vs_Out {
+	smooth	v2		vs_interp_screen_uv;
+};
+
+const v2 uv[6] = v2[] (		v2(1,0),			v2(1,1),			v2(0,0),
+							v2(0,0),			v2(1,1),			v2(0,1)					);
+const v4 pos[6] = v4[] (	v4(+1,-1, +1, 1),	v4(+1,+1, +1, 1),	v4(-1,-1, +1, 1),
+							v4(-1,-1, +1, 1),	v4(+1,+1, +1, 1),	v4(-1,+1, +1, 1)		);
+
+void main () {
+	vs_interp_screen_uv =	uv[gl_VertexID];
+	gl_Position =			pos[gl_VertexID];
+}
+/*----------------------------------------------------*/ )_SHAD" } )
+
+
+
 /*-----------*/ _SOURCE_SHADER("_pbr_dev_normal_mapped.vert", { R"_SHAD(
 $include "_glsl_version.h.glsl"
 $include "_global_include.h.vert"
@@ -437,6 +458,20 @@ void main () {
 	v3 col = g_mat.albedo;
 	
 	FRAG_DONE(v4(col, 1.0));
+}
+/*----------------------------------------------------*/ )_SHAD" } )
+
+/*-----------*/ _SOURCE_SHADER("_sky_test.frag", { R"_SHAD(
+$include "_glsl_version.h.glsl"
+$include "_global_include.h.frag"
+
+in Vs_Out {
+	smooth	v2		vs_interp_screen_uv;
+};
+
+void main () {
+	//FRAG_DONE(v4(vs_interp_screen_uv, 0, 1));
+	FRAG_DONE(v4(v3(0.02), 1));
 }
 /*----------------------------------------------------*/ )_SHAD" } )
 
@@ -636,6 +671,9 @@ void main () {
 	v3	albedo =	g_mat.albedo *		texture(albedo_tex, vs_interp_uv).rgb;
 	flt	roughness =	g_mat.roughness *	texture(roughness_tex, vs_interp_uv).r;
 	flt	metallic =	g_mat.metallic *	texture(metallic_tex, vs_interp_uv).r;
+	
+	if ((get_screen_pos().x -get_mouse_pos().x) < -0.25)	normal_dir_cam = vs_interp_norm_cam;
+	if ((get_screen_pos().x -get_mouse_pos().x) < +0.25)	albedo = g_mat.albedo;
 	
 	v4 col = brfd_test(vs_interp_pos_cam, normal_dir_cam,
 			albedo, metallic, roughness, g_mat.IOR);

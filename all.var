@@ -8,7 +8,7 @@ controls = {
 	.cam_mouselook_sens =				v2( rad(PI / 1600.0) );
 	.cam_roll_vel =						45_deg;
 	
-	.cam_translate_vel =				2 ?
+	.cam_translate_vel =				1 ?
 											v3(0.05) :
 											v3(0.2) :
 											v3(0.8) :
@@ -24,11 +24,11 @@ controls = {
 
 camera = {
 	.pos_world =					#	v3(-29.2636, +5.4754, +0.1278)
-									$	v3(+13.3441, +7.5536, +10.0961)
-									$s	v3(+13.3441, +7.5536, +10.0961);
+									$	v3(-7.6878, +1.7200, +0.7969)
+									$s	v3(-7.6878, +1.7200, +0.7969);
 	.aer =							#
-									$	deg(v3(+118.9121, +48.3750, +0.0000))
-									$s	deg(v3(+118.9121, +48.3750, +0.0000));
+									$	deg(v3(+125.4380, +79.6501, +0.0000))
+									$s	deg(v3(+125.4380, +79.6501, +0.0000));
 	.base_ori =							quat(ident);
 	
 	.vfov =							#	+100_deg
@@ -64,8 +64,8 @@ env_viewer = {
 	.luminance_prefilter_base_samples =	256;
 	
 	.cur_humus_indx =					#112
-									$	8
-									$s	8;
+									$	11
+									$s	11;
 	## Favorites:
 	# 107 			Stairs					Green Djungle Temple Stairs			
 	# 13 			CoitTower2				
@@ -75,8 +75,8 @@ env_viewer = {
 	# 23			Footballfield2			Nice glass reflections				
 	
 	.cur_sibl_indx =				#	28
-									$	42
-									$s	42;
+									$	43
+									$s	43;
 	## Favorites:
 	# 30			PaperMill_Ruins_E		
 									
@@ -202,6 +202,7 @@ materials = [] { # enum map
 	{# MAT_TREE_BLOSSOMS	#}			{ srgb(213,146,222),		0.00,	0.88 },
 	{# MAT_OBELISK			#}			{ col(1),					0.35,	0.70 },
 	{# MAT_MARBLE			#}			{ col(1),					0.0,	0.30 },
+	{# MAT_ROUGH_MARBLE		#}			{ col(1),					0.0,	0.80 },
 	{# MAT_WOODEN_BEAM		#}			{ col(0.898, 0.741, 0.698),	0.0,	0.70 },
 	{# MAT_WOODEN_BEAM_CUTS	#}			{ col(0.878, 0.729, 0.690),	0.0,	0.60 },
 	{# MAT_LIGHTBULB		#}			{ col(0.400, 0.400, 0.400),	0.20,	0.08 },
@@ -320,6 +321,9 @@ tex.names = [] {
 	{# TEX_CERBERUS_NORMAL							#}	"cerberus/Textures/Cerberus_N.nrm",
 	{# TEX_CERBERUS_METALLIC						#}	"cerberus/Textures/Cerberus_M.linear",
 	{# TEX_CERBERUS_ROUGHNESS						#}	"cerberus/Textures/Cerberus_R.linear",
+	
+	{# TEX_PG_DAVID_ALBEDO							#}	"photogr/david_albedo",
+	{# TEX_PG_DAVID_NORMAL							#}	"photogr/david.nrm",
 	
 };
 
