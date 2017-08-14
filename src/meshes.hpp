@@ -1,64 +1,63 @@
 #define MESHES \
-	X0(	nouv_MSH_AXIS_CROSS_PX ) \
-	X(	nouv_MSH_AXIS_CROSS_NX ) \
-	X(	nouv_MSH_AXIS_CROSS_PY ) \
-	X(	nouv_MSH_AXIS_CROSS_NY ) \
-	X(	nouv_MSH_AXIS_CROSS_PZ ) \
-	X(	nouv_MSH_AXIS_CROSS_NZ ) \
-	X(	nouv_MSH_AXIS_CROSS_PLANE_XY ) \
-	X(	nouv_MSH_3D_LINE_COMPONENT ) \
-	X(	nouv_MSH_SPHERE ) \
+	X0(	MSH_nouv_AXIS_CROSS_PX ) \
+	X(	MSH_nouv_AXIS_CROSS_NX ) \
+	X(	MSH_nouv_AXIS_CROSS_PY ) \
+	X(	MSH_nouv_AXIS_CROSS_NY ) \
+	X(	MSH_nouv_AXIS_CROSS_PZ ) \
+	X(	MSH_nouv_AXIS_CROSS_NZ ) \
+	X(	MSH_nouv_AXIS_CROSS_PLANE_XY ) \
+	X(	MSH_nouv_SPHERE ) \
 	 \
-	X(	nouv_MSH_STRUCTURE_RING ) \
-	X(	nouv_MSH_TERRAIN ) \
-	X(	nouv_MSH_UTAHTEAPOT ) \
+	X(	MSH_nouv_STRUCTURE_RING ) \
+	X(	MSH_nouv_TERRAIN ) \
+	X(	MSH_nouv_UTAHTEAPOT ) \
 	 \
-	X(	nouv_MSH_PLANETARIUM ) \
-	X(	nouv_MSH_PLANETARIUM_PROJECTOR ) \
+	X(	MSH_nouv_PLANETARIUM ) \
+	X(	MSH_nouv_PLANETARIUM_PROJECTOR ) \
 	 \
-	X(	nouv_MSH_ICO_SPHERE ) \
-	X(	nouv_MSH_STFD_BUNNY ) \
-	X(	nouv_MSH_STFD_BUDDHA ) \
-	X(	nouv_MSH_STFD_DRAGON ) \
+	X(	MSH_nouv_ICO_SPHERE ) \
+	X(	MSH_nouv_STFD_BUNNY ) \
+	X(	MSH_nouv_STFD_BUDDHA ) \
+	X(	MSH_nouv_STFD_DRAGON ) \
 	 \
-	X(	nouv_MSH_WINDOW_PILLAR ) \
-	X(	nouv_MSH_SHADOW_TEST_0 ) \
+	X(	MSH_nouv_WINDOW_PILLAR ) \
+	X(	MSH_nouv_SHADOW_TEST_0 ) \
 	 \
 	X(	MSH_nouv_col_LIGHT_BULB ) \
 	X(	MSH_nouv_col_SUN_LAMP ) \
 	 \
-	X(	uv_MSH_UNIT_PLANE ) \
+	X(	MSH_uv_UNIT_PLANE ) \
 	 \
-	X(	uv_SCENE_GROUND0 ) \
-	X(	uv_MSH_UGLY ) \
-	X(	uv_MSH_TERRAIN_TREE ) \
-	X(	uv_MSH_TERRAIN_TREE_CUTS ) \
-	X(	uv_MSH_TERRAIN_TREE_BLOSSOMS ) \
-	X(	uv_MSH_TERRAIN_CUBE ) \
-	X(	uv_MSH_TERRAIN_SPHERE ) \
-	X(	uv_MSH_TERRAIN_OBELISK ) \
-	X(	uv_MSH_STRUCTURE_WALLS ) \
-	X(	uv_MSH_STRUCTURE_GROUND ) \
-	X(	uv_MSH_STRUCTURE_BLOCK1 ) \
-	X(	uv_MSH_STRUCTURE_BLOCK2 ) \
-	X(	uv_MSH_STRUCTURE_BLOCK3 ) \
-	X(	uv_MSH_STRUCTURE_BLOCK4 ) \
-	X(	uv_MSH_STRUCTURE_BEAM ) \
-	X(	uv_MSH_STRUCTURE_BEAM_CUTS ) \
-	X(	uv_MSH_PLANETARIUM_STAND ) \
+	X(	MSH_uv_SCENE_GROUND0 ) \
+	X(	MSH_uv_UGLY ) \
+	X(	MSH_uv_TERRAIN_TREE ) \
+	X(	MSH_uv_TERRAIN_TREE_CUTS ) \
+	X(	MSH_uv_TERRAIN_TREE_BLOSSOMS ) \
+	X(	MSH_uv_TERRAIN_CUBE ) \
+	X(	MSH_uv_TERRAIN_SPHERE ) \
+	X(	MSH_uv_TERRAIN_OBELISK ) \
+	X(	MSH_uv_STRUCTURE_WALLS ) \
+	X(	MSH_uv_STRUCTURE_GROUND ) \
+	X(	MSH_uv_STRUCTURE_BLOCK1 ) \
+	X(	MSH_uv_STRUCTURE_BLOCK2 ) \
+	X(	MSH_uv_STRUCTURE_BLOCK3 ) \
+	X(	MSH_uv_STRUCTURE_BLOCK4 ) \
+	X(	MSH_uv_STRUCTURE_BEAM ) \
+	X(	MSH_uv_STRUCTURE_BEAM_CUTS ) \
+	X(	MSH_uv_PLANETARIUM_STAND ) \
 	 \
-	X(	uv_tang_MSH_UNIT_PLANE ) \
+	X(	MSH_uv_tang_UNIT_PLANE ) \
 	 \
-	X(	uv_tang_NANOSUIT_TORSO ) \
-	X(	uv_tang_NANOSUIT_LEGS ) \
-	X(	uv_tang_NANOSUIT_NECK ) \
-	X(	uv_tang_NANOSUIT_HELMET ) \
+	X(	MSH_uv_tang_NANOSUIT_TORSO ) \
+	X(	MSH_uv_tang_NANOSUIT_LEGS ) \
+	X(	MSH_uv_tang_NANOSUIT_NECK ) \
+	X(	MSH_uv_tang_NANOSUIT_HELMET ) \
 	 \
-	X(	uv_tang_NORM_TEST_00 ) \
+	X(	MSH_uv_tang_NORM_TEST_00 ) \
 	\
-	X(	uv_tang_CERBERUS ) \
+	X(	MSH_uv_tang_CERBERUS ) \
 	 \
-	X(	uv_tang_PG_DAVID )
+	X(	MSH_uv_tang_PG_DAVID )
 
 #define X0(name)	name=0,
 #define X(name)		name,
@@ -80,21 +79,21 @@ DECLD constexpr char const* MESH_ID_NAMES[MESHES_COUNT] {
 
 #undef MESHES
 
-DECLD constexpr mesh_id_e		NOUV_MSH_FIRST =				nouv_MSH_AXIS_CROSS_PX;
-DECLD constexpr mesh_id_e		NOUV_MSH_END =					(mesh_id_e)(nouv_MSH_SHADOW_TEST_0 +1);
-DECLD constexpr u32				NOUV_MSH_COUNT =				NOUV_MSH_END -NOUV_MSH_FIRST;
+DECLD constexpr mesh_id_e		MSH_NOUV_FIRST =				MSH_nouv_AXIS_CROSS_PX;
+DECLD constexpr mesh_id_e		MSH_NOUV_END =					(mesh_id_e)(MSH_nouv_SHADOW_TEST_0 +1);
+DECLD constexpr u32				MSH_NOUV_COUNT =				MSH_NOUV_END -MSH_NOUV_FIRST;
 
-DECLD constexpr mesh_id_e		NOUV_COL_MSH_FIRST =			MSH_nouv_col_LIGHT_BULB;
-DECLD constexpr mesh_id_e		NOUV_COL_MSH_END =				(mesh_id_e)(MSH_nouv_col_SUN_LAMP +1);
-DECLD constexpr u32				NOUV_COL_MSH_COUNT =			NOUV_COL_MSH_END -NOUV_COL_MSH_FIRST;
+DECLD constexpr mesh_id_e		MSH_NOUV_COL_FIRST =			MSH_nouv_col_LIGHT_BULB;
+DECLD constexpr mesh_id_e		MSH_NOUV_COL_END =				(mesh_id_e)(MSH_nouv_col_SUN_LAMP +1);
+DECLD constexpr u32				MSH_NOUV_COL_COUNT =			MSH_NOUV_COL_END -MSH_NOUV_COL_FIRST;
 
-DECLD constexpr mesh_id_e		UV_MSH_FIRST =					uv_MSH_UNIT_PLANE;
-DECLD constexpr mesh_id_e		UV_MSH_END =					(mesh_id_e)(uv_MSH_PLANETARIUM_STAND +1);
-DECLD constexpr u32				UV_MSH_COUNT =					UV_MSH_END -UV_MSH_FIRST;
+DECLD constexpr mesh_id_e		MSH_UV_FIRST =					MSH_uv_UNIT_PLANE;
+DECLD constexpr mesh_id_e		MSH_UV_END =					(mesh_id_e)(MSH_uv_PLANETARIUM_STAND +1);
+DECLD constexpr u32				MSH_UV_COUNT =					MSH_UV_END -MSH_UV_FIRST;
 
-DECLD constexpr mesh_id_e		UV_TANG_MSH_FIRST =				uv_tang_MSH_UNIT_PLANE;
-DECLD constexpr mesh_id_e		UV_TANG_MSH_END =				(mesh_id_e)(uv_tang_PG_DAVID +1);
-DECLD constexpr u32				UV_TANG_MSH_COUNT =				UV_TANG_MSH_END -UV_TANG_MSH_FIRST;
+DECLD constexpr mesh_id_e		MSH_UV_TANG_FIRST =				MSH_uv_tang_UNIT_PLANE;
+DECLD constexpr mesh_id_e		MSH_UV_TANG_END =				(mesh_id_e)(MSH_uv_tang_PG_DAVID +1);
+DECLD constexpr u32				MSH_UV_TANG_COUNT =				MSH_UV_TANG_END -MSH_UV_TANG_FIRST;
 
 DECLD char const*				mesh_names[MESHES_COUNT];
 

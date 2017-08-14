@@ -219,68 +219,67 @@ materials = [] { # enum map
 
 mesh_names = [] {
 	#%name%
-	{# nouv_AXIS_CROSS_PX_MSH			#}	"axis_cross_px.nouv",
-	{# nouv_AXIS_CROSS_NX_MSH			#}	"axis_cross_nx.nouv",
-	{# nouv_AXIS_CROSS_PY_MSH			#}	"axis_cross_py.nouv",
-	{# nouv_AXIS_CROSS_NY_MSH			#}	"axis_cross_ny.nouv",
-	{# nouv_AXIS_CROSS_PZ_MSH			#}	"axis_cross_pz.nouv",
-	{# nouv_AXIS_CROSS_NZ_MSH			#}	"axis_cross_nz.nouv",
-	{# nouv_AXIS_CROSS_PLANE_XY_MSH		#}	"axis_cross_plane_xy.nouv",
-	{# nouv__3D_LINE_COMPONENT_MSH		#}	"3d_line_component.nouv",
-	{# nouv_SPHERE_MSH					#}	"_unit_sphere.nouv",
+	{# MSH_nouv_AXIS_CROSS_PX			#}	"axis_cross_px.nouv",
+	{# MSH_nouv_AXIS_CROSS_NX			#}	"axis_cross_nx.nouv",
+	{# MSH_nouv_AXIS_CROSS_PY			#}	"axis_cross_py.nouv",
+	{# MSH_nouv_AXIS_CROSS_NY			#}	"axis_cross_ny.nouv",
+	{# MSH_nouv_AXIS_CROSS_PZ			#}	"axis_cross_pz.nouv",
+	{# MSH_nouv_AXIS_CROSS_NZ			#}	"axis_cross_nz.nouv",
+	{# MSH_nouv_AXIS_CROSS_PLANE_XY		#}	"axis_cross_plane_xy.nouv",
+	{# MSH_nouv_SPHERE					#}	"_unit_sphere.nouv",
 	
-	{# nouv_STRUCTURE_RING_MSH			#}	"structure_ring.nouv",
-	{# nouv_TERRAIN_MSH					#}	"terrain.nouv",
-	{# nouv_MSH_UTAHTEAPOT				#}	"utahTeapot.nouv",
+	{# MSH_nouv_STRUCTURE_RING			#}	"structure_ring.nouv",
+	{# MSH_nouv_TERRAIN					#}	"terrain.nouv",
+	{# MSH_nouv_UTAHTEAPOT				#}	"utahTeapot.nouv",
 	
-	{# nouv_PLANETARIUM_MSH				#}	"planetarium.nouv",
-	{# nouv_PLANETARIUM_PROJECTOR_MSH	#}	"planetarium_projector.nouv",
+	{# MSH_nouv_PLANETARIUM				#}	"planetarium.nouv",
+	{# MSH_nouv_PLANETARIUM_PROJECTOR	#}	"planetarium_projector.nouv",
 	
-	{# nouv_MSH_ICO_SPHERE				#}	"_ico_sphere.nouv",
-	{# nouv_MSH_STFD_BUNNY				#}	"stanford/bunny.nouv",
-	{# nouv_MSH_STFD_BUDDHA				#}	"stanford/buddha.nouv",
-	{# nouv_MSH_STFD_DRAGON				#}	"stanford/dragon.nouv",
+	{# MSH_nouv_ICO_SPHERE				#}	"_ico_sphere.nouv",
+	{# MSH_nouv_STFD_BUNNY				#}	"stanford/bunny.nouv",
+	{# MSH_nouv_STFD_BUDDHA				#}	"stanford/buddha.nouv",
+	{# MSH_nouv_STFD_DRAGON				#}	"stanford/dragon.nouv",
 	
-	{# nouv_MSH_WINDOW_PILLAR			#}	"window_pillar.nouv",
-	{# nouv_MSH_SHADOW_TEST_0			#}	"shadow_test_0.nouv",
-	
-	
-	{# MSH_nouv_col_LIGHT_BULB			#}	"light_bulb.nouv_col",
-	{# MSH_nouv_col_SUN_LAMP			#}	"sun_lamp.nouv_col",
+	{# MSH_nouv_WINDOW_PILLAR			#}	"window_pillar.nouv",
+	{# MSH_nouv_SHADOW_TEST_0			#}	"shadow_test_0.nouv",
 	
 	
-	{# uv_MSH_UNIT_PLANE				#}	"_unitPlane",
+	{# MSH_nouv_col_LIGHT_BULB			#}	"light_bulb.nouv_vcol",
+	{# MSH_nouv_col_SUN_LAMP			#}	"sun_lamp.nouv_vcol",
 	
-	{# uv_SCENE_GROUND0					#}	"scene_ground0",
-	{# uv_UGLY_MSH						#}	"ugly",
-	{# uv_TERRAIN_TREE_MSH				#}	"terrain_tree", # implement ternary
-	{# uv_TERRAIN_TREE_CUTS_MSH			#}	"terrain_tree_cuts",
-	{# uv_TERRAIN_TREE_BLOSSOMS_MSH		#}	"terrain_tree_blossoms",
-	{# uv_TERRAIN_CUBE_MSH				#}	"terrain_cube",
-	{# uv_TERRAIN_SPHERE_MSH			#}	"terrain_sphere",
-	{# uv_TERRAIN_OBELISK_MSH			#}	"terrain_obelisk",
-	{# uv_STRUCTURE_WALLS_MSH			#}	"structure_walls",
-	{# uv_STRUCTURE_GROUND_MSH			#}	"structure_ground",
-	{# uv_STRUCTURE_BLOCK1_MSH			#}	"structure_block1",
-	{# uv_STRUCTURE_BLOCK2_MSH			#}	"structure_block2",
-	{# uv_STRUCTURE_BLOCK3_MSH			#}	"structure_block3",
-	{# uv_STRUCTURE_BLOCK4_MSH			#}	"structure_block4",
-	{# uv_STRUCTURE_BEAM_MSH			#}	"structure_beam",
-	{# uv_STRUCTURE_BEAM_CUTS_MSH		#}	"structure_beam_cuts",
-	{# uv_PLANETARIUM_STAND_MSH			#}	"planetarium_stand",
 	
-	{# uv_tang_MSH_UNIT_PLANE			#}	"_unit_plane_tang.uv_tang",
+	{# MSH_uv_UNIT_PLANE				#}	"_unit_plane",
 	
-	{# uv_tang_NANOSUIT_TORSO			#}	"nano_suit/nanosuit_torso.uv_tang",
-	{# uv_tang_NANOSUIT_LEGS			#}	"nano_suit/nanosuit_legs.uv_tang",
-	{# uv_tang_NANOSUIT_NECK			#}	"nano_suit/nanosuit_neck.uv_tang",
-	{# uv_tang_NANOSUIT_HELMET			#}	"nano_suit/nanosuit_helmet.uv_tang",
+	{# MSH_uv_SCENE_GROUND0					#}	"scene_ground0",
+	{# MSH_uv_UGLY						#}	"ugly",
+	{# MSH_uv_TERRAIN_TREE				#}	"terrain_tree", # implement ternary
+	{# MSH_uv_TERRAIN_TREE_CUTS			#}	"terrain_tree_cuts",
+	{# MSH_uv_TERRAIN_TREE_BLOSSOMS		#}	"terrain_tree_blossoms",
+	{# MSH_uv_TERRAIN_CUBE				#}	"terrain_cube",
+	{# MSH_uv_TERRAIN_SPHERE			#}	"terrain_sphere",
+	{# MSH_uv_TERRAIN_OBELISK			#}	"terrain_obelisk",
+	{# MSH_uv_STRUCTURE_WALLS			#}	"structure_walls",
+	{# MSH_uv_STRUCTURE_GROUND			#}	"structure_ground",
+	{# MSH_uv_STRUCTURE_BLOCK1			#}	"structure_block1",
+	{# MSH_uv_STRUCTURE_BLOCK2			#}	"structure_block2",
+	{# MSH_uv_STRUCTURE_BLOCK3			#}	"structure_block3",
+	{# MSH_uv_STRUCTURE_BLOCK4			#}	"structure_block4",
+	{# MSH_uv_STRUCTURE_BEAM			#}	"structure_beam",
+	{# MSH_uv_STRUCTURE_BEAM_CUTS		#}	"structure_beam_cuts",
+	{# MSH_uv_PLANETARIUM_STAND			#}	"planetarium_stand",
 	
-	{# uv_tang_NORM_TEST_00				#}	"norm_test/test_00.uv_tang",
+	{# MSH_uv_tang_UNIT_PLANE			#}	"_unit_plane.uv_tang",
 	
-	{# uv_tang_CERBERUS					#}	"cerberus/cerberus.uv_tang",
+	{# MSH_uv_tang_NANOSUIT_TORSO		#}	"nano_suit/nanosuit_torso.uv_tang",
+	{# MSH_uv_tang_NANOSUIT_LEGS		#}	"nano_suit/nanosuit_legs.uv_tang",
+	{# MSH_uv_tang_NANOSUIT_NECK		#}	"nano_suit/nanosuit_neck.uv_tang",
+	{# MSH_uv_tang_NANOSUIT_HELMET		#}	"nano_suit/nanosuit_helmet.uv_tang",
 	
-	{# uv_tang_PG_DAVID					#}	"photogr/david.uv_tang",
+	{# MSH_uv_tang_NORM_TEST_00			#}	"norm_test/test_00.uv_tang",
+	
+	{# MSH_uv_tang_CERBERUS				#}	"cerberus/cerberus.uv_tang",
+	
+	{# MSH_uv_tang_PG_DAVID				#}	"photogr/david.uv_tang",
 };
 
 

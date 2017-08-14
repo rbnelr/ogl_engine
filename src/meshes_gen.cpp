@@ -29,14 +29,14 @@ cstr parse_uint (cstr cur, uptr* out) {
 }
 
 uptr parsePlyHeader (cstr data, uptr dataMaxSize,
-		uptr & outVertCount, uptr & outFaceCount, meshes_file_n::format_t& outFormat) {
+		uptr & outVertCount, uptr & outFaceCount, meshes_file_n::format_e& outFormat) {
 	using namespace meshes_file_n;
 	
 	auto cur = data;
 	
 	uptr		vertCount;
 	uptr		faceCount;
-	format_t	format = 0;
+	format_e	format = (format_e)0;
 	
 	auto skipWhitespace = [&] (char const** cur_) -> void {
 		auto cur = *cur_;
@@ -170,11 +170,13 @@ uptr parsePlyHeader (cstr data, uptr dataMaxSize,
 		assert(token(&cur, "uchar"));
 		
 		if (		token(&cur, "uint8") ) {
-			format |= INDEX_UBYTE;
+			//format |= INDEX_UBYTE;
+			assert(false);
 		} else if (	token(&cur, "uint16") ) {
 			format |= INDEX_USHORT;
 		} else if (	token(&cur, "uint32") ) {
-			format |= INDEX_UINT;
+			//format |= INDEX_UINT;
+			assert(false);
 		} else {
 			assert(false);
 		}
@@ -195,12 +197,12 @@ uptr parsePlyHeader (cstr data, uptr dataMaxSize,
 	return ptr_sub(data, cur);
 }
 
-meshes_file_n::format_t processFile (byte * fileData, uptr fileSize, meshes_file_n::Header * file_header,
+meshes_file_n::format_e processFile (byte * fileData, uptr fileSize, meshes_file_n::Header * file_header,
 		byte * data_stk_begin, cstr relativePath, Stack & data_stk, Stack & header_stk,
 		uptr & outVertexCount, uptr & outIndexCount) {
 	using namespace meshes_file_n;
 	
-	format_t	format;
+	format_e	format;
 	uptr		vertCount;
 	uptr		faceCount;
 	byte *		binaryData;
@@ -228,24 +230,24 @@ meshes_file_n::format_t processFile (byte * fileData, uptr fileSize, meshes_file
 		
 		if (!ext1.str) {
 			
-			auto form = INTERLEAVED|POS_XYZ|NORM_XYZ|UV_UV|INDEX_USHORT;
+			auto form = INTERLEAVED|INDEX_USHORT|POS_XYZ|NORM_XYZ|UV_UV;
 			assert(format == form, "mesh type mismatch", bin(format), bin(form));
 			
 		} else if (ext1.str && str::comp(ext1, "uv_tang")) {
 			
-			auto form = INTERLEAVED|POS_XYZ|NORM_XYZ|UV_UV|INDEX_USHORT;
+			auto form = INTERLEAVED|INDEX_USHORT|POS_XYZ|NORM_XYZ|UV_UV;
 			assert(format == form, "mesh type mismatch", bin(format), bin(form));
 			
 			format |= TANG_XYZW;
 			
 		} else if (ext1.str && str::comp(ext1, "nouv")) {
 			
-			auto form = INTERLEAVED|POS_XYZ|NORM_XYZ|INDEX_USHORT;
+			auto form = INTERLEAVED|INDEX_USHORT|POS_XYZ|NORM_XYZ;
 			assert(format == form, "mesh type mismatch have % should be %", bin(format), bin(form));
 			
-		} else if (ext1.str && str::comp(ext1, "nouv_col")) {
+		} else if (ext1.str && str::comp(ext1, "nouv_vcol")) {
 			
-			auto form = INTERLEAVED|POS_XYZ|NORM_XYZ|COL_RGB|INDEX_USHORT;
+			auto form = INTERLEAVED|INDEX_USHORT|POS_XYZ|NORM_XYZ|COL_RGB;
 			assert(format == form, "mesh type mismatch have % should be %", bin(format), bin(form));
 			
 		} else {
@@ -264,9 +266,9 @@ meshes_file_n::format_t processFile (byte * fileData, uptr fileSize, meshes_file
 	{
 		auto cur = binaryData;
 		
-		assert((format & INTERLEAVED_MASK) ==	INTERLEAVED);
-		assert((format & POS_MASK) ==			POS_XYZ);
-		assert((format & NORM_MASK) ==			NORM_XYZ);
+		assert(format & INTERLEAVED);
+		assert(format & POS_XYZ);
+		assert(format & NORM_XYZ);
 		
 		{
 			auto readFloat32 = [&] () {
@@ -284,9 +286,9 @@ meshes_file_n::format_t processFile (byte * fileData, uptr fileSize, meshes_file
 			
 			auto count = vertCount;
 			
-			if (			(format & UV_MASK) == UV_NONE ) {
+			if (			!(format & UV_UV) ) {
 				
-				if (		(format & COL_MASK) == COL_NONE ) {
+				if (		!(format & COL_RGB) ) {
 					
 					assert(is_aligned(data_stk.getTop(), sizeof(GLfloat)));
 					outVertexData = data_stk.pushArrNoAlign<GLfloat>(vertCount * (3 +3)); // pos_xyz +norm_xyz
@@ -300,7 +302,7 @@ meshes_file_n::format_t processFile (byte * fileData, uptr fileSize, meshes_file
 						*out++ = readFloat32(); // ny
 						*out++ = readFloat32(); // nz
 					}
-				} else if (	(format & COL_MASK) == COL_RGB ) {
+				} else {
 					
 					assert(is_aligned(data_stk.getTop(), sizeof(GLfloat)));
 					outVertexData = data_stk.pushArrNoAlign<GLfloat>(vertCount * (3 +3 +3)); // pos_xyz +norm_xyz +col_rgb
@@ -317,12 +319,10 @@ meshes_file_n::format_t processFile (byte * fileData, uptr fileSize, meshes_file
 						*out++ = static_cast<f32>(readUchar()) / 255.0f; // g
 						*out++ = static_cast<f32>(readUchar()) / 255.0f; // b
 					}
-				} else {
-					assert(false);
 				}
-			} else if (		(format & UV_MASK) == UV_UV) {
+			} else {
 				
-				if (		(format & COL_MASK) == COL_NONE ) {
+				if (		!(format & COL_RGB) ) {
 					
 					if (format & TANG_XYZW) {
 						
@@ -366,7 +366,7 @@ meshes_file_n::format_t processFile (byte * fileData, uptr fileSize, meshes_file
 						
 					}
 					
-				} else if (	(format & COL_MASK) == COL_RGB ) {
+				} else {
 					
 					assert(is_aligned(data_stk.getTop(), sizeof(GLfloat)));
 					outVertexData = data_stk.pushArrNoAlign<GLfloat>(vertCount * (3 +3 +2 +3)); // pos_xyz +norm_xyz +uv_uv +col_rgb
@@ -386,20 +386,16 @@ meshes_file_n::format_t processFile (byte * fileData, uptr fileSize, meshes_file
 						*out++ = static_cast<f32>(readUchar()) / 255.0f; // b
 					}
 					
-				} else {
-					assert(false);
 				}
-			} else {
-				assert(false);
 			}
 		}
 		
 		indexCount = 0;
 		
-		if (		(format & INDEX_MASK) == INDEX_NONE ) {
+		if (		(format & INDEX_USHORT) == 0 ) {
 			assert(false);
 			outIndexData = nullptr;
-		} else if (	(format & INDEX_MASK) == INDEX_USHORT ) {
+		} else if (	(format & INDEX_USHORT) ) {
 			
 			data_stk.zeropad_to_align<sizeof(GLushort)>();
 			
