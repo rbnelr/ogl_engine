@@ -591,9 +591,4 @@ struct Textures {
 		
 	}
 	
-	DECLM void set_texture (GLenum gl_targ, textures_e texture) {
-		
-		glBindTexture(gl_targ, gl_refs[texture]);
-	}
-	
 };

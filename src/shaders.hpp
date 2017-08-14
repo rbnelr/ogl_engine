@@ -9,8 +9,8 @@ enum tex_unit_e : tex_unit_t {
 	// Cerberus
 	TEX_UNIT_CERB_ALBEDO =				6,//0,
 	TEX_UNIT_CERB_NORMAL =				1,
-	TEX_UNIT_CERB_METALLIC =			2,
-	TEX_UNIT_CERB_ROUGHNESS =			3,
+	TEX_UNIT_CERB_ROUGHNESS =			2,
+	TEX_UNIT_CERB_METALLIC =			3,
 	// PBR global
 	ENV_LUMINANCE_TEX_UNIT =			4,
 	ENV_ILLUMINANCE_TEX_UNIT =			5,

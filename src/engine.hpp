@@ -1259,14 +1259,14 @@ struct Entities {
 	}
 	
 	Mesh_Cerberus* mesh_cerberus (char const* name, v3 vp pos, quat vp ori, v3 vp scale, mesh_id_e mesh_id,
-			materials_e mat, textures_e albedo, textures_e norm, textures_e metallic, textures_e roughness) {
+			materials_e mat, textures_e albedo, textures_e norm, textures_e roughness, textures_e metallic) {
 		auto* ret = make_entity<Mesh_Cerberus, ET_MESH_CERBERUS>(name, pos, ori, scale);
 		ret->mesh_id = mesh_id;
 		ret->material = mat;
 		ret->tex.albedo =		albedo;
 		ret->tex.normal =		norm;
-		ret->tex.metallic =		metallic;
 		ret->tex.roughness =	roughness;
+		ret->tex.metallic =		metallic;
 		return ret;
 	}
 	
@@ -1525,7 +1525,7 @@ struct Entities {
 				auto* msh559 = mesh("silver",	v3(9)*offs, quat::ident(), v3(0.3f),	MSH_nouv_ICO_SPHERE, MAT_SHOW_SILVER);
 				
 			auto* msh56 = mesh_cerberus("cerberus",	v3(-7.41f, -1.04f, +0.70f), quat(v3(-0.07f, +0.01f, -0.13f), +0.99f), v3(1),
-					MSH_uv_tang_CERBERUS, MAT_IDENTITY,	TEX_CERBERUS_ALBEDO, TEX_CERBERUS_NORMAL, TEX_CERBERUS_METALLIC, TEX_CERBERUS_ROUGHNESS);
+					MSH_uv_tang_CERBERUS, MAT_IDENTITY,	TEX_CERBERUS_ALBEDO, TEX_CERBERUS_NORMAL, TEX_CERBERUS_ROUGHNESS, TEX_CERBERUS_METALLIC);
 			
 			auto* lgh57 = point_light("Grey dim",	v3(-6.28f, +0.24f, +0.83f), NOSHAD, srgb(225.0f,228,230) * col(75));
 			auto* lgh58 = point_light("Blue",		v3(-7.10f, -3.60f, +1.46f), NOSHAD, srgb(29,54,252) * col(450));
@@ -3468,7 +3468,7 @@ DECL void frame () {
 				auto draw_mesh_cerberus = [] (Mesh_Cerberus const* msh, hm mp to_cam, hm mp from_cam) {
 					PROFILE_SCOPED(THR_ENGINE, "mesh");
 					
-					glUseProgram(shaders[SHAD_PBR_DEV_NOTEX]);
+					glUseProgram(shaders[SHAD_PBR_DEV_CERBERUS]);
 					
 					auto id = msh->mesh_id;
 					if (		id >= MSH_NOUV_FIRST && id < MSH_NOUV_END ) {
@@ -3478,8 +3478,6 @@ DECL void frame () {
 					} else {
 						assert(false, "unknown mesh type (id: %)", (u32)id);
 					}
-					
-					//print(">>> draw '%' at %\n", msh->name, (to_world * hv(0)).xyz());
 					
 					GLOBAL_UBO_WRITE_VAL( std140::uint_, lightbulb_indx, -1);
 					
@@ -3492,6 +3490,19 @@ DECL void frame () {
 						
 						GLOBAL_UBO_WRITE(transforms, &temp);
 					}
+					
+					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_ALBEDO);
+					glBindTexture(GL_TEXTURE_2D, tex.gl_refs[msh->tex.albedo]);
+					
+					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_NORMAL);
+					glBindTexture(GL_TEXTURE_2D, tex.gl_refs[msh->tex.normal]);
+					
+					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_ROUGHNESS);
+					glBindTexture(GL_TEXTURE_2D, tex.gl_refs[msh->tex.roughness]);
+					
+					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_METALLIC);
+					glBindTexture(GL_TEXTURE_2D, tex.gl_refs[msh->tex.metallic]);
+					
 					
 					glDrawElementsBaseVertex(GL_TRIANGLES, meshes[id].indx_count, GL_UNSIGNED_SHORT,
 							meshes[id].indx_offsets, meshes[id].base_vertecies);
