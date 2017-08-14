@@ -26,27 +26,24 @@
 	X(	MSH_nouv_col_LIGHT_BULB ) \
 	X(	MSH_nouv_col_SUN_LAMP ) \
 	 \
-	X(	MSH_uv_UNIT_PLANE ) \
-	 \
-	X(	MSH_uv_SCENE_GROUND0 ) \
-	X(	MSH_uv_UGLY ) \
-	X(	MSH_uv_TERRAIN_TREE ) \
-	X(	MSH_uv_TERRAIN_TREE_CUTS ) \
-	X(	MSH_uv_TERRAIN_TREE_BLOSSOMS ) \
-	X(	MSH_uv_TERRAIN_CUBE ) \
-	X(	MSH_uv_TERRAIN_SPHERE ) \
-	X(	MSH_uv_TERRAIN_OBELISK ) \
-	X(	MSH_uv_STRUCTURE_WALLS ) \
-	X(	MSH_uv_STRUCTURE_GROUND ) \
-	X(	MSH_uv_STRUCTURE_BLOCK1 ) \
-	X(	MSH_uv_STRUCTURE_BLOCK2 ) \
-	X(	MSH_uv_STRUCTURE_BLOCK3 ) \
-	X(	MSH_uv_STRUCTURE_BLOCK4 ) \
-	X(	MSH_uv_STRUCTURE_BEAM ) \
-	X(	MSH_uv_STRUCTURE_BEAM_CUTS ) \
-	X(	MSH_uv_PLANETARIUM_STAND ) \
-	 \
 	X(	MSH_uv_tang_UNIT_PLANE ) \
+	 \
+	X(	MSH_uv_tang_SCENE_GROUND0 ) \
+	X(	MSH_uv_tang_UGLY ) \
+	X(	MSH_uv_tang_TERRAIN_TREE ) \
+	X(	MSH_uv_tang_TERRAIN_TREE_CUTS ) \
+	X(	MSH_uv_tang_TERRAIN_TREE_BLOSSOMS ) \
+	X(	MSH_uv_tang_TERRAIN_CUBE ) \
+	X(	MSH_uv_tang_TERRAIN_SPHERE ) \
+	X(	MSH_uv_tang_TERRAIN_OBELISK ) \
+	X(	MSH_uv_tang_STRUCTURE_WALLS ) \
+	X(	MSH_uv_tang_STRUCTURE_GROUND ) \
+	X(	MSH_uv_tang_STRUCTURE_BLOCK1 ) \
+	X(	MSH_uv_tang_STRUCTURE_BLOCK2 ) \
+	X(	MSH_uv_tang_STRUCTURE_BLOCK3 ) \
+	X(	MSH_uv_tang_STRUCTURE_BLOCK4 ) \
+	X(	MSH_uv_tang_STRUCTURE_BEAM ) \
+	X(	MSH_uv_tang_STRUCTURE_BEAM_CUTS ) \
 	 \
 	X(	MSH_uv_tang_NANOSUIT_TORSO ) \
 	X(	MSH_uv_tang_NANOSUIT_LEGS ) \
@@ -86,10 +83,6 @@ DECLD constexpr u32				MSH_NOUV_COUNT =				MSH_NOUV_END -MSH_NOUV_FIRST;
 DECLD constexpr mesh_id_e		MSH_NOUV_COL_FIRST =			MSH_nouv_col_LIGHT_BULB;
 DECLD constexpr mesh_id_e		MSH_NOUV_COL_END =				(mesh_id_e)(MSH_nouv_col_SUN_LAMP +1);
 DECLD constexpr u32				MSH_NOUV_COL_COUNT =			MSH_NOUV_COL_END -MSH_NOUV_COL_FIRST;
-
-DECLD constexpr mesh_id_e		MSH_UV_FIRST =					MSH_uv_UNIT_PLANE;
-DECLD constexpr mesh_id_e		MSH_UV_END =					(mesh_id_e)(MSH_uv_PLANETARIUM_STAND +1);
-DECLD constexpr u32				MSH_UV_COUNT =					MSH_UV_END -MSH_UV_FIRST;
 
 DECLD constexpr mesh_id_e		MSH_UV_TANG_FIRST =				MSH_uv_tang_UNIT_PLANE;
 DECLD constexpr mesh_id_e		MSH_UV_TANG_END =				(mesh_id_e)(MSH_uv_tang_PG_DAVID +1);
@@ -225,8 +218,8 @@ namespace meshes_file_n {
 					auto desired = format_strs(format);
 					warning("Wrong format of mesh % got %%%% (%) but wanted %%%% (%), not loaded!\n",
 							mesh_names[i],
-							actual.f, actual.tang, actual.uv, actual.col,		(format_e)mesh->dataFormat,
-							desired.f, desired.tang, desired.uv, desired.col,	(format_e)format);
+							actual.f, actual.tang, actual.uv, actual.col,		(u32)mesh->dataFormat,
+							desired.f, desired.tang, desired.uv, desired.col,	(u32)format);
 					continue;
 				}
 				

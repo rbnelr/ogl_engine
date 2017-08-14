@@ -22,8 +22,6 @@ enum vbo_indx_e : u32 {
 	NO_UV_INDX_BUF,
 	NO_UV_COL_ARR_BUF,
 	NO_UV_COL_INDX_BUF,
-	UV_ARR_BUF,
-	UV_INDX_BUF,
 	UV_TANG_ARR_BUF,
 	UV_TANG_INDX_BUF,
 	//GROUND_PLANE_ARR_BUF,
@@ -37,7 +35,6 @@ enum vbo_indx_e : u32 {
 enum vao_indx_e : u32 {
 	NO_UV_VAO=0,
 	NO_UV_COL_VAO,
-	UV_VAO,
 	UV_TANG_VAO,
 	//GROUND_PLANE_VAO,
 	VAO_FULLSCREEN_QUAD,
@@ -219,12 +216,6 @@ DECL void reload_meshes () { // Loading meshes from disk to GPU driver
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[NO_UV_COL_INDX_BUF]);
 		
 		meshes_file.reload_meshes(INTERLEAVED|INDEX_USHORT|POS_XYZ|NORM_XYZ|COL_RGB, MSH_NOUV_COL_FIRST, MSH_NOUV_COL_COUNT, meshes);
-		
-		//
-		glBindBuffer(GL_ARRAY_BUFFER,			VBOs[UV_ARR_BUF]);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[UV_INDX_BUF]);
-		
-		meshes_file.reload_meshes(INTERLEAVED|INDEX_USHORT|POS_XYZ|NORM_XYZ|UV_UV, MSH_UV_FIRST, MSH_UV_COUNT, meshes);
 		
 		//
 		glBindBuffer(GL_ARRAY_BUFFER,			VBOs[UV_TANG_ARR_BUF]);
@@ -1428,27 +1419,27 @@ struct Entities {
 					MSH_nouv_TERRAIN);
 				auto* msh11 = mesh("tree",
 						v3(0), quat::ident(),
-						MSH_uv_TERRAIN_TREE);
+						MSH_uv_tang_TERRAIN_TREE);
 				auto* msh12 = mesh("tree_cuts",
 						v3(0), quat::ident(),
-						MSH_uv_TERRAIN_TREE_CUTS);
+						MSH_uv_tang_TERRAIN_TREE_CUTS);
 				auto* msh13 = mesh("tree_blossoms",
 						v3(0), quat::ident(),
-						MSH_uv_TERRAIN_TREE_BLOSSOMS);
+						MSH_uv_tang_TERRAIN_TREE_BLOSSOMS);
 				auto* msh14 = mesh("cube",
 						v3(+0.97f, +1.54f, +0.90f),
 						quat(v3(+0.305f, +0.344f, +0.054f), +0.886f),
 						v3(0.226f),
-						MSH_uv_TERRAIN_CUBE);
+						MSH_uv_tang_TERRAIN_CUBE);
 				auto* msh15 = mesh("sphere",
 						v3(-1.49f, +1.45f, +0.86f),
 						quat(v3(0.0f, 0.0f, -0.089f), +0.996f),
 						v3(0.342f),
-						MSH_uv_TERRAIN_SPHERE);
+						MSH_uv_tang_TERRAIN_SPHERE);
 				auto* msh16 = mesh("obelisk",
 						v3(-1.49f, -1.53f, +0.83f),
 						quat(v3(+0.005f, +0.01f, -0.089f), +0.996f),
-						MSH_uv_TERRAIN_OBELISK);
+						MSH_uv_tang_TERRAIN_OBELISK);
 				auto* msh17 = mesh("teapot",
 						v3(+1.49f, -1.445f, +0.284f),
 						quat(v3(-0.025f, -0.055f, -0.561f), +0.826f),
@@ -1462,7 +1453,7 @@ struct Entities {
 					ON, srgb(244,217,171) * col(2000));
 			auto* msh20 = mesh("ugly",
 					v3(0), quat::ident(),
-					MSH_uv_UGLY);
+					MSH_uv_tang_UGLY);
 			
 		auto* scn3 = scene("structure_scene",
 				v3(0), quat::ident());
@@ -1472,24 +1463,24 @@ struct Entities {
 			auto* msh30 = mesh("ring",			v3(0), quat::ident(),
 					MSH_nouv_STRUCTURE_RING);
 			auto* msh31 = mesh("walls",			v3(0), quat::ident(),
-					MSH_uv_STRUCTURE_WALLS);
+					MSH_uv_tang_STRUCTURE_WALLS);
 			auto* msh32 = mesh("ground",		v3(0), quat::ident(),
-					MSH_uv_STRUCTURE_GROUND);
+					MSH_uv_tang_STRUCTURE_GROUND);
 			auto* msh33 = mesh("block 1",		v3(+1.52488f, +0.41832f, -3.31113f), quat(v3(-0.012f, +0.009f, -0.136f), +0.991f),
-					MSH_uv_STRUCTURE_BLOCK1);
+					MSH_uv_tang_STRUCTURE_BLOCK1);
 			auto* msh34 = mesh("block 2",		v3(+3.05563f, +5.89111f, +0.53238f), quat(v3(-0.038f, -0.001f, +0.076f), +0.996f),
-					MSH_uv_STRUCTURE_BLOCK2);
+					MSH_uv_tang_STRUCTURE_BLOCK2);
 			auto* msh35 = mesh("block 3",		v3(-2.84165f, +4.51917f, -2.67442f), quat(v3(-0.059f, -0.002f, +0.056f), +0.997f),
-					MSH_uv_STRUCTURE_BLOCK3);
+					MSH_uv_tang_STRUCTURE_BLOCK3);
 			auto* msh36 = mesh("block 4",		v3(+0.69161f, +1.3302f, -2.57026f), quat(v3(-0.013f, +0.009f, -0.253f), +0.967f),
-					MSH_uv_STRUCTURE_BLOCK4);
+					MSH_uv_tang_STRUCTURE_BLOCK4);
 					
 			auto* msh37 = group("beam",			v3(-3.4297f, +1.47318f, -1.26951f), quat(v3(-0.088f, +0.017f, +0.996f), +0.0008585f));
 				
 				auto* msh37_0 = mesh("beam",	v3(0), quat::ident(),
-						MSH_uv_STRUCTURE_BEAM);
+						MSH_uv_tang_STRUCTURE_BEAM);
 				auto* msh37_1 = mesh("cuts",	v3(0), quat::ident(),
-						MSH_uv_STRUCTURE_BEAM_CUTS);
+						MSH_uv_tang_STRUCTURE_BEAM_CUTS);
 			
 		auto* scn4 = scene("normals",			v3(-8.62f, +1.19f, +0.48f), quat(v3(-0.00f, -0.00f, +0.00f), +1.00f));
 			
@@ -3025,23 +3016,6 @@ DECL void init () {
 			
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[NO_UV_COL_INDX_BUF]);
 		}
-		{ // UV mesh buffer
-			glBindVertexArray(VAOs[UV_VAO]);
-			
-			glEnableVertexAttribArray(0);
-			glEnableVertexAttribArray(1);
-			glEnableVertexAttribArray(3);
-			
-			glBindBuffer(GL_ARRAY_BUFFER, VBOs[UV_ARR_BUF]);
-			
-			auto vert_size = safe_cast_assert(GLsizei, (3 +3 +2) * sizeof(f32));
-			
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((0) * sizeof(f32)));				// pos xyz
-			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +0) * sizeof(f32)));			// normal xyz
-			glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +3 +0) * sizeof(f32)));	// uv
-			
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[UV_INDX_BUF]);
-		}
 		{ // UV TANGENT mesh buffer
 			glBindVertexArray(VAOs[UV_TANG_VAO]);
 			
@@ -3443,8 +3417,6 @@ DECL void frame () {
 					auto id = msh->mesh_id;
 					if (		id >= MSH_NOUV_FIRST && id < MSH_NOUV_END ) {
 						glBindVertexArray(VAOs[NO_UV_VAO]);
-					} else if (	id >= MSH_UV_FIRST && id < MSH_UV_END ) {
-						glBindVertexArray(VAOs[UV_VAO]);
 					} else if (	id >= MSH_UV_TANG_FIRST && id < MSH_UV_TANG_END ) {
 						glBindVertexArray(VAOs[UV_TANG_VAO]);
 					} else {
@@ -3476,8 +3448,6 @@ DECL void frame () {
 					auto id = msh->mesh_id;
 					if (		id >= MSH_NOUV_FIRST && id < MSH_NOUV_END ) {
 						glBindVertexArray(VAOs[NO_UV_VAO]);
-					} else if (	id >= MSH_UV_FIRST && id < MSH_UV_END ) {
-						glBindVertexArray(VAOs[UV_VAO]);
 					} else if (	id >= MSH_UV_TANG_FIRST && id < MSH_UV_TANG_END ) {
 						glBindVertexArray(VAOs[UV_TANG_VAO]);
 					} else {
@@ -3503,8 +3473,6 @@ DECL void frame () {
 					auto id = msh->mesh_id;
 					if (		id >= MSH_NOUV_FIRST && id < MSH_NOUV_END ) {
 						glBindVertexArray(VAOs[NO_UV_VAO]);
-					} else if (	id >= MSH_UV_FIRST && id < MSH_UV_END ) {
-						glBindVertexArray(VAOs[UV_VAO]);
 					} else if (	id >= MSH_UV_TANG_FIRST && id < MSH_UV_TANG_END ) {
 						glBindVertexArray(VAOs[UV_TANG_VAO]);
 					} else {
