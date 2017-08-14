@@ -794,16 +794,16 @@ in Vs_Out {
 
 uniform		sampler2D			albedo_tex;
 uniform		sampler2D			normal_tex;
-uniform		sampler2D			metallic_tex;
 uniform		sampler2D			roughness_tex;
+uniform		sampler2D			metallic_tex;
 
 void main () {
 	
 	v3 normal_dir_cam = normal_mapping(vs_interp_pos_cam, vs_interp_tang_cam, vs_interp_norm_cam, vs_interp_uv, normal_tex);
 	
 	v3	albedo =	g_mat.albedo *		texture(albedo_tex, vs_interp_uv).rgb;
-	flt	metallic =	g_mat.metallic *	texture(metallic_tex, vs_interp_uv).r;
 	flt	roughness =	g_mat.roughness *	texture(roughness_tex, vs_interp_uv).r;
+	flt	metallic =	g_mat.metallic *	texture(metallic_tex, vs_interp_uv).r;
 	
 	v4 col = brfd_test(vs_interp_pos_cam, normal_dir_cam,
 			albedo, metallic, roughness, g_mat.IOR);

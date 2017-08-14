@@ -199,8 +199,8 @@ namespace shaders_n {
 		/* SHAD_PBR_DEV_CERBERUS */			{	{ "_pbr_dev_normal_mapped.vert", "_pbr_dev_cerberus.frag" }, {
 													{ TEX_UNIT_CERB_ALBEDO,			"albedo_tex" },
 													{ TEX_UNIT_CERB_NORMAL,			"normal_tex" },
-													{ TEX_UNIT_CERB_METALLIC,		"metallic_tex" },
 													{ TEX_UNIT_CERB_ROUGHNESS,		"roughness_tex" },
+													{ TEX_UNIT_CERB_METALLIC,		"metallic_tex" },
 													{ ENV_LUMINANCE_TEX_UNIT,		"env_luminance_tex" },
 													{ ENV_ILLUMINANCE_TEX_UNIT,		"env_illuminance_tex" },
 													{ TEX_UNIT_PBR_BRDF_LUT,		"brdf_lut_tex" },

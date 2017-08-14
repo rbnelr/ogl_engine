@@ -3434,7 +3434,7 @@ DECL void frame () {
 				auto draw_mesh = [] (Mesh const* msh, hm mp to_cam, hm mp from_cam) {
 					PROFILE_SCOPED(THR_ENGINE, "mesh");
 					
-					glUseProgram(shaders[SHAD_PBR_DEV_NOTEX]);
+					glUseProgram(shaders[SHAD_PBR_DEV_CERBERUS]);
 					
 					auto id = msh->mesh_id;
 					if (		id >= MSH_NOUV_FIRST && id < MSH_NOUV_END ) {
@@ -3460,6 +3460,18 @@ DECL void frame () {
 						GLOBAL_UBO_WRITE(transforms, &temp);
 					}
 				
+					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_ALBEDO);
+					glBindTexture(GL_TEXTURE_2D, tex_ident);
+					
+					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_NORMAL);
+					glBindTexture(GL_TEXTURE_2D, tex_ident_normal);
+					
+					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_ROUGHNESS);
+					glBindTexture(GL_TEXTURE_2D, tex_ident);
+					
+					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_METALLIC);
+					glBindTexture(GL_TEXTURE_2D, tex_ident);
+					
 					glDrawElementsBaseVertex(GL_TRIANGLES, meshes[msh->mesh_id].indx_count, GL_UNSIGNED_SHORT,
 							meshes[msh->mesh_id].indx_offsets, meshes[msh->mesh_id].base_vertecies);
 					
