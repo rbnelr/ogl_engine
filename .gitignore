@@ -1,3 +1,4 @@
+*.BACKUP
 *.ctm
 *.asm
 wierd_file_parse_error.txt
