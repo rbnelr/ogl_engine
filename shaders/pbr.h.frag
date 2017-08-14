@@ -301,6 +301,8 @@ v3 brfd_IBL (				v3 view, v3 norm, flt dvn,  v3 albedo, flt metallic, flt roughn
 // everything in cam space
 v4 brfd_test (	v3 pos_cam, v3 normal_dir, v3 albedo, flt metallic, flt roughness, flt IOR, v3 emissive ) {
 	
+	//DBG_COL(roughness);
+	
 	flt IORs = IOR_air;
 	flt IORd = IOR;
 	

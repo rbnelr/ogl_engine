@@ -1018,7 +1018,7 @@ namespace entities_n {
 	enum entity_tag : u32 {
 		ET_ROOT=0,
 		ET_MESH,
-		ET_MESH_CERBERUS,
+		ET_MESH_NANOSUIT,
 		ET_MATERIAL_SHOWCASE_GRID,
 		ET_GROUP,
 		ET_LIGHT,
@@ -1047,11 +1047,10 @@ namespace entities_n {
 		textures_e	roughness;
 		textures_e	metallic;
 	};
-	struct Textures_Cerberus {
-		textures_e	albedo;
+	struct Textures_Nanosuit {
+		textures_e	diffuse_emissive;
 		textures_e	normal;
-		textures_e	roughness;
-		textures_e	metallic;
+		textures_e	specular_roughness;
 	};
 	
 	DECLD v2u32		material_showcase_grid_steps;
@@ -1084,8 +1083,8 @@ namespace entities_n {
 	struct Mesh : public Mesh_Base {
 		Textures_Generic	tex;
 	};
-	struct Mesh_Cerberus : public Mesh_Base {
-		Textures_Cerberus	tex;
+	struct Mesh_Nanosuit : public Mesh_Base {
+		Textures_Nanosuit	tex;
 	};
 	struct Material_Showcase_Grid : public Entity {
 		mesh_id_e		mesh_id;
@@ -1279,16 +1278,14 @@ struct Entities {
 		return ret;
 	}
 	
-	Mesh_Cerberus* mesh_cerberus (char const* name, v3 vp pos, quat vp ori, v3 vp scale, mesh_id_e mesh_id,
-			materials_e mat,
-			textures_e albedo, textures_e norm, textures_e roughness, textures_e metallic) {
-		auto* ret = make_entity<Mesh_Cerberus, ET_MESH_CERBERUS>(name, pos, ori, scale);
+	Mesh_Nanosuit* mesh_nano (char const* name, v3 vp pos, quat vp ori, mesh_id_e mesh_id, materials_e mat,
+			textures_e diff_emiss, textures_e norm, textures_e spec_rough) {
+		auto* ret = make_entity<Mesh_Nanosuit, ET_MESH_NANOSUIT>(name, pos, ori, v3(1));
 		ret->mesh_id = mesh_id;
 		ret->material = mat;
-		ret->tex.albedo =		albedo;
-		ret->tex.normal =		norm;
-		ret->tex.roughness =	roughness;
-		ret->tex.metallic =		metallic;
+		ret->tex.diffuse_emissive =		diff_emiss;
+		ret->tex.normal =				norm;
+		ret->tex.specular_roughness =	spec_rough;
 		return ret;
 	}
 	
@@ -1388,6 +1385,8 @@ struct Entities {
 		auto OFF = LF_DISABLED;
 		auto NOSHAD = LF_NO_SHADOW;
 		
+		#define ROUGH(r) TEX_IDENT, TEX_IDENT, r, TEX_IDENT
+		
 		auto* scn = scene("shadow_test_0",
 				v3(-6.19f, +12.07f, +1.00f), quat::ident());
 			
@@ -1424,11 +1423,15 @@ struct Entities {
 			auto* nano = group("Nanosuit",
 					v3(+1.64f, +3.23f, +0.54f), quat(v3(+0.00f, +0.02f, +1.00f), +0.01f));
 				
-				auto* nano0 = mesh("Torso",		v3(0), quat::ident(), MSH_uv_tang_NANOSUIT_TORSO,	MAT_IDENTITY);
-				auto* nano1 = mesh("Legs",		v3(0), quat::ident(), MSH_uv_tang_NANOSUIT_LEGS,	MAT_IDENTITY);
-				auto* nano2 = mesh("Neck",		v3(0), quat::ident(), MSH_uv_tang_NANOSUIT_NECK,	MAT_IDENTITY);
-				auto* nano3 = mesh("Helmet",	v3(0), quat::ident(), MSH_uv_tang_NANOSUIT_HELMET,	MAT_IDENTITY);
-			
+				auto* nano0 = mesh_nano("Torso",	v3(0), quat::ident(), MSH_uv_tang_NANOSUIT_TORSO,	MAT_IDENTITY,
+						TEX_NANOSUIT_BODY_DIFF_EMISS, TEX_NANOSUIT_BODY_NORM, TEX_NANOSUIT_BODY_SPEC_ROUGH);
+				auto* nano1 = mesh_nano("Legs",		v3(0), quat::ident(), MSH_uv_tang_NANOSUIT_LEGS,	MAT_IDENTITY,
+						TEX_NANOSUIT_BODY_DIFF_EMISS, TEX_NANOSUIT_BODY_NORM, TEX_NANOSUIT_BODY_SPEC_ROUGH);
+				auto* nano2 = mesh_nano("Neck",		v3(0), quat::ident(), MSH_uv_tang_NANOSUIT_NECK,	MAT_IDENTITY,
+						TEX_NANOSUIT_NECK_DIFF, TEX_NANOSUIT_NECK_NORM, TEX_NANOSUIT_NECK_SPEC_ROUGH);
+				auto* nano3 = mesh_nano("Helmet",	v3(0), quat::ident(), MSH_uv_tang_NANOSUIT_HELMET,	MAT_IDENTITY,
+						TEX_NANOSUIT_HELMET_DIFF_EMISS, TEX_NANOSUIT_HELMET_NORM, TEX_NANOSUIT_HELMET_SPEC_ROUGH);
+				
 		auto* scn1 = scene("tree_scene",
 				v3(-5.13f, -14.30f, +0.94f), quat(v3(-0.00f, -0.00f, +0.00f), +1.00f));
 			
@@ -1441,10 +1444,10 @@ struct Entities {
 					MSH_nouv_TERRAIN,						MAT_TERRAIN);
 				auto* msh11 = mesh("tree",
 						v3(0), quat::ident(),
-						MSH_uv_tang_TERRAIN_TREE,			MAT_TREE_BARK);
+						MSH_uv_tang_TERRAIN_TREE,			MAT_TREE_BARK,			TEX_TERRAIN_TREE_DIFFUSE);
 				auto* msh12 = mesh("tree_cuts",
 						v3(0), quat::ident(),
-						MSH_uv_tang_TERRAIN_TREE_CUTS,		MAT_TREE_CUTS);
+						MSH_uv_tang_TERRAIN_TREE_CUTS,		MAT_TREE_CUTS,			TEX_TERRAIN_TREE_CUTS_DIFFUSE);
 				auto* msh13 = mesh("tree_blossoms",
 						v3(0), quat::ident(),
 						MSH_uv_tang_TERRAIN_TREE_BLOSSOMS,	MAT_TREE_BLOSSOMS);
@@ -1452,16 +1455,16 @@ struct Entities {
 						v3(+0.97f, +1.54f, +0.90f),
 						quat(v3(+0.305f, +0.344f, +0.054f), +0.886f),
 						v3(0.226f),
-						MSH_uv_tang_TERRAIN_CUBE,			MAT_RUSTY_METAL);
+						MSH_uv_tang_TERRAIN_CUBE,			MAT_RUSTY_METAL,		TEX_TERRAIN_CUBE_DIFFUSE);
 				auto* msh15 = mesh("sphere",
 						v3(-1.49f, +1.45f, +0.86f),
 						quat(v3(0.0f, 0.0f, -0.089f), +0.996f),
 						v3(0.342f),
-						MSH_uv_tang_TERRAIN_SPHERE,			MAT_GLASS);
+						MSH_uv_tang_TERRAIN_SPHERE,			MAT_GLASS,				TEX_TERRAIN_SPHERE_DIFFUSE);
 				auto* msh16 = mesh("obelisk",
 						v3(-1.49f, -1.53f, +0.83f),
 						quat(v3(+0.005f, +0.01f, -0.089f), +0.996f),
-						MSH_uv_tang_TERRAIN_OBELISK,		MAT_OBELISK);
+						MSH_uv_tang_TERRAIN_OBELISK,		MAT_OBELISK,			TEX_TERRAIN_OBELISK_DIFFUSE);
 				auto* msh17 = mesh("teapot",
 						v3(+1.49f, -1.445f, +0.284f),
 						quat(v3(-0.025f, -0.055f, -0.561f), +0.826f),
@@ -1474,8 +1477,9 @@ struct Entities {
 					v3(-1.83f, +1.37f, +2.05f), quat(v3(+0.21f, -0.45f, -0.78f), +0.37f),
 					ON, srgb(244,217,171) * col(2000));
 			auto* msh20 = mesh("ugly",
-					v3(0), quat::ident(),
-					MSH_uv_tang_UGLY,		MAT_SHINY_PLATINUM);
+					v3(0), quat(v3(-0.00f, +0.00f, -1.00f), +0.00f),
+					MSH_uv_tang_UGLY, MAT_SHINY_PLATINUM,
+					ROUGH(TEX_MAT_ROUGHNESS));
 			
 		auto* scn3 = scene("structure_scene",
 				v3(0), quat::ident());
@@ -1485,33 +1489,35 @@ struct Entities {
 			auto* msh30 = mesh("ring",			v3(0), quat::ident(),
 					MSH_nouv_STRUCTURE_RING,		MAT_GRIPPED_METAL);
 			auto* msh31 = mesh("walls",			v3(0), quat::ident(),
-					MSH_uv_tang_STRUCTURE_WALLS,	MAT_BLOTCHY_METAL);
+					MSH_uv_tang_STRUCTURE_WALLS,	MAT_BLOTCHY_METAL,				TEX_STRUCTURE_WALLS);
 			auto* msh32 = mesh("ground",		v3(0), quat::ident(),
-					MSH_uv_tang_STRUCTURE_GROUND,	MAT_DIRT);
+					MSH_uv_tang_STRUCTURE_GROUND,	MAT_DIRT,						TEX_STRUCTURE_GROUND);
 			auto* msh33 = mesh("block 1",		v3(+1.52488f, +0.41832f, -3.31113f), quat(v3(-0.012f, +0.009f, -0.136f), +0.991f),
-					MSH_uv_tang_STRUCTURE_BLOCK1,	MAT_GRIPPED_METAL);
+					MSH_uv_tang_STRUCTURE_BLOCK1,	MAT_GRIPPED_METAL,				TEX_METAL_GRIPPED_DIFFUSE);
 			auto* msh34 = mesh("block 2",		v3(+3.05563f, +5.89111f, +0.53238f), quat(v3(-0.038f, -0.001f, +0.076f), +0.996f),
-					MSH_uv_tang_STRUCTURE_BLOCK2,	MAT_RUSTY_METAL);
+					MSH_uv_tang_STRUCTURE_BLOCK2,	MAT_RUSTY_METAL,				TEX_METAL_RUSTY_02);
 			auto* msh35 = mesh("block 3",		v3(-2.84165f, +4.51917f, -2.67442f), quat(v3(-0.059f, -0.002f, +0.056f), +0.997f),
-					MSH_uv_tang_STRUCTURE_BLOCK3,	MAT_RUSTY_METAL);
+					MSH_uv_tang_STRUCTURE_BLOCK3,	MAT_RUSTY_METAL,				TEX_METAL_RUSTY_02);
 			auto* msh36 = mesh("block 4",		v3(+0.69161f, +1.3302f, -2.57026f), quat(v3(-0.013f, +0.009f, -0.253f), +0.967f),
-					MSH_uv_tang_STRUCTURE_BLOCK4,	MAT_MARBLE);
+					MSH_uv_tang_STRUCTURE_BLOCK4,	MAT_MARBLE,						TEX_MARBLE);
 					
 			auto* msh37 = group("beam",			v3(-3.4297f, +1.47318f, -1.26951f), quat(v3(-0.088f, +0.017f, +0.996f), +0.0008585f));
 				
 				auto* msh37_0 = mesh("beam",	v3(0), quat::ident(),
-						MSH_uv_tang_STRUCTURE_BEAM,	MAT_WOODEN_BEAM);
+						MSH_uv_tang_STRUCTURE_BEAM,	MAT_WOODEN_BEAM,				TEX_WOODEN_BEAM);
 				auto* msh37_1 = mesh("cuts",	v3(0), quat::ident(),
-						MSH_uv_tang_STRUCTURE_BEAM_CUTS,	MAT_WOODEN_BEAM_CUTS);
+						MSH_uv_tang_STRUCTURE_BEAM_CUTS,	MAT_WOODEN_BEAM_CUTS,	TEX_TERRAIN_TREE_CUTS_DIFFUSE);
 			
 		auto* scn4 = scene("normals",			v3(-8.62f, +1.19f, +0.48f), quat(v3(-0.00f, -0.00f, +0.00f), +1.00f));
 			
-			auto* lgh40 = dir_light("Sun",		v3(+2.29f, -0.11f, +2.77f), quat(v3(+0.17f, +0.27f, +0.80f), +0.51f),
+			auto* lgh40 = dir_light("Sun",		v3(+2.29f, +1.69f, +3.18f), quat(v3(+0.17f, +0.27f, +0.80f), +0.51f),
 					ON, srgb(244,217,171) * col(2000));
-			auto* msh40 = mesh("brick_wall",	v3(+0.00f, +1.15f, +0.77f), quat(v3(+0.61f, +0.36f, +0.36f), +0.61f),
-					MSH_uv_tang_UNIT_PLANE,			MAT_GRASS); // Supposed to be rough stone
+			auto* msh40 = mesh("brick_wall 1",	v3(+0.00f, +1.15f, +0.77f), quat(v3(+0.61f, +0.36f, +0.36f), +0.61f),
+					MSH_uv_tang_UNIT_PLANE,			MAT_GRASS,		TEX_TEX_DIF_BRICK_00,	TEX_TEX_NRM_BRICK_00); // met Supposed to be rough stone
+			auto* msh43 = mesh("brick_wall 2",	v3(+1.09f, +2.94f, +0.77f), quat(v3(+0.62f, +0.33f, +0.33f), +0.62f),
+					MSH_uv_tang_UNIT_PLANE,			MAT_GRASS,		TEX_TEX_DIF_BRICK_01,	TEX_TEX_NRM_BRICK_01); // met Supposed to be rough stone
 			auto* msh41 = mesh("weird plane",	v3(-0.73f, -1.07f, +0.00f), quat(v3(+0.06f, +0.08f, +0.80f), +0.59f),
-					MSH_uv_tang_NORM_TEST_00,		MAT_PLASTIC);
+					MSH_uv_tang_NORM_TEST_00,		MAT_PLASTIC,	TEX_IDENT,				TEX_NORM_TEST_00);
 			auto* msh42 = mesh("david",			v3(+0.59f, +0.31f, -0.21f), quat(v3(-0.00f, +0.00f, -0.76f), +0.65f),
 					MSH_uv_tang_PG_DAVID,			MAT_MARBLE);
 			
@@ -1546,8 +1552,9 @@ struct Entities {
 				auto* msh558 = mesh("alu",		v3(8)*offs, quat::ident(), v3(0.3f),	MSH_nouv_ICO_SPHERE, MAT_SHOW_ALU);
 				auto* msh559 = mesh("silver",	v3(9)*offs, quat::ident(), v3(0.3f),	MSH_nouv_ICO_SPHERE, MAT_SHOW_SILVER);
 				
-			auto* msh56 = mesh_cerberus("cerberus",	v3(-7.41f, -1.04f, +0.70f), quat(v3(-0.07f, +0.01f, -0.13f), +0.99f), v3(1),
-					MSH_uv_tang_CERBERUS, MAT_IDENTITY,	TEX_CERBERUS_ALBEDO, TEX_CERBERUS_NORMAL, TEX_CERBERUS_ROUGHNESS, TEX_CERBERUS_METALLIC);
+			auto* msh56 = mesh("cerberus",	v3(-7.41f, -1.04f, +0.70f), quat(v3(-0.07f, +0.01f, -0.13f), +0.99f), v3(1),
+					MSH_uv_tang_CERBERUS,			MAT_IDENTITY,
+					TEX_CERBERUS_ALBEDO, TEX_CERBERUS_NORMAL, TEX_CERBERUS_ROUGHNESS, TEX_CERBERUS_METALLIC);
 			
 			auto* lgh57 = point_light("Grey dim",	v3(-6.28f, +0.24f, +0.83f), NOSHAD, srgb(225.0f,228,230) * col(75));
 			auto* lgh58 = point_light("Blue",		v3(-7.10f, -3.60f, +1.46f), NOSHAD, srgb(29,54,252) * col(450));
@@ -1556,11 +1563,15 @@ struct Entities {
 			
 			auto* grp5b = group("nanosuit",		v3(-8.88f, -0.65f, +0.00f), quat(v3(-0.00f, +0.00f, -0.24f), +0.97f));
 				
-				auto* nano50 = mesh("Torso",	v3(0), quat::ident(), MSH_uv_tang_NANOSUIT_TORSO,		MAT_IDENTITY);
-				auto* nano51 = mesh("Legs",		v3(0), quat::ident(), MSH_uv_tang_NANOSUIT_LEGS,		MAT_IDENTITY);
-				auto* nano52 = mesh("Neck",		v3(0), quat::ident(), MSH_uv_tang_NANOSUIT_NECK,		MAT_IDENTITY);
-				auto* nano53 = mesh("Helmet",	v3(0), quat::ident(), MSH_uv_tang_NANOSUIT_HELMET,		MAT_IDENTITY);
-			
+				auto* nano50 = mesh_nano("Torso",	v3(0), quat::ident(), MSH_uv_tang_NANOSUIT_TORSO,	MAT_IDENTITY,
+						TEX_NANOSUIT_BODY_DIFF_EMISS, TEX_NANOSUIT_BODY_NORM, TEX_NANOSUIT_BODY_SPEC_ROUGH);
+				auto* nano51 = mesh_nano("Legs",	v3(0), quat::ident(), MSH_uv_tang_NANOSUIT_LEGS,	MAT_IDENTITY,
+						TEX_NANOSUIT_BODY_DIFF_EMISS, TEX_NANOSUIT_BODY_NORM, TEX_NANOSUIT_BODY_SPEC_ROUGH);
+				auto* nano52 = mesh_nano("Neck",	v3(0), quat::ident(), MSH_uv_tang_NANOSUIT_NECK,	MAT_IDENTITY,
+						TEX_NANOSUIT_NECK_DIFF, TEX_NANOSUIT_NECK_NORM, TEX_NANOSUIT_NECK_SPEC_ROUGH);
+				auto* nano53 = mesh_nano("Helmet",	v3(0), quat::ident(), MSH_uv_tang_NANOSUIT_HELMET,	MAT_IDENTITY,
+						TEX_NANOSUIT_HELMET_DIFF_EMISS, TEX_NANOSUIT_HELMET_NORM, TEX_NANOSUIT_HELMET_SPEC_ROUGH);
+				
 			
 		
 		tree(&root,
@@ -1615,6 +1626,7 @@ struct Entities {
 			scene_tree(scn4,
 				lgh40,
 				msh40,
+				msh43,
 				msh41,
 				msh42
 			),
@@ -1669,8 +1681,8 @@ struct Entities {
 		
 		switch (e->tag) {
 			case ET_MESH:
-			case ET_MESH_CERBERUS: {
-				auto* m = (Mesh*)e;
+			case ET_MESH_NANOSUIT: {
+				auto* m = (Mesh_Base*)e;
 				mesh_id_e mesh_id = m->mesh_id;
 				aabb_mesh = meshes_aabb[mesh_id];
 				ret = EF_HAS_MESHES;
@@ -1757,8 +1769,8 @@ AABB calc_shadow_cast_aabb (Entity const* e, hm mp parent_to_light) {
 	
 	switch (e->tag) {
 		case ET_MESH:
-		case ET_MESH_CERBERUS: {
-			auto* m = (Mesh*)e;
+		case ET_MESH_NANOSUIT: {
+			auto* m = (Mesh_Base*)e;
 			mesh_id_e mesh_id = m->mesh_id;
 			aabb_me = meshes_aabb[mesh_id];
 		} break;
@@ -3461,22 +3473,22 @@ DECL void frame () {
 					}
 				
 					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_ALBEDO);
-					glBindTexture(GL_TEXTURE_2D, tex_ident);
+					glBindTexture(GL_TEXTURE_2D, msh->tex.albedo == TEX_IDENT ? tex_ident : tex.gl_refs[msh->tex.albedo]);
 					
 					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_NORMAL);
-					glBindTexture(GL_TEXTURE_2D, tex_ident_normal);
+					glBindTexture(GL_TEXTURE_2D, msh->tex.normal == TEX_IDENT ? tex_ident_normal : tex.gl_refs[msh->tex.normal]);
 					
 					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_ROUGHNESS);
-					glBindTexture(GL_TEXTURE_2D, tex_ident);
+					glBindTexture(GL_TEXTURE_2D, msh->tex.roughness == TEX_IDENT ? tex_ident : tex.gl_refs[msh->tex.roughness]);
 					
 					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_METALLIC);
-					glBindTexture(GL_TEXTURE_2D, tex_ident);
+					glBindTexture(GL_TEXTURE_2D, msh->tex.metallic == TEX_IDENT ? tex_ident : tex.gl_refs[msh->tex.metallic]);
 					
 					glDrawElementsBaseVertex(GL_TRIANGLES, meshes[msh->mesh_id].indx_count, GL_UNSIGNED_SHORT,
 							meshes[msh->mesh_id].indx_offsets, meshes[msh->mesh_id].base_vertecies);
 					
 				};
-				auto draw_mesh_shadow = [] (Mesh const* msh, hm mp to_light, hm mp from_light) {
+				auto draw_mesh_shadow = [] (Mesh_Base const* msh, hm mp to_light, hm mp from_light) {
 					PROFILE_SCOPED(THR_ENGINE, "mesh");
 					
 					auto id = msh->mesh_id;
@@ -3499,10 +3511,10 @@ DECL void frame () {
 							meshes[id].indx_offsets, meshes[id].base_vertecies);
 				};
 				
-				auto draw_mesh_cerberus = [] (Mesh_Cerberus const* msh, hm mp to_cam, hm mp from_cam) {
+				auto draw_mesh_nanosuit = [] (Mesh_Nanosuit const* msh, hm mp to_cam, hm mp from_cam) {
 					PROFILE_SCOPED(THR_ENGINE, "mesh");
 					
-					glUseProgram(shaders[SHAD_PBR_DEV_CERBERUS]);
+					glUseProgram(shaders[SHAD_PBR_DEV_NANOSUIT]);
 					
 					auto id = msh->mesh_id;
 					if (		id >= MSH_NOUV_FIRST && id < MSH_NOUV_END ) {
@@ -3525,17 +3537,14 @@ DECL void frame () {
 						GLOBAL_UBO_WRITE(transforms, &temp);
 					}
 					
-					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_ALBEDO);
-					glBindTexture(GL_TEXTURE_2D, tex.gl_refs[msh->tex.albedo]);
+					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_NANO_DIFFUSE_EMISSIVE);
+					glBindTexture(GL_TEXTURE_2D, tex.gl_refs[msh->tex.diffuse_emissive]);
 					
-					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_NORMAL);
+					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_NANO_NORMAL);
 					glBindTexture(GL_TEXTURE_2D, tex.gl_refs[msh->tex.normal]);
 					
-					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_ROUGHNESS);
-					glBindTexture(GL_TEXTURE_2D, tex.gl_refs[msh->tex.roughness]);
-					
-					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_METALLIC);
-					glBindTexture(GL_TEXTURE_2D, tex.gl_refs[msh->tex.metallic]);
+					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_NANO_SPECULAR_ROUGHNESS);
+					glBindTexture(GL_TEXTURE_2D, tex.gl_refs[msh->tex.specular_roughness]);
 					
 					
 					glDrawElementsBaseVertex(GL_TRIANGLES, meshes[id].indx_count, GL_UNSIGNED_SHORT,
@@ -3628,8 +3637,8 @@ DECL void frame () {
 						switch (e->tag) {
 							
 							case ET_MESH:
-							case ET_MESH_CERBERUS:
-								draw_mesh_shadow((Mesh*)e, to_light, from_light);
+							case ET_MESH_NANOSUIT:
+								draw_mesh_shadow((Mesh_Base*)e, to_light, from_light);
 								break;
 								
 							case ET_LIGHT:
@@ -3866,8 +3875,8 @@ DECL void frame () {
 									draw_mesh((Mesh*)e, to_cam, from_cam);
 									break;
 									
-								case ET_MESH_CERBERUS:
-									draw_mesh_cerberus((Mesh_Cerberus*)e, to_cam, from_cam);
+								case ET_MESH_NANOSUIT:
+									draw_mesh_nanosuit((Mesh_Nanosuit*)e, to_cam, from_cam);
 									break;
 									
 								case ET_LIGHT:

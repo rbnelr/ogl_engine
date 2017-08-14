@@ -149,7 +149,9 @@ void main () {
 	
 	col += (bloom_0 +bloom_1 +bloom_2 +bloom_3 +bloom_4) * bloom_intensity;
 	
-	col = v3(1.0 -dbg_line.a)*col +v3(dbg_line.a)*dbg_line.rgb;
+	if (0) {
+		col = v3(1.0 -dbg_line.a)*col +v3(dbg_line.a)*dbg_line.rgb;
+	}
 	
 	{
 		#if 0

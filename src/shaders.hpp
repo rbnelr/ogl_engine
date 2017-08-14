@@ -3,9 +3,9 @@ typedef GLint tex_unit_t;
 enum tex_unit_e : tex_unit_t {
 	TEX_UNIT_ALBEDO =					6,//0,
 	// Nanosuit
-	DIFFUSE_EMISSIVE_TEX_UNIT =			6,//0,
-	NORMAL_TEX_UNIT =					1,
-	SPECULAR_ROUGHNESS_TEX_UNIT =		2,
+	TEX_UNIT_NANO_DIFFUSE_EMISSIVE =	6,//0,
+	TEX_UNIT_NANO_NORMAL =				1,
+	TEX_UNIT_NANO_SPECULAR_ROUGHNESS =	2,
 	// Cerberus
 	TEX_UNIT_CERB_ALBEDO =				6,//0,
 	TEX_UNIT_CERB_NORMAL =				1,
@@ -176,7 +176,7 @@ namespace shaders_n {
 											},
 		/* SHAD_PBR_DEV_NORMAL_MAPPED */	{	{ "_pbr_dev_normal_mapped.vert", "_pbr_dev_normal_mapped.frag" }, {
 													{ TEX_UNIT_ALBEDO,				"albedo_tex" },
-													{ NORMAL_TEX_UNIT,				"normal_tex" },
+													{ TEX_UNIT_CERB_NORMAL,			"normal_tex" },
 													{ ENV_LUMINANCE_TEX_UNIT,		"env_luminance_tex" },
 													{ ENV_ILLUMINANCE_TEX_UNIT,		"env_illuminance_tex" },
 													{ TEX_UNIT_PBR_BRDF_LUT,		"brdf_lut_tex" },
@@ -214,9 +214,9 @@ namespace shaders_n {
 													{ TEX_UNITS_SHADOW_FIRST,		(char const*)1 } } // Special case to generate all 
 											},
 		/* SHAD_PBR_DEV_NANOSUIT */			{	{ "_pbr_dev_normal_mapped.vert", "_pbr_dev_nanosuit.frag" }, {
-													{ DIFFUSE_EMISSIVE_TEX_UNIT,	"diffusse_emmissive_tex" },
-													{ NORMAL_TEX_UNIT,				"normal_tex" },
-													{ SPECULAR_ROUGHNESS_TEX_UNIT,	"specular_roughness_tex" },
+													{ TEX_UNIT_NANO_DIFFUSE_EMISSIVE,	"diffusse_emmissive_tex" },
+													{ TEX_UNIT_NANO_NORMAL,				"normal_tex" },
+													{ TEX_UNIT_NANO_SPECULAR_ROUGHNESS,	"specular_roughness_tex" },
 													{ ENV_LUMINANCE_TEX_UNIT,		"env_luminance_tex" },
 													{ ENV_ILLUMINANCE_TEX_UNIT,		"env_illuminance_tex" },
 													{ TEX_UNIT_PBR_BRDF_LUT,		"brdf_lut_tex" },
