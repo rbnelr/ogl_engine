@@ -24,11 +24,11 @@ controls = {
 
 camera = {
 	.pos_world =					#	v3(-29.2636, +5.4754, +0.1278)
-									$	v3(-2.6980, -3.5733, +3.5999)
-									$s	v3(+8.3165, -8.4133, +1.4922);
+									$	v3(+13.9296, -7.5660, +4.5569)
+									$s	v3(+8.5157, -9.2964, +1.7546);
 	.aer =							#
-									$	deg(v3(+323.2122, +43.7624, +0.0000))
-									$s	deg(v3(+274.1622, +71.7749, +0.0000));
+									$	deg(v3(+82.0122, +60.5249, +0.0000))
+									$s	deg(v3(+295.8745, +69.4124, +0.0000));
 	.base_ori =							quat(ident);
 	
 	.vfov =							#	+100_deg
@@ -283,36 +283,36 @@ mesh_names = [] {
 tex.names = [] {
 	#%name%
 	
-	{# MAT_ROUGHNESS_TEX							#}	"ugly_roughness.linear_r",
-	{# GRASS_TEX									#}	"grass_00",
-	{# TERRAIN_CUBE_DIFFUSE_TEX						#}	"terrain_cube_diffuse",
-	{# TERRAIN_SPHERE_DIFFUSE_TEX					#}	"terrain_sphere_diffuse",
-	{# TERRAIN_TREE_DIFFUSE_TEX						#}	"terrain_tree_diffuse",
-	{# TERRAIN_TREE_CUTS_DIFFUSE_TEX				#}	"terrain_tree_cuts_diffuse",
-	{# TERRAIN_OBELISK_DIFFUSE_TEX					#}	"obelisk_diffuse",
-	{# STRUCTURE_WALLS_TEX							#}	"structure_walls",
-	{# STRUCTURE_GROUND_TEX							#}	"structure_ground",
-	{# METAL_GRIPPED_DIFFUSE_TEX					#}	"metal_gripped_diffuse",
-	{# METAL_RUSTY_02_TEX							#}	"metal_rusty_02",
-	{# MARBLE_TEX									#}	"marble",
-	{# WOODEN_BEAM_TEX								#}	"wooden_beam",
+	{# TEX_MAT_ROUGHNESS							#}	"ugly_roughness.linear_r",
+	{# TEX_GRASS									#}	"grass_00",
+	{# TEX_TERRAIN_CUBE_DIFFUSE						#}	"terrain_cube_diffuse",
+	{# TEX_TERRAIN_SPHERE_DIFFUSE					#}	"terrain_sphere_diffuse",
+	{# TEX_TERRAIN_TREE_DIFFUSE						#}	"terrain_tree_diffuse",
+	{# TEX_TERRAIN_TREE_CUTS_DIFFUSE				#}	"terrain_tree_cuts_diffuse",
+	{# TEX_TERRAIN_OBELISK_DIFFUSE					#}	"obelisk_diffuse",
+	{# TEX_STRUCTURE_WALLS							#}	"structure_walls",
+	{# TEX_STRUCTURE_GROUND							#}	"structure_ground",
+	{# TEX_METAL_GRIPPED_DIFFUSE					#}	"metal_gripped_diffuse",
+	{# TEX_METAL_RUSTY_02							#}	"metal_rusty_02",
+	{# TEX_MARBLE									#}	"marble",
+	{# TEX_WOODEN_BEAM								#}	"wooden_beam",
 	
 	{# TEX_DIF_BRICK_00								#}	"brick_00_diff",
 	{# TEX_NRM_BRICK_00								#}	"brick_00.nrm",
 	{# TEX_DIF_BRICK_01								#}	"brick_01_diff",
 	{# TEX_NRM_BRICK_01								#}	"brick_01.nrm",
 	
-	{# NANOSUIT_BODY_DIFF_EMISS_TEX					#}	"nano_suit/nanosuit_body.sbgr_a",
-	{# NANOSUIT_BODY_SPEC_ROUGH_TEX					#}	"nano_suit/nanosuit_body_spec.sbgr_a",
-	{# NANOSUIT_BODY_NORM_TEX						#}	"nano_suit/nanosuit_body.nrm",
-	{# NANOSUIT_NECK_DIFF_TEX						#}	"nano_suit/nanosuit_neck",
-	{# NANOSUIT_NECK_SPEC_ROUGH_TEX					#}	"nano_suit/nanosuit_neck_spec.sbgr_a",
-	{# NANOSUIT_NECK_NORM_TEX						#}	"nano_suit/nanosuit_neck.nrm",
-	{# NANOSUIT_HELMET_DIFF_EMISS_TEX				#}	"nano_suit/nanosuit_helmet.sbgr_a",
-	{# NANOSUIT_HELMET_SPEC_ROUGH_TEX				#}	"nano_suit/nanosuit_helmet_spec.sbgr_a",
-	{# NANOSUIT_HELMET_NORM_TEX						#}	"nano_suit/nanosuit_helmet.nrm",
+	{# TEX_NANOSUIT_BODY_DIFF_EMISS					#}	"nano_suit/nanosuit_body.sbgr_a",
+	{# TEX_NANOSUIT_BODY_SPEC_ROUGH					#}	"nano_suit/nanosuit_body_spec.sbgr_a",
+	{# TEX_NANOSUIT_BODY_NORM						#}	"nano_suit/nanosuit_body.nrm",
+	{# TEX_NANOSUIT_NECK_DIFF						#}	"nano_suit/nanosuit_neck",
+	{# TEX_NANOSUIT_NECK_SPEC_ROUGH					#}	"nano_suit/nanosuit_neck_spec.sbgr_a",
+	{# TEX_NANOSUIT_NECK_NORM						#}	"nano_suit/nanosuit_neck.nrm",
+	{# TEX_NANOSUIT_HELMET_DIFF_EMISS				#}	"nano_suit/nanosuit_helmet.sbgr_a",
+	{# TEX_NANOSUIT_HELMET_SPEC_ROUGH				#}	"nano_suit/nanosuit_helmet_spec.sbgr_a",
+	{# TEX_NANOSUIT_HELMET_NORM						#}	"nano_suit/nanosuit_helmet.nrm",
 	
-	{# NORM_TEST_00_TEX								#}	"norm_test/norm_00.nrm",
+	{# TEX_NORM_TEST_00								#}	"norm_test/norm_00.nrm",
 	
 	{# TEX_CERBERUS_ALBEDO							#}	"cerberus/Textures/Cerberus_A",
 	{# TEX_CERBERUS_NORMAL							#}	"cerberus/Textures/Cerberus_N.nrm",
