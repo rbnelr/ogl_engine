@@ -64,6 +64,37 @@ DECLD constexpr const char* TEXTURES_ID_STR[TEXTURES_COUNT] = {
 
 #undef TEXTURES_X
 
+DECLD constexpr textures_e TEX_IDENT = (textures_e)-1;
+
+DECLD GLuint tex_ident;
+DECLD GLuint tex_ident_normal;
+
+void init_tex_ident () {
+	glGenTextures(1, &tex_ident);
+	glGenTextures(1, &tex_ident_normal);
+	
+	{
+		glBindTexture(GL_TEXTURE_2D, tex_ident);
+		
+		v4 col = v4(1);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 1,1, 0, GL_RGBA, GL_FLOAT, &col);
+		
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+	}
+	{
+		glBindTexture(GL_TEXTURE_2D, tex_ident_normal);
+		
+		v3 up = v3(0.5f, 0.5f, 1.0f);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, 1,1, 0, GL_RGB, GL_FLOAT, &up);
+		
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+	}
+	
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 enum samplers_e : u32 {
 	DEFAULT_SAMPLER=0,
 	SAMPLER_SHADOW_2D,
@@ -196,21 +227,11 @@ struct Textures {
 		
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &gl_max_aniso);
 		
-		init_samplers(samplers, gl_max_aniso);
-		
 		glActiveTexture(GL_TEXTURE0);
 		
-		#if 0
-		{
-			glBindTexture(GL_TEXTURE_2D, WHITENESS_TEXTURE);
-			
-			u8 col[4] = { 255, 255, 255, 255 };
-			glTexImage2D(GL_TEXTURE_2D, (GLint)0, GL_SRGB8_ALPHA8, 1, 1, (GLint)0, GL_RGBA, GL_UNSIGNED_BYTE, col);
-			
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, (GLint)0);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, (GLint)0);
-		}
-		#endif
+		init_tex_ident();
+		
+		init_samplers(samplers, gl_max_aniso);
 		
 		{
 			using namespace tex_file;

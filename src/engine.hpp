@@ -1041,11 +1041,17 @@ namespace entities_n {
 	};
 	DEFINE_ENUM_FLAG_OPS(light_flags_e, u32)
 	
+	struct Textures_Generic {
+		textures_e	albedo;
+		textures_e	normal;
+		textures_e	roughness;
+		textures_e	metallic;
+	};
 	struct Textures_Cerberus {
 		textures_e	albedo;
 		textures_e	normal;
-		textures_e	metallic;
 		textures_e	roughness;
+		textures_e	metallic;
 	};
 	
 	DECLD v2u32		material_showcase_grid_steps;
@@ -1071,11 +1077,14 @@ namespace entities_n {
 		entity_tag		tag;
 	};
 	
-	struct Mesh : public Entity {
+	struct Mesh_Base : public Entity {
 		mesh_id_e		mesh_id;
 		materials_e		material;
 	};
-	struct Mesh_Cerberus : public Mesh {
+	struct Mesh : public Mesh_Base {
+		Textures_Generic	tex;
+	};
+	struct Mesh_Cerberus : public Mesh_Base {
 		Textures_Cerberus	tex;
 	};
 	struct Material_Showcase_Grid : public Entity {
@@ -1245,21 +1254,34 @@ struct Entities {
 		return ret;
 	}
 	
-	Mesh* mesh (char const* name, v3 vp pos, quat vp ori, mesh_id_e mesh_id, materials_e mat=MAT_WHITENESS) {
+	Mesh* mesh (char const* name, v3 vp pos, quat vp ori, mesh_id_e mesh_id,
+			materials_e mat=MAT_WHITENESS,
+			textures_e albedo=TEX_IDENT, textures_e norm=TEX_IDENT, textures_e roughness=TEX_IDENT, textures_e metallic=TEX_IDENT) {
 		auto* ret = make_entity<Mesh, ET_MESH>(name, pos, ori);
 		ret->mesh_id = mesh_id;
 		ret->material = mat;
+		ret->tex.albedo =		albedo;
+		ret->tex.normal =		norm;
+		ret->tex.roughness =	roughness;
+		ret->tex.metallic =		metallic;
 		return ret;
 	}
-	Mesh* mesh (char const* name, v3 vp pos, quat vp ori, v3 vp scale, mesh_id_e mesh_id, materials_e mat=MAT_WHITENESS) {
+	Mesh* mesh (char const* name, v3 vp pos, quat vp ori, v3 vp scale, mesh_id_e mesh_id,
+			materials_e mat=MAT_WHITENESS,
+			textures_e albedo=TEX_IDENT, textures_e norm=TEX_IDENT, textures_e roughness=TEX_IDENT, textures_e metallic=TEX_IDENT) {
 		auto* ret = make_entity<Mesh, ET_MESH>(name, pos, ori, scale);
 		ret->mesh_id = mesh_id;
 		ret->material = mat;
+		ret->tex.albedo =		albedo;
+		ret->tex.normal =		norm;
+		ret->tex.roughness =	roughness;
+		ret->tex.metallic =		metallic;
 		return ret;
 	}
 	
 	Mesh_Cerberus* mesh_cerberus (char const* name, v3 vp pos, quat vp ori, v3 vp scale, mesh_id_e mesh_id,
-			materials_e mat, textures_e albedo, textures_e norm, textures_e roughness, textures_e metallic) {
+			materials_e mat,
+			textures_e albedo, textures_e norm, textures_e roughness, textures_e metallic) {
 		auto* ret = make_entity<Mesh_Cerberus, ET_MESH_CERBERUS>(name, pos, ori, scale);
 		ret->mesh_id = mesh_id;
 		ret->material = mat;
