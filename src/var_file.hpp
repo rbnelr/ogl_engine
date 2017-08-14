@@ -341,30 +341,6 @@ namespace var {
 	
 	void init_vars () {
 		
-		auto strct_light = STRUCT(
-			VAR(		Light,				name,							VT_CSTR),
-			VAR(		Light,				pos_world,						VT_F32V3),
-			VAR(		Light,				ori_world,						VT_F32QUAT),
-			VAR(		Light,				type,							VT_U32), // TODO: enum
-			VAR(		Light,				flags,							VT_U32), // TODO: enum
-			VAR(		Light,				power,							VT_F32V3|VT_COLOR)
-		);
-		
-		auto strct_generic = STRUCT(
-			VAR(		Generic_Movable,	name,							VT_CSTR),
-			VAR(		Generic_Movable,	pos_world,						VT_F32V3),
-			VAR(		Generic_Movable,	ori_world,						VT_F32QUAT),
-			VAR(		Showcase::Cerberus, select_radius,					VT_F32) // same offset for all
-		);
-		
-		auto strct_showcase_grid_obj = STRUCT(
-			VAR(		Generic_Movable,	name,							VT_CSTR),
-			VAR(		Generic_Movable,	pos_world,						VT_F32V3),
-			VAR(		Generic_Movable,	ori_world,						VT_F32QUAT),
-			VAR(		Showcase::Grid_Obj, select_radius,					VT_F32),
-			VAR(		Showcase::Grid_Obj, grid_offs,						VT_F32)
-		);
-		
 		auto strct_camera = STRUCT(
 			VAR(		Camera,				pos_world,							VT_F32V3),
 			VAR(		Camera,				aer,								VT_F32V3|VT_ANGLE),
@@ -423,10 +399,6 @@ namespace var {
 			)),
 			GBL_VAR(						camera,								strct_camera),
 			GBL_ARRAY(						saved_cameras,		sizeof(Camera),	strct_camera),
-			GBL_VAR(						lights,								STRUCT(
-				DYNARR(		Lights,				lights,				sizeof(Light),	strct_light),
-				ARRAY(		Lights,				select_radius,		sizeof(f32),	VT_F32)
-			)),
 			GBL_ARRAY(						materials,				sizeof(std140_Material), STRUCT(
 				VAR(		std140_Material,	albedo,								VT_F32COL),
 				VAR(		std140_Material,	metallic,							VT_F32),
@@ -436,16 +408,6 @@ namespace var {
 			GBL_ARRAY(						mesh_names,					sizeof(char const*), VT_CSTR),
 			GBL_VAR(						tex,								STRUCT(
 				ARRAY(		Textures,			names,					sizeof(char const*), VT_CSTR)
-			)),
-			GBL_VAR(						showcase,							STRUCT(
-				VAR(		Showcase,			grid_steps,							VT_U32),
-				VAR(		Showcase,			sphere,								strct_showcase_grid_obj),
-				VAR(		Showcase,			bunny,								strct_showcase_grid_obj),
-				VAR(		Showcase,			buddha,								strct_showcase_grid_obj),
-				VAR(		Showcase,			dragon,								strct_showcase_grid_obj),
-				VAR(		Showcase,			teapot,								strct_showcase_grid_obj),
-				VAR(		Showcase,			materials,							strct_showcase_grid_obj),
-				VAR(		Showcase,			cerberus,							strct_generic)
 			)),
 			GBL_VAR(						material_showcase_grid_steps,			VT_U32V2),
 			GBL_VAR(						material_showcase_grid_mat,				VT_F32M2)

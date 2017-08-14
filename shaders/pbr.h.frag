@@ -215,7 +215,7 @@ v3 get_light (ui i, v3 pos_cam, v3 norm_cam, out v3 luminance) {
 }
 
 v3 brfd_analytical_light (	v3 pos_cam, v3 view, v3 norm, flt dvn,  v3 albedo, flt metallic, flt roughness,
-							flt IORs, flt IORd,  ui light_i ) {
+							flt IORs, flt IORd, v3 lightbulb_emissive,  ui light_i ) {
 	
 	v3	light_luminance;
 	v3	light =	get_light(light_i, pos_cam, norm, light_luminance);
@@ -223,7 +223,7 @@ v3 brfd_analytical_light (	v3 pos_cam, v3 view, v3 norm, flt dvn,  v3 albedo, fl
 	
 	if (g_lightbulb_indx != ui(-1) && light_i == g_lightbulb_indx) {
 		//DBG_COL(v3(0,1,0));
-		return light_luminance; // emmissive
+		return light_luminance * lightbulb_emissive; // emmissive
 	}
 	
 	flt dln =	max(dot(light, norm), 0.0);
@@ -299,7 +299,7 @@ v3 brfd_IBL (				v3 view, v3 norm, flt dvn,  v3 albedo, flt metallic, flt roughn
 }
 
 // everything in cam space
-v4 brfd_test (	v3 pos_cam, v3 normal_dir, v3 albedo, flt metallic, flt roughness, flt IOR ) {
+v4 brfd_test (	v3 pos_cam, v3 normal_dir, v3 albedo, flt metallic, flt roughness, flt IOR, v3 emissive ) {
 	
 	flt IORs = IOR_air;
 	flt IORd = IOR;
@@ -313,7 +313,7 @@ v4 brfd_test (	v3 pos_cam, v3 normal_dir, v3 albedo, flt metallic, flt roughness
 	
 	#if 1
 	for (ui i=ui(0); i<g_lights_count; ++i) {
-		luminance += brfd_analytical_light(	pos_cam, view, norm, dvn,  albedo, metallic, roughness,  IORs, IORd, i );
+		luminance += brfd_analytical_light(	pos_cam, view, norm, dvn,  albedo, metallic, roughness, IORs, IORd, emissive,  i );
 	}
 	#endif
 	
@@ -333,6 +333,9 @@ v4 brfd_test (	v3 pos_cam, v3 normal_dir, v3 albedo, flt metallic, flt roughness
 	
 	return v4(luminance, 1);
 	
+}
+v4 brfd_test (	v3 pos_cam, v3 normal_dir, v3 albedo, flt metallic, flt roughness, flt IOR ) {
+	return brfd_test(pos_cam, normal_dir, albedo, metallic, roughness, IOR, v3(0));
 }
 #else
 

@@ -415,6 +415,33 @@ void main () {
 }
 /*----------------------------------------------------*/ )_SHAD" } )
 
+/*-----------*/ _SOURCE_SHADER("_pbr_dev_lightbulb.vert", { R"_SHAD(
+$include "_glsl_version.h.glsl"
+$include "_global_include.h.vert"
+
+ATTRIB(0)	v3		attrib_pos_model;
+ATTRIB(1)	v3		attrib_norm_model;
+ATTRIB(4)	v3		attrib_vert_col;
+
+out Vs_Out {
+	smooth	v3		vs_interp_pos_cam;
+	smooth	v3		vs_interp_norm_cam;
+	smooth	v3		vs_interp_emissive;
+};
+
+void main () {
+	
+	v4 pos_cam = g_transforms.model_to_cam * v4(attrib_pos_model, 1);
+	v4 pos_clip = g_cam_to_clip * pos_cam;
+	
+	gl_Position = pos_clip;
+	
+	vs_interp_pos_cam =			v3(pos_cam);
+	vs_interp_norm_cam =		g_transforms.normal_model_to_cam * attrib_norm_model;
+	vs_interp_emissive =		attrib_vert_col;
+}
+/*----------------------------------------------------*/ )_SHAD" } )
+
 
 /*-----------*/ _SOURCE_SHADER("_fullscreen_quad.vert", { R"_SHAD(
 $include "_glsl_version.h.glsl"
@@ -733,6 +760,26 @@ void main () {
 	FRAG_DONE(col)
 }
 /*----------------------------------------------------*/ )_SHAD" } )
+
+/*-----------*/ _SOURCE_SHADER("_pbr_dev_lightbulb.frag", { R"_SHAD(
+$include "_glsl_version.h.glsl"
+$include "pbr.h.frag"
+
+in Vs_Out {
+	smooth				v3	vs_interp_pos_cam;
+	smooth				v3	vs_interp_norm_cam;
+	smooth				v3	vs_interp_emissive;
+};
+
+void main () {
+	
+	v4 col = brfd_test(vs_interp_pos_cam, normalize(vs_interp_norm_cam),
+			g_mat.albedo, g_mat.metallic, g_mat.roughness, g_mat.IOR, vs_interp_emissive);
+	
+	FRAG_DONE(col)
+}
+/*----------------------------------------------------*/ )_SHAD" } )
+
 
 /*-----------*/ _SOURCE_SHADER("_pbr_dev_cerberus.frag", { R"_SHAD(
 $include "_glsl_version.h.glsl"

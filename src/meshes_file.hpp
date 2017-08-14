@@ -4,36 +4,27 @@
 
 namespace meshes_file_n {
 	
-	typedef u16 format_t;
-	
-	enum format_e : format_t {
-		INTERLEAVED_MASK=	0b1 << 0,
-		INTERLEAVED=		0b1 << 0,
-		
-		POS_MASK=			0b1 << 1,
-		POS_XYZ=			0b1 << 1,
-		
-		NORM_MASK=			0b1 << 2,
-		NORM_XYZ=			0b1 << 2,
-		
-		TANG_MASK=			0b1 << 3,
-		TANG_NONE=			0b0 << 3,
-		TANG_XYZW=			0b1 << 3,
-		
-		UV_MASK=			0b1 << 4,
-		UV_NONE=			0b0 << 4,
-		UV_UV=				0b1 << 4,
-		
-		COL_MASK=			0b1 << 5,
-		COL_NONE=			0b0 << 5,
-		COL_RGB=			0b1 << 5,
-		
-		INDEX_MASK=			0b11 << 6,
-		INDEX_NONE=			0b00 << 6,
-		INDEX_UBYTE=		0b01 << 6,
-		INDEX_USHORT=		0b10 << 6,
-		INDEX_UINT=			0b11 << 6,
+	enum format_e : u16 {
+						INTERLEAVED=		0b1 << 0,
+						
+						POS_XYZ=			0b1 << 1,
+						
+						NORM_XYZ=			0b1 << 2,
+						
+						TANG_XYZW=			0b1 << 3,
+						
+						UV_UV=				0b1 << 4,
+						
+						COL_RGB=			0b1 << 5,
+						
+						//INDEX_NONE=			0b00 << 6,
+						//INDEX_UBYTE=		0b01 << 6,
+						INDEX_USHORT=		0b10 << 6,
+						//INDEX_UINT=			0b11 << 6,
 	};
+	DEFINE_ENUM_FLAG_OPS(format_e, u16);
+	
+	DECLD constexpr u16	INDEX_MASK=			0b11 << 6;
 	
 	struct Format_Print {
 		char const*	f;
@@ -42,24 +33,24 @@ namespace meshes_file_n {
 		char const*	col;
 	};
 	
-	DECL Format_Print format_strs (format_t f) {
+	DECL Format_Print format_strs (format_e f) {
 		Format_Print ret;
 		ret.f = "USUAL_FORMAT";
 		
-		switch (f & TANG_MASK) {
-			case TANG_NONE:	ret.tang = "";			break;
+		switch (f & TANG_XYZW) {
+			case 0:			ret.tang = "";			break;
 			case TANG_XYZW:	ret.tang = "|TANG_XYZW";	break;
 			default: assert(false);
 		}
 		
-		switch (f & UV_MASK) {
-			case UV_NONE:	ret.uv = "";		break;
+		switch (f & UV_UV) {
+			case 0:			ret.uv = "";		break;
 			case UV_UV:		ret.uv = "|UV_UV";	break;
 			default: assert(false);
 		}
 		
-		switch (f & COL_MASK) {
-			case COL_NONE:	ret.col = "";			break;
+		switch (f & COL_RGB) {
+			case 0:			ret.col = "";			break;
 			case COL_RGB:	ret.col = "|COL_RGB";	break;
 			default: assert(false);
 		}
@@ -85,7 +76,7 @@ namespace meshes_file_n {
 			GLuint		gluint;
 		} vertexCount;
 		
-		format_t	dataFormat;
+		format_e	dataFormat;
 		
 		//char		meshNameCstr[/* Null terminated */];
 	};

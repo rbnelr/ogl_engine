@@ -161,6 +161,10 @@
 		return memcmp(l, r, size) == 0;
 	}
 	
+	DECL void* cmemzero (void* ptr, uptr size) {
+		return memset(ptr, 0, size);
+	}
+	
 ////
 namespace safe {
 	
@@ -169,25 +173,33 @@ namespace safe {
 	
 	#define SAFE_CAST(t_cast, t) template<> DECLT constexpr bool _safe_cast<t_cast, t> (t val)
 	
-	DECLD constexpr u64 MAX_S64 =		0x8000000000000000ull;
 	DECLD constexpr u64 MAX_U32 =		       0x100000000ull;
+	DECLD constexpr u32 MAX_U16 =		           0x10000ul;
+	
+	DECLD constexpr u64 MAX_S64 =		0x8000000000000000ull;
 	DECLD constexpr u32 MAX_S32 =		        0x80000000ul;
 	
-	SAFE_CAST(s64, u64) { return val < MAX_S64; }
 	SAFE_CAST(u64, u64) { return true; }
 	SAFE_CAST(u32, u64) { return val < MAX_U32; }
+	SAFE_CAST(u16, u64) { return val < MAX_U16; }
+	SAFE_CAST(s64, u64) { return val < MAX_S64; }
 	SAFE_CAST(s32, u64) { return val < MAX_S32; }
+	
 	SAFE_CAST(u32, s64) { return val >= 0; }
 	
-	SAFE_CAST(s64, u32) { return true; }
+	
 	SAFE_CAST(u32, u32) { return true; }
+	SAFE_CAST(s64, u32) { return true; }
 	SAFE_CAST(s32, u32) { return val < MAX_S32; }
+	
+	SAFE_CAST(u32, s32) { return val >= 0; }
 	SAFE_CAST(s64, s32) { return true; }
 	SAFE_CAST(s32, s32) { return true; }
-	SAFE_CAST(u32, s32) { return val >= 0; }
+	
 	
 	SAFE_CAST(u32, u16) { return true; }
 	SAFE_CAST(s32, u16) { return true; }
+	
 	SAFE_CAST(s32, s16) { return true; }
 	
 	#undef SAFE_CAST

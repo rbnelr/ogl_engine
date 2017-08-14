@@ -20,6 +20,8 @@ enum vbo_indx_e : u32 {
 	GLOBAL_UNIFORM_BUF=0,
 	NO_UV_ARR_BUF,
 	NO_UV_INDX_BUF,
+	NO_UV_COL_ARR_BUF,
+	NO_UV_COL_INDX_BUF,
 	UV_ARR_BUF,
 	UV_INDX_BUF,
 	UV_TANG_ARR_BUF,
@@ -34,6 +36,7 @@ enum vbo_indx_e : u32 {
 //// VAO
 enum vao_indx_e : u32 {
 	NO_UV_VAO=0,
+	NO_UV_COL_VAO,
 	UV_VAO,
 	UV_TANG_VAO,
 	//GROUND_PLANE_VAO,
@@ -88,159 +91,115 @@ DEFINE_ENUM_ITER_OPS(materials_e, u32)
 DECLD constexpr materials_e	MAT_SHOW_FIRST =			MAT_SHOW_PLASTIC;
 DECLD constexpr materials_e	MAT_SHOW_END =				(materials_e)(MAT_SHOW_SILVER +1);
 
-//// Entities
-	//////////////////// These will go away after completely switching to the new entity based editor features
-	struct Generic_Movable {
-		char const*	name;
-		v3			pos_world;
-		quat		ori_world;
-	};
-	
 ////
-	DECLD bool					reloaded_vars;
+DECLD bool					reloaded_vars;
+
+DECL void set_vsync (s32 swap_interval) {
 	
-	DECL void set_vsync (s32 swap_interval) {
-		
-		print("Vsync % (%).\n", swap_interval ? "enabled":"disabled", swap_interval);
-		
-		auto ret = wglSwapIntervalEXT(swap_interval);
-		assert(ret != FALSE);
-	}
+	print("Vsync % (%).\n", swap_interval ? "enabled":"disabled", swap_interval);
 	
-	DECLD GLuint				shaders[SHAD_COUNT];
+	auto ret = wglSwapIntervalEXT(swap_interval);
+	assert(ret != FALSE);
+}
+
+DECLD GLuint				shaders[SHAD_COUNT];
+
+DECLD GLuint				VBOs[VBO_COUNT];
+DECLD GLuint				VAOs[VAO_COUNT];
+
+DECLD Mesh_Ref				meshes[MESHES_COUNT];
+DECLD AABB					meshes_aabb[MESHES_COUNT];
+
+meshes_file_n::Meshes_File	meshes_file = {}; // init to null
+
+AABB calc_AABB_model (mesh_id_e id) {
 	
-	DECLD GLuint				VBOs[VBO_COUNT];
-	DECLD GLuint				VAOs[VAO_COUNT];
+	// AABB returned is in the space between to_world & from_model
+	// gets deplayed in world space
 	
-	DECLD Mesh_Ref				meshes[MESHES_COUNT];
-	DECLD AABB					meshes_aabb[MESHES_COUNT];
+	byte*		vertices;
+	GLushort*	indices;
 	
-	DECL void draw_solid_color (mesh_id_e mesh_id, hm mp model_to_camera, hm mp camera_to_model, v3 col) {
-		auto& mesh = meshes[mesh_id];
-		
-		set_transforms_and_solid_color(model_to_camera, camera_to_model, col);
-		
-		glDrawElementsBaseVertex(GL_TRIANGLES, mesh.indx_count, GL_UNSIGNED_SHORT,
-				mesh.indx_offsets, mesh.base_vertecies);
-	}
-	DECL void draw (mesh_id_e mesh_id, hm mp model_to_camera, hm mp camera_to_model, std140_Material const* mat) {
-		auto& mesh = meshes[mesh_id];
-		
-		set_transforms_and_mat(model_to_camera, camera_to_model, mat);
-		
-		glDrawElementsBaseVertex(GL_TRIANGLES, mesh.indx_count, GL_UNSIGNED_SHORT,
-				mesh.indx_offsets, mesh.base_vertecies);
-	}
-	DECL void draw_keep_set (mesh_id_e mesh_id) {
-		auto& mesh = meshes[mesh_id];
-		
-		glDrawElementsBaseVertex(GL_TRIANGLES, mesh.indx_count, GL_UNSIGNED_SHORT,
-				mesh.indx_offsets, mesh.base_vertecies);
-	}
-	DECL void draw_keep_mat (mesh_id_e mesh_id, hm mp model_to_camera, hm mp camera_to_model) {
-		auto& mesh = meshes[mesh_id];
-		
-		set_transforms(model_to_camera, camera_to_model);
-		
-		glDrawElementsBaseVertex(GL_TRIANGLES, mesh.indx_count, GL_UNSIGNED_SHORT,
-				mesh.indx_offsets, mesh.base_vertecies);
-	}
+	u32			vertex_stride;
 	
-	hm transl_ori (Generic_Movable cr ent) {
-		return translate_h(ent.pos_world) * hm::ident().m3( conv_to_m3(ent.ori_world) );
-	}
-	hm transl_ori  (hm mp mat, Generic_Movable cr ent) {
-		return mat * transl_ori(ent);
-	}
-	hm transl_ori_scale (hm mp mat, Generic_Movable cr ent, v3 vp scale) {
-		return transl_ori(mat, ent) * scale_h(scale);
-	}
-	
-	hm inverse_transl_ori (Generic_Movable cr ent) { // direct inverse calculation from entity
-		return hm::ident().m3( conv_to_m3(inverse(ent.ori_world)) ) * translate_h(-ent.pos_world);
-	}
-	
-	meshes_file_n::Meshes_File	meshes_file = {}; // init to null
-	
-	AABB calc_AABB_model (mesh_id_e id) {
+	u32			vertex_count;
+	u32			index_count;
+	{
+		byte* file_data = (byte*)meshes_file.header;
 		
-		// AABB returned is in the space between to_world & from_model
-		// gets deplayed in world space
+		auto mesh = meshes_file.query_mesh(mesh_names[id]);
+		assert(mesh);
 		
-		byte*		vertices;
-		GLushort*	indices;
+		vertex_count = safe_cast_assert(u32, mesh->vertexCount.glushort);
+		assert(vertex_count > 0);
 		
-		u32			vertex_stride;
+		index_count = safe_cast_assert(u32, mesh->indexCount);
+		assert(index_count > 0);
 		
-		u32			vertex_count;
-		u32			index_count;
-		{
-			byte* file_data = (byte*)meshes_file.header;
+		switch (mesh->dataFormat) {
+			using namespace meshes_file_n;
 			
-			auto mesh = meshes_file.query_mesh(mesh_names[id]);
-			assert(mesh);
+			case (INTERLEAVED|POS_XYZ|NORM_XYZ|INDEX_USHORT): {
+				struct Vertex {
+					v3	pos;
+					v3	norm;
+				};
+				vertex_stride = sizeof(Vertex);
+			} break;
 			
-			vertex_count = safe_cast_assert(u32, mesh->vertexCount.glushort);
-			assert(vertex_count > 0);
+			case (INTERLEAVED|POS_XYZ|NORM_XYZ|COL_RGB|INDEX_USHORT): {
+				struct Vertex {
+					v3	pos;
+					v3	norm;
+					v3	color;
+				};
+				vertex_stride = sizeof(Vertex);
+			} break;
 			
-			index_count = safe_cast_assert(u32, mesh->indexCount);
-			assert(index_count > 0);
+			case (INTERLEAVED|POS_XYZ|NORM_XYZ|UV_UV|INDEX_USHORT): {
+				struct Vertex {
+					v3	pos;
+					v3	norm;
+					v2	uv;
+				};
+				vertex_stride = sizeof(Vertex);
+			} break;
 			
-			switch (mesh->dataFormat) {
-				using namespace meshes_file_n;
-				
-				case (INTERLEAVED|POS_XYZ|NORM_XYZ|INDEX_USHORT): {
-					struct Vertex {
-						v3	pos;
-						v3	norm;
-					};
-					vertex_stride = sizeof(Vertex);
-				} break;
-				
-				case (INTERLEAVED|POS_XYZ|NORM_XYZ|UV_UV|INDEX_USHORT): {
-					struct Vertex {
-						v3	pos;
-						v3	norm;
-						v2	uv;
-					};
-					vertex_stride = sizeof(Vertex);
-				} break;
-				
-				case (INTERLEAVED|POS_XYZ|NORM_XYZ|UV_UV|TANG_XYZW|INDEX_USHORT): {
-					struct Vertex {
-						v3	pos;
-						v3	norm;
-						v4	tang;
-						v2	uv;
-					};
-					vertex_stride = sizeof(Vertex);
-				} break; 
-				
-				default: assert(false); vertex_stride = 0; // shut up compiler
-			}
+			case (INTERLEAVED|POS_XYZ|NORM_XYZ|UV_UV|TANG_XYZW|INDEX_USHORT): {
+				struct Vertex {
+					v3	pos;
+					v3	norm;
+					v4	tang;
+					v2	uv;
+				};
+				vertex_stride = sizeof(Vertex);
+			} break; 
 			
-			u32 vert_size = vertex_count * vertex_stride;
-			u32 index_size = index_count * sizeof(GLushort);
-			
-			assert((mesh->dataOffset +vert_size) <= meshes_file.file_size);
-			assert((mesh->dataOffset +vert_size +index_size) <= meshes_file.file_size);
-			
-			vertices = (byte*)align_up(file_data +mesh->dataOffset, sizeof(GLfloat));
-			indices = (GLushort*)align_up(((byte*)vertices) +vert_size, sizeof(GLushort));
-			
+			default: assert(false); vertex_stride = 0; // shut up compiler
 		}
 		
-		AABB ret = AABB::inf();
+		u32 vert_size = vertex_count * vertex_stride;
+		u32 index_size = index_count * sizeof(GLushort);
 		
-		for (u32 i=0; i<vertex_count; ++i) {
-			v3 pos = *(v3*)( vertices +vertex_stride * i );
-			ret.minmax(pos);
-		}
+		assert((mesh->dataOffset +vert_size) <= meshes_file.file_size);
+		assert((mesh->dataOffset +vert_size +index_size) <= meshes_file.file_size);
 		
-		return ret;
+		vertices = (byte*)align_up(file_data +mesh->dataOffset, sizeof(GLfloat));
+		indices = (GLushort*)align_up(((byte*)vertices) +vert_size, sizeof(GLushort));
+		
 	}
 	
-	DECL void reload_meshes () { // Loading meshes from disk to GPU driver
+	AABB ret = AABB::inf();
+	
+	for (u32 i=0; i<vertex_count; ++i) {
+		v3 pos = *(v3*)( vertices +vertex_stride * i );
+		ret.minmax(pos);
+	}
+	
+	return ret;
+}
+
+DECL void reload_meshes () { // Loading meshes from disk to GPU driver
 		using namespace meshes_file_n;
 		
 		PROFILE_SCOPED(THR_ENGINE, "reload_meshes");
@@ -254,6 +213,12 @@ DECLD constexpr materials_e	MAT_SHOW_END =				(materials_e)(MAT_SHOW_SILVER +1);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[NO_UV_INDX_BUF]);
 		
 		meshes_file.reload_meshes(INTERLEAVED|POS_XYZ|NORM_XYZ|INDEX_USHORT, NOUV_MSH_FIRST, NOUV_MSH_COUNT, meshes);
+		
+		//
+		glBindBuffer(GL_ARRAY_BUFFER,			VBOs[NO_UV_COL_ARR_BUF]);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[NO_UV_COL_INDX_BUF]);
+		
+		meshes_file.reload_meshes(INTERLEAVED|POS_XYZ|NORM_XYZ|COL_RGB|INDEX_USHORT, NOUV_COL_MSH_FIRST, NOUV_COL_MSH_COUNT, meshes);
 		
 		//
 		glBindBuffer(GL_ARRAY_BUFFER,			VBOs[UV_ARR_BUF]);
@@ -271,52 +236,11 @@ DECLD constexpr materials_e	MAT_SHOW_END =				(materials_e)(MAT_SHOW_SILVER +1);
 			meshes_aabb[id] = calc_AABB_model(id);
 		}
 	}
-	
-	
-	enum light_type_e : u32 {
-		LT_DIRECTIONAL=0,
-		LT_POINT,
-		
-		LIGHT_TYPES
-	};
-	enum light_flags_e : u32 {
-		LF_DISABLED=	0b00000001,
-		LF_NO_SHADOW=	0b00000010,
-	};
-	DEFINE_ENUM_FLAG_OPS(light_flags_e, u32)
-	struct Light : public Generic_Movable {
-		light_type_e	type;
-		light_flags_e	flags;
-		v3				power;
-	};
-	
-	struct Lights {
-		dynarr<Light>		lights;
-		f32						select_radius[LIGHT_TYPES];
-	};
-	
-	DECLD struct Showcase {
-		
-		u32				grid_steps;
-		
-		struct Grid_Obj : public Generic_Movable {
-			f32				select_radius;
-			f32				grid_offs;
-		};
-		
-		Grid_Obj		sphere;
-		Grid_Obj		bunny;
-		Grid_Obj		buddha;
-		Grid_Obj		dragon;
-		Grid_Obj		teapot;
-		Grid_Obj		materials;
-		
-		struct Cerberus : public Generic_Movable {
-			f32				select_radius;
-		}				cerberus;
-		
-	} showcase;
-	
+
+DECLD Textures				tex;
+
+DECLD std140_Material		materials[MAT_COUNT] =			{}; // init to zero except for default values
+
 //////
 // "Gameplay" - stuff
 //////
@@ -1103,6 +1027,7 @@ namespace entities_n {
 	enum entity_tag : u32 {
 		ET_ROOT=0,
 		ET_MESH,
+		ET_MESH_CERBERUS,
 		ET_MATERIAL_SHOWCASE_GRID,
 		ET_GROUP,
 		ET_LIGHT,
@@ -1112,6 +1037,29 @@ namespace entities_n {
 		EF_HAS_MESHES=	0b01,
 	};
 	DEFINE_ENUM_FLAG_OPS(entity_flag, u32)
+	
+	enum light_type_e : u32 {
+		LT_DIRECTIONAL=0,
+		LT_POINT,
+		
+		LIGHT_TYPES
+	};
+	enum light_flags_e : u32 {
+		LF_DISABLED=	0b00000001,
+		LF_NO_SHADOW=	0b00000010,
+	};
+	DEFINE_ENUM_FLAG_OPS(light_flags_e, u32)
+	
+	struct Textures_Cerberus {
+		textures_e	albedo;
+		textures_e	normal;
+		textures_e	metallic;
+		textures_e	roughness;
+	};
+	
+	DECLD v2u32		material_showcase_grid_steps;
+	DECLD m2		material_showcase_grid_mat = m2::row(	+1, 0,
+															 0,-1 );
 	
 	struct Entity {
 		char const*		name;
@@ -1134,12 +1082,11 @@ namespace entities_n {
 	
 	struct Mesh : public Entity {
 		mesh_id_e		mesh_id;
+		materials_e		material;
 	};
-	
-	DECLD v2u32		material_showcase_grid_steps;
-	DECLD m2		material_showcase_grid_mat = m2::row(	+1, 0,
-															 0,-1 );
-	
+	struct Mesh_Cerberus : public Mesh {
+		Textures_Cerberus	tex;
+	};
 	struct Material_Showcase_Grid : public Entity {
 		mesh_id_e		mesh_id;
 		v2				grid_offs;
@@ -1310,11 +1257,25 @@ struct Entities {
 	Mesh* mesh (char const* name, v3 vp pos, quat vp ori, mesh_id_e mesh_id) {
 		auto* ret = make_entity<Mesh, ET_MESH>(name, pos, ori);
 		ret->mesh_id = mesh_id;
+		ret->material = MAT_WHITENESS;
 		return ret;
 	}
-	Mesh* mesh (char const* name, v3 vp pos, quat vp ori, v3 vp scale, mesh_id_e mesh_id) {
+	Mesh* mesh (char const* name, v3 vp pos, quat vp ori, v3 vp scale, mesh_id_e mesh_id, materials_e mat=MAT_WHITENESS) {
 		auto* ret = make_entity<Mesh, ET_MESH>(name, pos, ori, scale);
 		ret->mesh_id = mesh_id;
+		ret->material = mat;
+		return ret;
+	}
+	
+	Mesh_Cerberus* mesh_cerberus (char const* name, v3 vp pos, quat vp ori, v3 vp scale, mesh_id_e mesh_id,
+			materials_e mat, textures_e albedo, textures_e norm, textures_e metallic, textures_e roughness) {
+		auto* ret = make_entity<Mesh_Cerberus, ET_MESH_CERBERUS>(name, pos, ori, scale);
+		ret->mesh_id = mesh_id;
+		ret->material = mat;
+		ret->tex.albedo =		albedo;
+		ret->tex.normal =		norm;
+		ret->tex.metallic =		metallic;
+		ret->tex.roughness =	roughness;
 		return ret;
 	}
 	
@@ -1420,7 +1381,7 @@ struct Entities {
 			auto* lgh0 = dir_light("Test dir light",
 					v3(+1.21f, -2.92f, +3.51f), quat(v3(+0.61f, +0.01f, +0.01f), +0.79f),
 					ON,
-					srgb(244.0f,217.0f,171.0f) * col(2000.0f));
+					srgb(244,217,171) * col(2000));
 			
 			auto* msh0 = mesh("shadow_test_0",
 					v3(+2.67f, +2.47f, +0.00f), quat(v3(+0.00f, -0.00f, -0.04), +1.00f),
@@ -1428,13 +1389,13 @@ struct Entities {
 				
 				auto* lgh1 = point_light("Test point light 1",
 						v3(+0.9410f, +1.2415f, +1.1063f),
-						NOSHAD, srgb(200.0f,48.0f,79.0f) * col(100.0f));
+						NOSHAD, srgb(200,48,79) * col(100));
 				auto* lgh2 = point_light("Test point light 2",
 						v3(+1.0914f, +0.5582f, +1.3377f),
-						NOSHAD, srgb(48.0f,200.0f,79.0f) * col(100.0f));
+						NOSHAD, srgb(48,200,79) * col(100));
 				auto* lgh3 = point_light("Test point light 3",
 						v3(+0.3245f, +0.7575f, +1.0226f),
-						NOSHAD, srgb(48.0f,7.0f,200.0f) * col(100.0f));
+						NOSHAD, srgb(48,7,200) * col(100));
 				
 			auto* msh1 = mesh("Window_Pillar",
 					v3(-3.21f, +0.00f, +0.00f), quat(v3(-0.00f, +0.00f, -1.00f), +0.08f),
@@ -1442,10 +1403,10 @@ struct Entities {
 				
 				auto* lgh4 = point_light("Torch light L",
 						v3(-0.91969f, +0.610f, +1.880f),
-						NOSHAD, srgb(240.0f,142.0f,77.0f) * col(60.0f));
+						NOSHAD, srgb(240,142,77) * col(60));
 				auto* lgh5 = point_light("Torch light R",
 						v3(+0.91969f, +0.610f, +1.880f),
-						NOSHAD, srgb(240.0f,142.0f,77.0f) * col(60.0f));
+						NOSHAD, srgb(240,142,77) * col(60));
 			
 			auto* nano = group("Nanosuit",
 					v3(+1.64f, +3.23f, +0.54f), quat(v3(+0.00f, +0.02f, +1.00f), +0.01f));
@@ -1461,7 +1422,7 @@ struct Entities {
 			auto* lgh10 = dir_light("Sun",
 					v3(+0.06f, -2.76f, +4.53f), quat(v3(+0.31f, +0.01f, +0.04f), +0.95f),
 					ON,
-					srgb(244.0f,217.0f,171.0f) * col(2000.0f));
+					srgb(244,217,171) * col(2000));
 			auto* msh10 = mesh("terrain",
 					v3(0), quat::ident(),
 					nouv_MSH_TERRAIN);
@@ -1498,7 +1459,7 @@ struct Entities {
 			
 			auto* lgh20 = dir_light("Sun",
 					v3(-1.83f, +1.37f, +2.05f), quat(v3(+0.21f, -0.45f, -0.78f), +0.37f),
-					ON, srgb(244.0f,217.0f,171.0f) * col(2000.0f));
+					ON, srgb(244,217,171) * col(2000));
 			auto* msh20 = mesh("ugly",
 					v3(0), quat::ident(),
 					uv_MSH_UGLY);
@@ -1506,76 +1467,89 @@ struct Entities {
 		auto* scn3 = scene("structure_scene",
 				v3(0), quat::ident());
 			
-			auto* lgh30 = dir_light("Sun",
-					v3(-2.84f, +4.70f, +4.90f), quat(v3(+0.15f, -0.12f, -0.62f), +0.76f),
-					ON, srgb(244.0f,217.0f,171.0f) * col(2000.0f));
-			auto* msh30 = mesh("ring",
-					v3(0), quat::ident(),
+			auto* lgh30 = dir_light("Sun",		v3(-2.84f, +4.70f, +4.90f), quat(v3(+0.15f, -0.12f, -0.62f), +0.76f),
+					ON, srgb(244,217,171) * col(2000));
+			auto* msh30 = mesh("ring",			v3(0), quat::ident(),
 					nouv_MSH_STRUCTURE_RING);
-			auto* msh31 = mesh("walls",
-					v3(0), quat::ident(),
+			auto* msh31 = mesh("walls",			v3(0), quat::ident(),
 					uv_MSH_STRUCTURE_WALLS);
-			auto* msh32 = mesh("ground",
-					v3(0), quat::ident(),
+			auto* msh32 = mesh("ground",		v3(0), quat::ident(),
 					uv_MSH_STRUCTURE_GROUND);
-			auto* msh33 = mesh("block 1",
-					v3(+1.52488f, +0.41832f, -3.31113f), quat(v3(-0.012f, +0.009f, -0.136f), +0.991f),
+			auto* msh33 = mesh("block 1",		v3(+1.52488f, +0.41832f, -3.31113f), quat(v3(-0.012f, +0.009f, -0.136f), +0.991f),
 					uv_MSH_STRUCTURE_BLOCK1);
-			auto* msh34 = mesh("block 2",
-					v3(+3.05563f, +5.89111f, +0.53238f), quat(v3(-0.038f, -0.001f, +0.076f), +0.996f),
+			auto* msh34 = mesh("block 2",		v3(+3.05563f, +5.89111f, +0.53238f), quat(v3(-0.038f, -0.001f, +0.076f), +0.996f),
 					uv_MSH_STRUCTURE_BLOCK2);
-			auto* msh35 = mesh("block 3",
-					v3(-2.84165f, +4.51917f, -2.67442f), quat(v3(-0.059f, -0.002f, +0.056f), +0.997f),
+			auto* msh35 = mesh("block 3",		v3(-2.84165f, +4.51917f, -2.67442f), quat(v3(-0.059f, -0.002f, +0.056f), +0.997f),
 					uv_MSH_STRUCTURE_BLOCK3);
-			auto* msh36 = mesh("block 4",
-					v3(+0.69161f, +1.3302f, -2.57026f), quat(v3(-0.013f, +0.009f, -0.253f), +0.967f),
+			auto* msh36 = mesh("block 4",		v3(+0.69161f, +1.3302f, -2.57026f), quat(v3(-0.013f, +0.009f, -0.253f), +0.967f),
 					uv_MSH_STRUCTURE_BLOCK4);
 					
-			auto* msh37 = group("beam",
-					v3(-3.4297f, +1.47318f, -1.26951f), quat(v3(-0.088f, +0.017f, +0.996f), +0.0008585f));
+			auto* msh37 = group("beam",			v3(-3.4297f, +1.47318f, -1.26951f), quat(v3(-0.088f, +0.017f, +0.996f), +0.0008585f));
 				
-				auto* msh37_0 = mesh("beam",
-						v3(0), quat::ident(),
+				auto* msh37_0 = mesh("beam",	v3(0), quat::ident(),
 						uv_MSH_STRUCTURE_BEAM);
-				auto* msh37_1 = mesh("cuts",
-						v3(0), quat::ident(),
+				auto* msh37_1 = mesh("cuts",	v3(0), quat::ident(),
 						uv_MSH_STRUCTURE_BEAM_CUTS);
 			
-		auto* scn4 = scene("normals",
-				v3(-8.62f, +1.19f, +0.48f), quat(v3(-0.00f, -0.00f, +0.00f), +1.00f));
+		auto* scn4 = scene("normals",			v3(-8.62f, +1.19f, +0.48f), quat(v3(-0.00f, -0.00f, +0.00f), +1.00f));
 			
-			auto* lgh40 = dir_light("Sun",
-					v3(+2.29f, -0.11f, +2.77f), quat(v3(+0.17f, +0.27f, +0.80f), +0.51f),
-					ON, srgb(244.0f,217.0f,171.0f) * col(2000.0f));
-			auto* msh40 = mesh("brick_wall",
-					v3(+0.00f, +1.15f, +0.77f), quat(v3(+0.61f, +0.36f, +0.36f), +0.61f),
+			auto* lgh40 = dir_light("Sun",		v3(+2.29f, -0.11f, +2.77f), quat(v3(+0.17f, +0.27f, +0.80f), +0.51f),
+					ON, srgb(244,217,171) * col(2000));
+			auto* msh40 = mesh("brick_wall",	v3(+0.00f, +1.15f, +0.77f), quat(v3(+0.61f, +0.36f, +0.36f), +0.61f),
 					uv_tang_MSH_UNIT_PLANE);
-			auto* msh41 = mesh("weird plane",
-					v3(-0.73f, -1.07f, +0.00f), quat(v3(+0.06f, +0.08f, +0.80f), +0.59f),
+			auto* msh41 = mesh("weird plane",	v3(-0.73f, -1.07f, +0.00f), quat(v3(+0.06f, +0.08f, +0.80f), +0.59f),
 					uv_tang_NORM_TEST_00);
+			auto* msh42 = mesh("david",			v3(+0.59f, +0.31f, -0.21f), quat(v3(-0.00f, +0.00f, -0.76f), +0.65f),
+					uv_tang_PG_DAVID);
 			
-		auto* scn5 = scene("showcase",
+		auto* scn5 = scene("PBR showcase",
 				v3(+9.67f, +0.16f, +0.00f), quat(v3(-0.00f, -0.00f, +0.71f), +0.71f));
 			
-			auto* lgh50 = dir_light("Sun",
-					v3(-4.91f, +2.46f, +3.35f), quat(v3(+0.05f, -0.22f, -0.95f), +0.21f),
-					ON, srgb(244.0f,217.0f,171.0f) * col(2000.0f));
-			auto* msh50 = material_showcase_grid("ico_sphere",
-					v3(-4.84f, -1.52f, +0.00f), quat::ident(), v3(0.3f),
+			auto* lgh50 = dir_light("Sun",		v3(-4.91f, +2.46f, +3.35f), quat(v3(+0.05f, -0.22f, -0.95f), +0.21f),
+					ON, srgb(244,217,171) * col(2000));
+			auto* msh50 = material_showcase_grid("ico_sphere",	v3(-4.84f, -1.52f, +0.00f), quat::ident(), v3(0.3f),
 					nouv_MSH_ICO_SPHERE, v2(2.5f));
-			auto* msh51 = material_showcase_grid("bunny",
-					v3(+0.38f, -1.69f, +0.00f), quat::ident(), v3(2.0f),
+			auto* msh51 = material_showcase_grid("bunny",		v3(+0.38f, -1.69f, +0.00f), quat::ident(), v3(2.0f),
 					nouv_MSH_STFD_BUNNY, v2(0.375f));
-			auto* msh52 = material_showcase_grid("buddha",
-					v3(+1.25f, -4.38f, +0.00f), quat::ident(), v3(1),
+			auto* msh52 = material_showcase_grid("buddha",		v3(+1.25f, -4.38f, +0.00f), quat::ident(), v3(1),
 					nouv_MSH_STFD_BUDDHA, v2(0.85f));
-			auto* msh53 = material_showcase_grid("dragon",
-					v3(-3.41f, +1.48f, +0.00f), quat::ident(), v3(1),
+			auto* msh53 = material_showcase_grid("dragon",		v3(-3.41f, +1.48f, +0.00f), quat::ident(), v3(1),
 					nouv_MSH_STFD_DRAGON, v2(0.65f));
-			auto* msh54 = material_showcase_grid("teapot",
-					v3(+2.09f, +1.42f, +0.00f), quat::ident(), v3(2.5f),
+			auto* msh54 = material_showcase_grid("teapot",		v3(+2.09f, +1.42f, +0.00f), quat::ident(), v3(2.5f),
 					nouv_MSH_UTAHTEAPOT, v2(0.3f));
 			
+			auto* grp55 = group("materials",	v3(-13.89f, -0.74f, +1.00f), quat(v3(+0.00f, -0.00f, -0.33f), +0.94f));
+				
+				v3 offs = v3(0.65f, 0,0);
+				
+				auto* msh550 = mesh("plastic",	v3(0)*offs, quat::ident(), v3(0.3f),	nouv_MSH_ICO_SPHERE, MAT_SHOW_PLASTIC);
+				auto* msh551 = mesh("glass",	v3(1)*offs, quat::ident(), v3(0.3f),	nouv_MSH_ICO_SPHERE, MAT_SHOW_GLASS);
+				auto* msh552 = mesh("plasic_h",	v3(2)*offs, quat::ident(), v3(0.3f),	nouv_MSH_ICO_SPHERE, MAT_SHOW_PLASIC_H);
+				auto* msh553 = mesh("ruby",		v3(3)*offs, quat::ident(), v3(0.3f),	nouv_MSH_ICO_SPHERE, MAT_SHOW_RUBY);
+				auto* msh554 = mesh("diamond",	v3(4)*offs, quat::ident(), v3(0.3f),	nouv_MSH_ICO_SPHERE, MAT_SHOW_DIAMOND);
+				auto* msh555 = mesh("iron",		v3(5)*offs, quat::ident(), v3(0.3f),	nouv_MSH_ICO_SPHERE, MAT_SHOW_IRON);
+				auto* msh556 = mesh("copper",	v3(6)*offs, quat::ident(), v3(0.3f),	nouv_MSH_ICO_SPHERE, MAT_SHOW_COPPER);
+				auto* msh557 = mesh("gold",		v3(7)*offs, quat::ident(), v3(0.3f),	nouv_MSH_ICO_SPHERE, MAT_SHOW_GOLD);
+				auto* msh558 = mesh("alu",		v3(8)*offs, quat::ident(), v3(0.3f),	nouv_MSH_ICO_SPHERE, MAT_SHOW_ALU);
+				auto* msh559 = mesh("silver",	v3(9)*offs, quat::ident(), v3(0.3f),	nouv_MSH_ICO_SPHERE, MAT_SHOW_SILVER);
+				
+			auto* msh56 = mesh_cerberus("cerberus",	v3(-7.41f, -1.04f, +0.70f), quat(v3(-0.07f, +0.01f, -0.13f), +0.99f), v3(1),
+					uv_tang_CERBERUS, MAT_IDENTITY,	TEX_CERBERUS_ALBEDO, TEX_CERBERUS_NORMAL, TEX_CERBERUS_METALLIC, TEX_CERBERUS_ROUGHNESS);
+			
+			auto* lgh57 = point_light("Grey dim",	v3(-6.28f, +0.24f, +0.83f), NOSHAD, srgb(225.0f,228,230) * col(75));
+			auto* lgh58 = point_light("Blue",		v3(-7.10f, -3.60f, +1.46f), NOSHAD, srgb(29,54,252) * col(450));
+			auto* lgh59 = point_light("Red bright",	v3(-12.38f, -4.31f, +2.65f), NOSHAD, srgb(237,7,51) * col(750));
+			auto* lgh5a = point_light("Sunlike",	v3(-0.30f, -2.18f, +3.60f), NOSHAD, srgb(244,217,171) * col(1200));
+			
+			auto* grp5b = group("nanosuit",		v3(-8.88f, -0.65f, +0.00f), quat(v3(-0.00f, +0.00f, -0.24f), +0.97f));
+				
+				auto* nano50 = mesh("Torso",	v3(0), quat::ident(), uv_tang_NANOSUIT_TORSO);
+				auto* nano51 = mesh("Legs",		v3(0), quat::ident(), uv_tang_NANOSUIT_LEGS);
+				auto* nano52 = mesh("Neck",		v3(0), quat::ident(), uv_tang_NANOSUIT_NECK);
+				auto* nano53 = mesh("Helmet",	v3(0), quat::ident(), uv_tang_NANOSUIT_HELMET);
+			
+			
+		
 		tree(&root,
 			scene_tree(scn,
 				lgh0,
@@ -1628,7 +1602,8 @@ struct Entities {
 			scene_tree(scn4,
 				lgh40,
 				msh40,
-				msh41
+				msh41,
+				msh42
 			),
 			scene_tree(scn5,
 				lgh50,
@@ -1636,47 +1611,32 @@ struct Entities {
 				msh51,
 				msh52,
 				msh53,
-				msh54
+				msh54,
+				tree(grp55,
+					msh550,
+					msh551,
+					msh552,
+					msh553,
+					msh554,
+					msh555,
+					msh556,
+					msh557,
+					msh558,
+					msh559
+				),
+				msh56,
+				lgh57,
+				lgh58,
+				lgh59,
+				lgh5a,
+				tree(grp5b,
+					nano50,
+					nano51,
+					nano52,
+					nano53
+				)
 			)
 		);
-		
-		#if 0
-		{
-			{
-				
-				for (auto i=MAT_SHOW_FIRST; i<MAT_SHOW_END; ++i) {
-					
-					f32 offs = (f32)(i -MAT_SHOW_FIRST) * showcase.materials.grid_offs;
-					
-					draw(nouv_MSH_ICO_SPHERE,
-							m * translate_h(showcase.materials.pos_world) * hm::ident().m3( conv_to_m3(showcase.materials.ori_world) ) *
-							translate_h(v3(offs, 0, 0)) * scale_h(v3(0.3f)),
-							&materials[i]);
-				}
-			}
-			
-			glBindVertexArray(VAOs[UV_TANG_VAO]);
-			glUseProgram(shaders[SHAD_PBR_DEV_CERBERUS]);
-			
-			glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_ALBEDO);
-			tex.set_texture(GL_TEXTURE_2D, TEX_CERBERUS_ALBEDO);
-			
-			glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_NORMAL);
-			tex.set_texture(GL_TEXTURE_2D, TEX_CERBERUS_NORMAL);
-			
-			glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_METALLIC);
-			tex.set_texture(GL_TEXTURE_2D, TEX_CERBERUS_METALLIC);
-			
-			glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_ROUGHNESS);
-			tex.set_texture(GL_TEXTURE_2D, TEX_CERBERUS_ROUGHNESS);
-			
-			draw(uv_tang_CERBERUS,
-					m * translate_h(showcase.cerberus.pos_world) * hm::ident().m3( conv_to_m3(showcase.cerberus.ori_world) )
-					//* scale_h(v3(1.0f)),
-					,
-					&materials[MAT_IDENTITY]);
-		}
-		#endif
 		
 		//test_enumerate();
 		//
@@ -1695,7 +1655,8 @@ struct Entities {
 		AABB aabb_mesh;
 		
 		switch (e->tag) {
-			case ET_MESH: {
+			case ET_MESH:
+			case ET_MESH_CERBERUS: {
 				auto* m = (Mesh*)e;
 				mesh_id_e mesh_id = m->mesh_id;
 				aabb_mesh = meshes_aabb[mesh_id];
@@ -1711,8 +1672,8 @@ struct Entities {
 				auto* l = (Light_*)e;
 				mesh_id_e mesh_id;
 				switch (l->type) {
-					case LT_DIRECTIONAL:	mesh_id = nouv_MSH_SUN_LAMP_MSH;	break;
-					case LT_POINT:			mesh_id = nouv_MSH_LIGHT_BULB;		break;
+					case LT_DIRECTIONAL:	mesh_id = MSH_nouv_col_SUN_LAMP;	break;
+					case LT_POINT:			mesh_id = MSH_nouv_col_LIGHT_BULB;		break;
 					default: assert(false); mesh_id = (mesh_id_e)0;
 				}
 				aabb_mesh = meshes_aabb[mesh_id];
@@ -1782,7 +1743,8 @@ AABB calc_shadow_cast_aabb (Entity const* e, hm mp parent_to_light) {
 	AABB aabb_me;
 	
 	switch (e->tag) {
-		case ET_MESH: {
+		case ET_MESH:
+		case ET_MESH_CERBERUS: {
 			auto* m = (Mesh*)e;
 			mesh_id_e mesh_id = m->mesh_id;
 			aabb_me = meshes_aabb[mesh_id];
@@ -1834,8 +1796,7 @@ struct Editor {
 	v3					selected_pos_paren =		v3(0);
 	
 	DECLM void do_entities (hm mp world_to_cam, hm mp cam_to_world, Inp cr inp, SInp cr sinp,
-			v2 vp cam_frust_scale, m4 mp cam_to_clip, Camera cr cam,
-			Lights* lights, Entities* entities) {
+			v2 vp cam_frust_scale, m4 mp cam_to_clip, Camera cr cam, Entities* entities) {
 		
 		PROFILE_SCOPED(THR_ENGINE, "editor_do_entities");
 		
@@ -2153,13 +2114,6 @@ DECLD Camera				saved_cameras[10];
 DECLD Env_Viewer			env_viewer;
 DECLD Entities				entities;
 DECLD Editor				editor;
-
-
-DECLD Textures				tex;
-
-DECLD Lights				lights;
-
-DECLD std140_Material		materials[MAT_COUNT] =			{}; // init to zero except for default values
 
 //////
 // Rendering
@@ -3054,6 +3008,23 @@ DECL void init () {
 			
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[NO_UV_INDX_BUF]);
 		}
+		{ // 
+			glBindVertexArray(VAOs[NO_UV_COL_VAO]);
+			
+			glEnableVertexAttribArray(0);
+			glEnableVertexAttribArray(1);
+			glEnableVertexAttribArray(4);
+			
+			glBindBuffer(GL_ARRAY_BUFFER, VBOs[NO_UV_COL_ARR_BUF]);
+			
+			auto vert_size = safe_cast_assert(GLsizei, (3 +3 +3) * sizeof(f32));
+			
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((0) * sizeof(f32)));				// pos xyz
+			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +0) * sizeof(f32)));			// normal xyz
+			glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +3 +0) * sizeof(f32)));		// color rgb
+			
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[NO_UV_COL_INDX_BUF]);
+		}
 		{ // UV mesh buffer
 			glBindVertexArray(VAOs[UV_VAO]);
 			
@@ -3415,7 +3386,7 @@ DECL void frame () {
 	
 	// select entities based on their <current> position and AABB (<current> = like rendered prev frame)
 	editor.do_entities(world_to_cam, cam_to_world, inp, sinp,
-			cam_frust_scale, cam_to_clip, camera, &lights, &entities);
+			cam_frust_scale, cam_to_clip, camera, &entities);
 	
 	entities.calc_mesh_aabb(); // update AABB since entities could have moved in do_entities
 	
@@ -3484,7 +3455,19 @@ DECL void frame () {
 					
 					GLOBAL_UBO_WRITE_VAL( std140::uint_, lightbulb_indx, -1);
 					
-					draw(id, to_cam, from_cam, &materials[MAT_WHITENESS]);
+					{
+						std140_Transforms_Material temp;
+						
+						temp.transforms.model_to_cam.set(to_cam);
+						temp.transforms.normal_model_to_cam.set(transpose(from_cam.m3())); // cancel out scaling and translation -> only keep rotaton
+						
+						temp.mat = materials[msh->material];
+						
+						GLOBAL_UBO_WRITE(transforms, &temp);
+					}
+				
+					glDrawElementsBaseVertex(GL_TRIANGLES, meshes[msh->mesh_id].indx_count, GL_UNSIGNED_SHORT,
+							meshes[msh->mesh_id].indx_offsets, meshes[msh->mesh_id].base_vertecies);
 					
 				};
 				auto draw_mesh_shadow = [] (Mesh const* msh, hm mp to_light, hm mp from_light) {
@@ -3501,7 +3484,49 @@ DECL void frame () {
 						assert(false, "unknown mesh type (id: %)", (u32)id);
 					}
 					
-					draw_keep_mat(id, to_light, from_light);
+					{
+						std140_Transforms temp;
+						temp.model_to_cam.set(to_light);
+						temp.normal_model_to_cam.set(transpose(from_light.m3())); // cancel out scaling and translation -> only keep rotaton
+						GLOBAL_UBO_WRITE(transforms, &temp);
+					}
+					
+					glDrawElementsBaseVertex(GL_TRIANGLES, meshes[id].indx_count, GL_UNSIGNED_SHORT,
+							meshes[id].indx_offsets, meshes[id].base_vertecies);
+				};
+				
+				auto draw_mesh_cerberus = [] (Mesh_Cerberus const* msh, hm mp to_cam, hm mp from_cam) {
+					PROFILE_SCOPED(THR_ENGINE, "mesh");
+					
+					glUseProgram(shaders[SHAD_PBR_DEV_NOTEX]);
+					
+					auto id = msh->mesh_id;
+					if (		id >= NOUV_MSH_FIRST && id < NOUV_MSH_END ) {
+						glBindVertexArray(VAOs[NO_UV_VAO]);
+					} else if (	id >= UV_MSH_FIRST && id < UV_MSH_END ) {
+						glBindVertexArray(VAOs[UV_VAO]);
+					} else if (	id >= UV_TANG_MSH_FIRST && id < UV_TANG_MSH_END ) {
+						glBindVertexArray(VAOs[UV_TANG_VAO]);
+					} else {
+						assert(false, "unknown mesh type (id: %)", (u32)id);
+					}
+					
+					//print(">>> draw '%' at %\n", msh->name, (to_world * hv(0)).xyz());
+					
+					GLOBAL_UBO_WRITE_VAL( std140::uint_, lightbulb_indx, -1);
+					
+					{
+						std140_Transforms_Material temp;
+						
+						temp.transforms.model_to_cam.set(to_cam);
+						temp.transforms.normal_model_to_cam.set(transpose(from_cam.m3())); // cancel out scaling and translation -> only keep rotaton
+						temp.mat = materials[msh->material];
+						
+						GLOBAL_UBO_WRITE(transforms, &temp);
+					}
+					
+					glDrawElementsBaseVertex(GL_TRIANGLES, meshes[id].indx_count, GL_UNSIGNED_SHORT,
+							meshes[id].indx_offsets, meshes[id].base_vertecies);
 					
 				};
 				
@@ -3530,8 +3555,17 @@ DECL void frame () {
 					
 					auto& mesh = meshes[e->mesh_id];
 					
-					set_transforms_and_mat(to_cam, from_cam, &mat);
 					GLOBAL_UBO_WRITE_VAL( std140::uint_, lightbulb_indx, -1);
+					{
+						std140_Transforms_Material temp;
+						
+						temp.transforms.model_to_cam.set(to_cam);
+						temp.transforms.normal_model_to_cam.set(transpose(from_cam.m3())); // cancel out scaling and translation -> only keep rotaton
+						
+						temp.mat = mat;
+						
+						GLOBAL_UBO_WRITE(transforms, &temp);
+					}
 					
 					auto inst_count = safe_cast_assert(GLsizei, steps.x*steps.y);
 					
@@ -3555,8 +3589,15 @@ DECL void frame () {
 							
 							v2 offs = material_showcase_grid_mat * (v2(e->grid_offs) * cast_v2<v2>(v2u32(i, j)));
 							
-							draw_keep_mat(e->mesh_id,
-									to_light * translate_h(v3(offs, 0)), translate_h(v3(-offs, 0)) * from_light);
+							{
+								std140_Transforms temp;
+								temp.model_to_cam.set(to_light * translate_h(v3(offs, 0)));
+								temp.normal_model_to_cam.set(transpose((translate_h(v3(-offs, 0)) * from_light).m3())); // cancel out scaling and translation -> only keep rotaton
+								GLOBAL_UBO_WRITE(transforms, &temp);
+							}
+							
+							glDrawElementsBaseVertex(GL_TRIANGLES, meshes[e->mesh_id].indx_count, GL_UNSIGNED_SHORT,
+									meshes[e->mesh_id].indx_offsets, meshes[e->mesh_id].base_vertecies);
 						}
 					}
 					
@@ -3574,6 +3615,7 @@ DECL void frame () {
 						switch (e->tag) {
 							
 							case ET_MESH:
+							case ET_MESH_CERBERUS:
 								draw_mesh_shadow((Mesh*)e, to_light, from_light);
 								break;
 								
@@ -3771,18 +3813,30 @@ DECL void frame () {
 						auto draw_light_bulb = [&] (Light_ const* l, hm mp to_cam, hm mp from_cam) {
 							PROFILE_SCOPED(THR_ENGINE, "light_bulb");
 							
-							glUseProgram(shaders[SHAD_PBR_DEV_NOTEX]);
+							glUseProgram(shaders[SHAD_PBR_DEV_LIGHTBULB]);
 							
 							if (!(inp.mouselook & FPS_MOUSELOOK)) {
 								
-								glBindVertexArray(VAOs[NO_UV_VAO]);
+								glBindVertexArray(VAOs[NO_UV_COL_VAO]);
 								
 								GLOBAL_UBO_WRITE_VAL( std140::uint_, lightbulb_indx,
 										(l->flags & LF_DISABLED) ? -1 : enabled_light_indx );
 								
-								draw(l->type == LT_POINT ? nouv_MSH_LIGHT_BULB : nouv_MSH_SUN_LAMP_MSH,
-										to_cam, from_cam,
-										&materials[MAT_LIGHTBULB] );
+								auto mesh = l->type == LT_POINT ? MSH_nouv_col_LIGHT_BULB : MSH_nouv_col_SUN_LAMP;
+								
+								{
+									std140_Transforms_Material temp;
+									
+									temp.transforms.model_to_cam.set(to_cam);
+									temp.transforms.normal_model_to_cam.set(transpose(from_cam.m3())); // cancel out scaling and translation -> only keep rotaton
+									
+									temp.mat = materials[MAT_LIGHTBULB];
+									
+									GLOBAL_UBO_WRITE(transforms, &temp);
+								}
+								
+								glDrawElementsBaseVertex(GL_TRIANGLES, meshes[mesh].indx_count, GL_UNSIGNED_SHORT,
+										meshes[mesh].indx_offsets, meshes[mesh].base_vertecies);
 								
 								if (!(l->flags & LF_DISABLED)) {
 									++enabled_light_indx;
@@ -3797,6 +3851,10 @@ DECL void frame () {
 								
 								case ET_MESH:
 									draw_mesh((Mesh*)e, to_cam, from_cam);
+									break;
+									
+								case ET_MESH_CERBERUS:
+									draw_mesh_cerberus((Mesh_Cerberus*)e, to_cam, from_cam);
 									break;
 									
 								case ET_LIGHT:
@@ -3833,172 +3891,6 @@ DECL void frame () {
 			e = scn->next;
 			++scn_i;
 		}
-	}
-	
-	{ ////// Old main pass
-		PROFILE_SCOPED(THR_ENGINE, "old_main_pass");
-		
-		hm m = world_to_cam;
-		
-		#if 1
-		{ // Light processing
-			std140_Shading temp = {};
-			
-			{
-				for (u32 i=0; i<lights.lights.len; ++i) {
-					auto& l = temp.lights[i];
-					
-					l.light_vec_cam.set(	v4( (world_to_cam * hv(lights.lights[i].pos_world) ).xyz(), 1) );
-					l.power.set(			lights.lights[i].power );
-					l.shad_i.set(			-1 );
-					l.cam_to_light.set(		m4::zero() );
-				}
-				
-				temp.lights_count.set(lights.lights.len);
-			}
-			
-			GLOBAL_UBO_WRITE(lights_count, &temp);
-		}
-		GLOBAL_UBO_WRITE_VAL( std140::uint_, lightbulb_indx, -1 );
-		#endif
-		
-		glUseProgram(shaders[SHAD_PBR_DEV_NORMAL_MAPPED]);
-		
-		{
-			glBindVertexArray(VAOs[NO_UV_VAO]);
-			glUseProgram(shaders[SHAD_PBR_DEV_NOTEX]);
-			
-			assert(showcase.grid_steps >= 2);
-			
-			f32 inv_range = 1.0f / (f32)(showcase.grid_steps -1);
-			
-			std140_Material mat;
-			mat.albedo.set(v3(0.91f, 0.92f, 0.92f)); // aluminium
-			
-			auto draw_grid = [&] (mesh_id_e mesh, Showcase::Grid_Obj cr obj, v3 vp scale) {
-				
-				for (u32 j=0; j<3; ++j) {
-					
-					mat.metallic.set( (f32)j / 2.0f );
-					
-					for (u32 i=0; i<showcase.grid_steps; ++i) {
-						
-						mat.roughness.set( fp::lerp(0.01f, 1.0f, (f32)i * inv_range) );
-						
-						v2 offs = cast_v2<v2>(v2u32(i, j)) * v2(1,-1) * v2(obj.grid_offs);
-						
-						draw(mesh,
-								m * translate_h(obj.pos_world) * hm::ident().m3( conv_to_m3(obj.ori_world) ) *
-								translate_h(v3(offs, 0.0f)) * scale_h(scale), hm::ident(),
-								&mat);
-					}
-				}
-			};
-			
-			//draw_grid(nouv_MSH_ICO_SPHERE, showcase.sphere, v3(0.3f));
-			//draw_grid(nouv_MSH_STFD_BUNNY, showcase.bunny, v3(2.0f));
-			//draw_grid(nouv_MSH_STFD_BUDDHA, showcase.buddha, v3(1));
-			//draw_grid(nouv_MSH_STFD_DRAGON, showcase.dragon, v3(1));
-			//draw_grid(nouv_MSH_UTAHTEAPOT, showcase.teapot, v3(2.5f));
-			
-			{
-				
-				for (auto i=MAT_SHOW_FIRST; i<MAT_SHOW_END; ++i) {
-					
-					f32 offs = (f32)(i -MAT_SHOW_FIRST) * showcase.materials.grid_offs;
-					
-					draw(nouv_MSH_ICO_SPHERE,
-							m * translate_h(showcase.materials.pos_world) * hm::ident().m3( conv_to_m3(showcase.materials.ori_world) ) *
-							translate_h(v3(offs, 0, 0)) * scale_h(v3(0.3f)), hm::ident(),
-							&materials[i]);
-				}
-			}
-			
-			glBindVertexArray(VAOs[UV_TANG_VAO]);
-			glUseProgram(shaders[SHAD_PBR_DEV_CERBERUS]);
-			
-			glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_ALBEDO);
-			tex.set_texture(GL_TEXTURE_2D, TEX_CERBERUS_ALBEDO);
-			
-			glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_NORMAL);
-			tex.set_texture(GL_TEXTURE_2D, TEX_CERBERUS_NORMAL);
-			
-			glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_METALLIC);
-			tex.set_texture(GL_TEXTURE_2D, TEX_CERBERUS_METALLIC);
-			
-			glActiveTexture(GL_TEXTURE0 +TEX_UNIT_CERB_ROUGHNESS);
-			tex.set_texture(GL_TEXTURE_2D, TEX_CERBERUS_ROUGHNESS);
-			
-			draw(uv_tang_CERBERUS,
-					m * translate_h(showcase.cerberus.pos_world) * hm::ident().m3( conv_to_m3(showcase.cerberus.ori_world) )
-					//* scale_h(v3(1.0f)),
-					, hm::ident(),
-					&materials[MAT_IDENTITY]);
-		}
-		
-		glBindVertexArray(VAOs[NO_UV_VAO]);
-		glUseProgram(shaders[SHAD_PBR_DEV_NOTEX]);
-		
-		if (!(inp.mouselook & FPS_MOUSELOOK)) { // Light bulbs
-			
-			for (u32 light_i=0; light_i<lights.lights.len; ++light_i) {
-				
-				GLOBAL_UBO_WRITE_VAL( std140::uint_, lightbulb_indx, light_i );
-				
-				auto& l = lights.lights[light_i];
-				{
-					draw(l.type == LT_POINT ? nouv_MSH_LIGHT_BULB : nouv_MSH_SUN_LAMP_MSH,
-							m * translate_h(l.pos_world) *  hm::ident().m3( conv_to_m3(l.ori_world) )
-							* scale_h(v3(1.0f / 1)), hm::ident(),
-							&materials[MAT_LIGHTBULB] );
-				}
-			}
-			
-			GLOBAL_UBO_WRITE_VAL( std140::uint_, lightbulb_indx, -1 );
-			
-		}
-		
-		glUseProgram(shaders[SHAD_TINT_AS_FRAG_COL]);
-		
-		#if 0
-		glDisable(GL_CULL_FACE);
-		glUseProgram(shaders[SHAD_PBR_DEV_TEX]);
-		
-		{ // Ground
-			glActiveTexture(GL_TEXTURE0 +TEX_UNIT_ALBEDO);
-			tex.set_texture(GL_TEXTURE_2D, GRASS_TEX);
-			
-			set_transforms_and_mat(m, &materials[MAT_GRASS]);
-			
-			glBindVertexArray(VAOs[UV_VAO]);
-			draw_keep_set(uv_SCENE_GROUND0);
-			
-			glBindVertexArray(VAOs[GROUND_PLANE_VAO]);
-			glDrawArrays(GL_TRIANGLES, 0, GROUND_PLANE_VERT_COUNT);
-		}
-		
-		glEnable(GL_CULL_FACE);
-		
-		glBindVertexArray(VAOs[NO_UV_VAO]);
-		//// Draw skybox
-		glDepthMask(GL_FALSE);
-		glEnable(GL_DEPTH_CLAMP);
-		
-		glUseProgram(shaders[SHAD_SKY]);
-		
-		{ // Sky
-		  // Scene is drawn at the far nrm_wall (by having the vertex shader produce the correct z value)
-		  // Depth clamping is enabled in case of precision problems so that the sky does not get clipped
-		  // All pixels drawn before should have an early z rejection and only the rest should get drawn
-			draw_solid_color(nouv_MSH_SKYSPHERE2_SUN,
-					hm::ident().m3(m.m3() * sky_sphere_to_world),
-					(scattered_sun_power * v3(4)) / v3(max_power) );
-		}
-		
-		glDisable(GL_DEPTH_CLAMP);
-		glDepthMask(GL_TRUE);
-		#endif
-		
 	}
 	
 	{ // Entity highlighting by draing bounding box with as dbg_lines
@@ -4066,6 +3958,29 @@ DECL void frame () {
 						assert(highl_axis >= 0 && highl_axis < 3);
 					}
 					
+					auto draw_solid_color = [] (mesh_id_e mesh_id, hm mp model_to_cam, hm mp cam_to_model, v3 col) {
+						auto& mesh = meshes[mesh_id];
+						
+						std140_Material mat;
+						mat.albedo.set(col);
+						mat.metallic.set(0);
+						mat.roughness.set(0);
+						mat.roughness.set(0);
+						
+						{
+							std140_Transforms_Material temp;
+							
+							temp.transforms.model_to_cam.set(model_to_cam);
+							temp.transforms.normal_model_to_cam.set(transpose(cam_to_model.m3())); // cancel out scaling and translation -> only keep rotaton
+							
+							temp.mat = mat;
+							
+							GLOBAL_UBO_WRITE(transforms, &temp);
+						}
+						
+						glDrawElementsBaseVertex(GL_TRIANGLES, mesh.indx_count, GL_UNSIGNED_SHORT,
+								mesh.indx_offsets, mesh.base_vertecies);
+					};
 					if (drawAxisLines) {
 						assert(highl_axis != u32(-1));
 						

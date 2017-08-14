@@ -125,9 +125,11 @@ struct Stack {
 	}
 	
 	template <uptr ALIGN, typename T=byte> DECLM T* zeropad_to_align () {
-		u8* cur = getTop<byte>();
-		u8* end = align_up(cur, ALIGN);
-		pushArrZero<byte>(ptr_sub(cur, end));
+		byte* cur = getTop<byte>();
+		byte* end = align_up(cur, ALIGN);
+		auto len = ptr_sub(cur, end);
+		pushArr<byte>(len);
+		cmemzero(cur, len);
 		return reinterpret_cast<T*>(cur);
 	}
 	

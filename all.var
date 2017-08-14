@@ -24,11 +24,11 @@ controls = {
 
 camera = {
 	.pos_world =					#	v3(-29.2636, +5.4754, +0.1278)
-									$	v3(+5.6778, -3.3362, +2.7755)
-									$s	v3(+5.6778, -3.3362, +2.7755);
+									$	v3(+9.0350, -8.3571, +1.8613)
+									$s	v3(+9.0350, -8.3571, +1.8613);
 	.aer =							#
-									$	deg(v3(+300.9345, +58.9500, +0.0000))
-									$s	deg(v3(+300.9345, +58.9500, +0.0000));
+									$	deg(v3(+310.9496, +53.2124, +0.0000))
+									$s	deg(v3(+310.9496, +53.2124, +0.0000));
 	.base_ori =							quat(ident);
 	
 	.vfov =							#	+100_deg
@@ -95,46 +95,12 @@ saved_cameras =				$s [10] {
 	{ v3(+0.0000, +0.0000, +0.0000), deg(v3(+0.0000, +90.0000, +0.0000)), quat(v3(+0.0000, +0.0000, +0.0000), +1.0000), +75.0000_deg, +0.0625, +4096.0000 }
 };
 
-### Lighting stuff
-lights = {
-	.lights =						[] {
-		{ "Grey dim",	v3(-42.2029, -5.7587, +1.0016), quat(ident),	1, 0, srgb(225,228,230) * col(30) },
-		{ "Blue",		v3(-41.6029, -6.0587, +1.7016), quat(ident),	1, 0, srgb(29,54,252) * col(450) },
-		{ "Red bright",	v3(-41.7029, -6.0587, +1.0016), quat(ident),	1, 0, srgb(237,7,51) * col(750) },
-		{ "Sunlike",	v3(-41.8029, -5.4587, +1.8016), quat(ident),	1, 0, srgb(244,217,171) * col(1200) }
-	};
-	
-	.select_radius =				[2]	{
-										1.0 / 4.0,	# Directional light
-										1.0 / 20.0,	# Point light
-	};
-};
-
 ### Scene
 
 {#
 	.cube_rot_vel =						deg(0 ? +20 : 0);
 	.sphere_rot_vel =					-6_deg;
 #}
-
-showcase = {
-	
-	.grid_steps =						10;
-	
-	.materials = {
-		.pos_world =				$s	v3(-49.0546, -3.0716, +1.2679);
-		.ori_world =				$s	quat(v3(-0.0000, +0.0000, -0.0000), +1.0000);
-		.select_radius =				0.25;
-		.grid_offs =					0.65;
-	};
-	
-	.cerberus = {
-		.pos_world =				$s	v3(-47.0940, -3.0819, +1.8214);
-		.ori_world =				$s	quat(v3(+0.0009, +0.0058, +0.9878), +0.1555);
-		.select_radius =				0.15;
-	};
-	
-};
 
 material_showcase_grid_steps =			uv2(7, 3);
 #material_showcase_grid_mat =			m2(	+1, 0,
@@ -263,9 +229,6 @@ mesh_names = [] {
 	{# nouv__3D_LINE_COMPONENT_MSH		#}	"3d_line_component.nouv",
 	{# nouv_SPHERE_MSH					#}	"_unit_sphere.nouv",
 	
-	{# nouv_LIGHT_BULB_MSH				#}	"light_bulb.nouv",
-	{# nouv_MSH_SUN_LAMP_MSH			#}	"sun_lamp.nouv",
-	
 	{# nouv_STRUCTURE_RING_MSH			#}	"structure_ring.nouv",
 	{# nouv_TERRAIN_MSH					#}	"terrain.nouv",
 	{# nouv_MSH_UTAHTEAPOT				#}	"utahTeapot.nouv",
@@ -280,6 +243,10 @@ mesh_names = [] {
 	
 	{# nouv_MSH_WINDOW_PILLAR			#}	"window_pillar.nouv",
 	{# nouv_MSH_SHADOW_TEST_0			#}	"shadow_test_0.nouv",
+	
+	
+	{# MSH_nouv_col_LIGHT_BULB			#}	"light_bulb.nouv_col",
+	{# MSH_nouv_col_SUN_LAMP			#}	"sun_lamp.nouv_col",
 	
 	
 	{# uv_MSH_UNIT_PLANE				#}	"_unitPlane",
@@ -312,6 +279,8 @@ mesh_names = [] {
 	{# uv_tang_NORM_TEST_00				#}	"norm_test/test_00.uv_tang",
 	
 	{# uv_tang_CERBERUS					#}	"cerberus/cerberus.uv_tang",
+	
+	{# uv_tang_PG_DAVID					#}	"photogr/david.uv_tang",
 };
 
 

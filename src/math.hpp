@@ -89,10 +89,10 @@ template <typename T> DECL constexpr tv3<T> to_srgb (tv3<T> linear) {
 	return tv3<T>( to_srgb(linear.x), to_srgb(linear.y), to_srgb(linear.z) );
 }
 
-template <typename T>	DECL constexpr tv3<T> col (T x, T y, T z) {		return tv3<T>(x,y,z); }
-template <typename T>	DECL constexpr tv3<T> srgb (T x, T y, T z) {	return to_linear(tv3<T>(x,y,z) * tv3<T>(T(1.0/255.0))); }
-template <typename T>	DECL constexpr tv3<T> col (T all) {				return col(all,all,all); }
-template <typename T>	DECL constexpr tv3<T> srgb (T all) {			return srgb(all,all,all); }
+DECL constexpr v3 col (f32 x, f32 y, f32 z) {	return v3(x,y,z); }
+DECL constexpr v3 srgb (f32 x, f32 y, f32 z) {	return to_linear(v3(x,y,z) * v3(1.0f/255.0f)); }
+DECL constexpr v3 col (f32 all) {				return col(all,all,all); }
+DECL constexpr v3 srgb (f32 all) {				return srgb(all,all,all); }
 
 DECL m3 scale_3 (v3 vp scale) {
 	m3 ret = m3::zero();

@@ -9,9 +9,6 @@
 	X(	nouv_MSH_3D_LINE_COMPONENT ) \
 	X(	nouv_MSH_SPHERE ) \
 	 \
-	X(	nouv_MSH_LIGHT_BULB ) \
-	X(	nouv_MSH_SUN_LAMP_MSH ) \
-	 \
 	X(	nouv_MSH_STRUCTURE_RING ) \
 	X(	nouv_MSH_TERRAIN ) \
 	X(	nouv_MSH_UTAHTEAPOT ) \
@@ -26,6 +23,9 @@
 	 \
 	X(	nouv_MSH_WINDOW_PILLAR ) \
 	X(	nouv_MSH_SHADOW_TEST_0 ) \
+	 \
+	X(	MSH_nouv_col_LIGHT_BULB ) \
+	X(	MSH_nouv_col_SUN_LAMP ) \
 	 \
 	X(	uv_MSH_UNIT_PLANE ) \
 	 \
@@ -56,7 +56,9 @@
 	 \
 	X(	uv_tang_NORM_TEST_00 ) \
 	\
-	X(	uv_tang_CERBERUS )
+	X(	uv_tang_CERBERUS ) \
+	 \
+	X(	uv_tang_PG_DAVID )
 
 #define X0(name)	name=0,
 #define X(name)		name,
@@ -82,12 +84,16 @@ DECLD constexpr mesh_id_e		NOUV_MSH_FIRST =				nouv_MSH_AXIS_CROSS_PX;
 DECLD constexpr mesh_id_e		NOUV_MSH_END =					(mesh_id_e)(nouv_MSH_SHADOW_TEST_0 +1);
 DECLD constexpr u32				NOUV_MSH_COUNT =				NOUV_MSH_END -NOUV_MSH_FIRST;
 
+DECLD constexpr mesh_id_e		NOUV_COL_MSH_FIRST =			MSH_nouv_col_LIGHT_BULB;
+DECLD constexpr mesh_id_e		NOUV_COL_MSH_END =				(mesh_id_e)(MSH_nouv_col_SUN_LAMP +1);
+DECLD constexpr u32				NOUV_COL_MSH_COUNT =			NOUV_COL_MSH_END -NOUV_COL_MSH_FIRST;
+
 DECLD constexpr mesh_id_e		UV_MSH_FIRST =					uv_MSH_UNIT_PLANE;
 DECLD constexpr mesh_id_e		UV_MSH_END =					(mesh_id_e)(uv_MSH_PLANETARIUM_STAND +1);
 DECLD constexpr u32				UV_MSH_COUNT =					UV_MSH_END -UV_MSH_FIRST;
 
 DECLD constexpr mesh_id_e		UV_TANG_MSH_FIRST =				uv_tang_MSH_UNIT_PLANE;
-DECLD constexpr mesh_id_e		UV_TANG_MSH_END =				(mesh_id_e)(uv_tang_CERBERUS +1);
+DECLD constexpr mesh_id_e		UV_TANG_MSH_END =				(mesh_id_e)(uv_tang_PG_DAVID +1);
 DECLD constexpr u32				UV_TANG_MSH_COUNT =				UV_TANG_MSH_END -UV_TANG_MSH_FIRST;
 
 DECLD char const*				mesh_names[MESHES_COUNT];
@@ -163,34 +169,31 @@ namespace meshes_file_n {
 			}
 			return nullptr;
 		}
-		DECLM void reload_meshes (format_t format, mesh_id_e first_mesh, u32 mesh_count, Mesh_Ref* meshes) {
+		DECLM void reload_meshes (format_e format, mesh_id_e first_mesh, u32 mesh_count, Mesh_Ref* meshes) {
 			
 			uptr sizePerVertex = 0;
 			uptr sizePerIndex;
 			{
 				{
-					assert((format & INTERLEAVED_MASK) ==	INTERLEAVED);
+					assert(format & INTERLEAVED);
 					
-					assert((format & POS_MASK) ==			POS_XYZ);
+					assert(format & POS_XYZ);
 					sizePerVertex += 3;
 					
-					assert((format & NORM_MASK) ==			NORM_XYZ);
+					assert(format & NORM_XYZ);
 					sizePerVertex += 3;
 					
-					
-					switch (format & TANG_MASK) {
-						case TANG_NONE:	sizePerVertex += 0;	break;
-						case TANG_XYZW:	sizePerVertex += 4;	break;
-						default: assert(false);
+					if (format & TANG_XYZW) {
+						sizePerVertex += 4;
 					}
 					
-					switch (format & UV_MASK) {
-						case UV_NONE:	sizePerVertex += 0;	break;
-						case UV_UV:		sizePerVertex += 2;	break;
-						default: assert(false);
+					if (format & UV_UV) {
+						sizePerVertex += 2;
 					}
 					
-					assert((format & COL_MASK) ==			COL_NONE);
+					if (format & COL_RGB) {
+						sizePerVertex += 3;
+					}
 					
 					sizePerVertex *= sizeof(f32);
 				}
@@ -223,8 +226,8 @@ namespace meshes_file_n {
 					auto desired = format_strs(format);
 					warning("Wrong format of mesh % got %%%% (%) but wanted %%%% (%), not loaded!\n",
 							mesh_names[i],
-							actual.f, actual.tang, actual.uv, actual.col,		(format_t)mesh->dataFormat,
-							desired.f, desired.tang, desired.uv, desired.col,	(format_t)format);
+							actual.f, actual.tang, actual.uv, actual.col,		(format_e)mesh->dataFormat,
+							desired.f, desired.tang, desired.uv, desired.col,	(format_e)format);
 					continue;
 				}
 				
@@ -286,44 +289,4 @@ namespace meshes_file_n {
 		}
 		
 	};
-}
-
-DECL std140_Transforms _set_transforms (hm mp model_to_cam, hm mp cam_to_model) {
-	std140_Transforms temp;
-	
-	temp.model_to_cam.set(model_to_cam);
-	temp.normal_model_to_cam.set(transpose(cam_to_model.m3())); // cancel out scaling and translation -> only keep rotaton
-	
-	hm test = cam_to_model * model_to_cam;
-	
-	return temp;
-}
-DECL void set_transforms (hm mp model_to_cam, hm mp cam_to_model) {
-	std140_Transforms temp = _set_transforms(model_to_cam, cam_to_model);
-	
-	GLOBAL_UBO_WRITE(transforms, &temp);
-}
-DECL void set_transforms_and_mat (hm mp model_to_cam, hm mp cam_to_model, std140_Material const* mat) {
-	
-	std140_Transforms_Material temp;
-	
-	temp.transforms = _set_transforms(model_to_cam, cam_to_model);
-	
-	temp.mat = *mat;
-	
-	GLOBAL_UBO_WRITE(transforms, &temp);
-}
-DECL void set_transforms_and_solid_color (hm mp model_to_cam, hm mp cam_to_model, v3 vp col) {
-	
-	std140_Material mat;
-	mat.albedo.set(col);
-	mat.metallic.set(0);
-	mat.roughness.set(0);
-	mat.roughness.set(0);
-	
-	set_transforms_and_mat(model_to_cam, cam_to_model, &mat);
-}
-DECL void set_mat (std140_Material const* mat) {
-	
-	GLOBAL_UBO_WRITE(mat, mat);
 }
