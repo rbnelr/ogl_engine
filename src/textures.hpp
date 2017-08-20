@@ -37,8 +37,16 @@
 		X(	TEX_CERBERUS_METALLIC		) \
 		X(	TEX_CERBERUS_ROUGHNESS		) \
 		 \
-		X(	TEX_PG_DAVID_ALBEDO		) \
-		X(	TEX_PG_DAVID_NORMAL		)
+		X(	TEX_PG_DAVID_ALBEDO			) \
+		X(	TEX_PG_DAVID_NORMAL			) \
+		 \
+		X(	TEX_PG_STOOL_ALB			) \
+		X(	TEX_PG_STOOL_NRM_256		) \
+		X(	TEX_PG_STOOL_NRM_512		) \
+		X(	TEX_PG_STOOL_NRM_1024		) \
+		X(	TEX_PG_STOOL_NRM_2048		) \
+		X(	TEX_PG_DAVID3_ALB			) \
+		X(	TEX_PG_DAVID3_NRM			)
 
 #define X0(id)				id=0,
 #define X(id)				id,

@@ -421,15 +421,15 @@ namespace list_of_files_in_n {
 	enum flags_e : u32 {
 							FILES=				0b000001,
 							FOLDERS=			0b000010,
-							FILTER_FILES=		0b000100,
-							RECURSIVE=			0b001000,
+							RECURSIVE=			0b000100,
+							FILTER_FILES=		0b001000,
 							FILTER_INCL_EXCL=	0b010000,
 							NO_BASE_PATH=		0b100000, // Don't include base path in resulting filenames
 	};
 	DEFINE_ENUM_FLAG_OPS(flags_e, u32)
 	
-	static constexpr u32	FILTER_INCL=		0b000000;
-	static constexpr u32	FILTER_EXCL=		0b010000;
+	static constexpr flags_e	FILTER_INCL=	(flags_e)0b000000;
+	static constexpr flags_e	FILTER_EXCL=	(flags_e)0b010000;
 	
 }
 	
@@ -467,12 +467,27 @@ namespace list_of_files_in_n {
 					// Ignore "." and ".." directories
 				} else {
 					bool is_dir = info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
-					char* filename = info.cFileName;
+					lstr filename = lstr::count_cstr(info.cFileName);
 					assert(filename[0] != '\0');
 					
-					working_stk.push<bool>(is_dir);
-					str::append_term(&working_stk, lstr::count_cstr(filename));
-					++count;
+					bool push = true;
+					if (!is_dir && (flags & FILTER_FILES)) {
+						push = (flags & FILTER_INCL_EXCL) == FILTER_INCL ? false : true;
+						
+						lstr ext = path::find_ext(filename);
+						for (ui i=0; i<filters_len; ++i) {
+							if (str::comp(filters[i], ext)) {
+								push = !push;
+								break;
+							}
+						}
+					}
+					
+					if (push) {
+						working_stk.push<bool>(is_dir);
+						str::append_term(&working_stk, filename);
+						++count;
+					}
 				}
 				{
 					auto ret = FindNextFile(search_handle, &info);
@@ -533,8 +548,7 @@ namespace list_of_files_in_n {
 			ui filters_len, lstr const* filters) {
 		using namespace list_of_files_in_n;
 		
-		assert(	(flags & ~(FILES|FOLDERS|RECURSIVE|NO_BASE_PATH)) == 0 &&
-				filters_len == 0 && filters == nullptr, "Not implemented");
+		assert(	(flags & ~(FILES|FOLDERS|RECURSIVE|FILTER_FILES|FILTER_INCL_EXCL|NO_BASE_PATH)) == 0);
 		
 		Filenames ret;
 		ret.arr		.alloc(0, 256);

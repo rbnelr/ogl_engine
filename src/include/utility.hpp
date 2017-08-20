@@ -135,6 +135,10 @@
 		return (s32)alignup_power_of_two((u32)val);
 	}
 	
+	DECL bool is_power_of_two (u32 val) {
+		return val != 0 && alignup_power_of_two(val) == val;
+	}
+	
 ////
 	template <typename T>
 	DECL constexpr uptr ptr_sub (T const* a, T const* b) {
@@ -276,9 +280,14 @@ namespace str {
 		char*		str;
 		u32			len;
 		
+		mlstr () {}
 		constexpr mlstr (char* str, u32 len):	str{str}, len{len} {}
 		
 		constexpr static mlstr null () { return {nullptr, 0}; }
+		
+		constexpr char& operator[] (u32 indx) const {
+			return str[indx];
+		}
 		
 		static mlstr count_cstr (char* str) {
 			return mlstr(str, str::len(str));
@@ -297,6 +306,10 @@ namespace str {
 		constexpr lstr (mlstr s):					str{s.str}, len{s.len} {}
 		
 		constexpr static lstr null () { return {nullptr, 0}; }
+		
+		constexpr char const& operator[] (u32 indx) const {
+			return str[indx];
+		}
 		
 		template <u32 LEN>
 		constexpr lstr (char const (& lit)[LEN]):	str{lit}, len{LEN -1} {
@@ -372,6 +385,10 @@ namespace str {
 		}
 		return true;
 	}
+	DECL bool comp_up_to_count (lstr a, lstr b, uptr len) {
+		assert(a.len >= len && b.len >= len);
+		return comp_up_to_count(a.str, b.str, len);
+	}
 	
 	// for c=='/'
 	// "blah/dir/file.ext" ->	"/file.ext"
@@ -418,11 +435,11 @@ namespace path {
 		return str::find_tail_excl(path, '\\');
 	}
 	
-	// "blah.ext" ->	".ext"
+	// "blah.ext" ->	"ext"
 	// "blah." ->		""
 	// "blah" ->		null
 	DECL lstr find_ext (lstr path) {
-		return str::find_tail_incl(path, '.');
+		return str::find_tail_excl(path, '.');
 	}
 }
 	

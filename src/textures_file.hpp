@@ -1,4 +1,10 @@
 
+enum img_color_channels_e : u32 {
+	CH_RED =	1,
+	CH_BGR =	3,
+	CH_BGRA =	4,
+};
+
 namespace tex_type {
 	typedef u32 type_t;
 	
@@ -39,6 +45,7 @@ namespace tex_type {
 		NORMAL =			T_TEX_2D|	T_CH_BGR|	T_MIPS|		T_NO_SRGB,
 		
 		SBGR_A =			T_TEX_2D|	T_CH_BGRA|	T_MIPS|		T_SRGB,
+		SBGR =				T_TEX_2D|	T_CH_BGR|	T_MIPS|		T_SRGB,
 		
 		CUBEMAP =			T_CUBEMAP|	T_CH_BGR|	T_MIPS|		T_SRGB|		T_MY_CUBEMAP,
 		CUBEMAP_HUMUS =		T_CUBEMAP|	T_CH_BGR|	T_MIPS|		T_SRGB|		T_HUMUS_CUBEMAP,

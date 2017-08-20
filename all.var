@@ -24,24 +24,24 @@ controls = {
 
 camera = {
 	.pos_world =					#	v3(-29.2636, +5.4754, +0.1278)
-									$	v3(-7.6878, +1.7200, +0.7969)
-									$s	v3(-7.6878, +1.7200, +0.7969);
+									$	v3(-6.5339, +3.0934, +0.3584)
+									$s	v3(-6.6376, +2.8525, +0.6941);
 	.aer =							#
-									$	deg(v3(+125.4380, +79.6501, +0.0000))
-									$s	deg(v3(+125.4380, +79.6501, +0.0000));
+									$	deg(v3(+130.8374, +73.9127, +0.0000))
+									$s	deg(v3(+118.6874, +79.8752, +0.0000));
 	.base_ori =							quat(ident);
 	
 	.vfov =							#	+100_deg
 									$	+75.0000_deg
 									$i	+75.0000_deg;
 									
-	.clip_near =						1.0/16.0;
+	.clip_near =						1.0/64.0;
 	.clip_far =							4096;
 	
 };
 
 passes = {
-	.main_pass_clear_col =				1 ?	srgb(1) :
+	.main_pass_clear_col =				0 ?	srgb(1) :
 											col(0.01) :
 											col(0.2) :
 											srgb(120,175,193);
@@ -106,76 +106,6 @@ saved_cameras =				$s [10] {
 material_showcase_grid_steps =			uv2(7, 3);
 #material_showcase_grid_mat =			m2(	+1, 0,
 #											 0,-1 ); # !!!!!!! BROKEN because var_file.hpp has not implemented matrix handling yet
-
-{#
-scenes =								[] {
-	{#Scene#}{	.name =							"shadow_test_0";
-		.pos =							$s	v3(-46.6174, +3.8187, +0.9977);
-		.ori =							$s	quat(v3(-0.0013, +0.0014, -0.7383), +0.6745);
-		.children =						[] {
-			
-			{#Light#}{	.type =		0;	.name =		"Test dir light";
-				.pos =						$s	v3(+5.4736, -1.8077, +2.4948);
-				.ori =						$s	quat(v3(+0.3753, +0.4900, +0.6247), +0.4784);
-				.power =						srgb(244,217,171) * col(2000);
-				.flags =						0;
-			},
-			
-			{#Mesh#}{	.name =						"shadow_test_0_mesh";
-				.pos =						$s	v3(0);
-				.ori =						$s	quat(ident);
-				.children =				[] {
-					
-					{#Light#}{	.type =		1;	.name =	"Test point light 1";
-						.pos =					$s	v3(+0.9410, +1.2415, +1.1063);
-						.ori =						quat(ident);
-						.power =					srgb(200,48,79) * col(100);
-						.flags =					2;
-					},
-					{#Light#}{	.type =		1;	.name =	"Test point light 2";
-						.pos =					$s	v3(+1.0914, +0.5582, +1.3377);
-						.ori =						quat(ident);
-						.power =					srgb(48,200,79) * col(100);
-						.flags =					2;
-					},
-					{#Light#}{	.type =		1;	.name =	"Test point light 3";
-						.pos =					$s	v3(+0.3245, +0.7575, +1.0226);
-						.ori =						quat(ident);
-						.power =					srgb(48,79,200) * col(100);
-						.flags =					2;
-					},
-					
-				};
-			},
-			{#Mesh#}{	.name =						"Window_Pillar";
-				.pos =						$s	v3(+3.7783, -5.7335, +0.0000);
-				.ori =						$s	quat(v3(+0.0005, -0.0004, -0.6161), +0.7877);
-				.children =				[] {
-					
-					{#Light#}{	.type =		1;	.name =	"Torch light L";
-						.pos =					$s	v3(+4.5799, -6.4858, +1.9066);
-						.ori =						quat(ident);
-						.power =					srgb(240,142,77) * col(60);
-						.flags =					2;
-					},                      
-					{#Light#}{	.type =		1;	.name =	"Torch light R";
-						.pos =					$s	v3(+4.1454, -4.6933, +1.8854);
-						.ori =						quat(ident);
-						.power =					srgb(240,142,77) * col(60);
-						.flags =					2;
-					},
-					
-				};
-			},
-			{#Mesh#}{	.name =						"Nanosuit";
-				.pos =						$s	v3(-0.6927, -1.1003, +0.5381);
-				.ori =						$s	quat(v3(+0.0049, -0.0048, -0.6973), +0.7167);
-			},	
-			
-		};
-	},
-};
-#}
 
 ### Assets
 {# shaders = [] {
@@ -280,6 +210,8 @@ mesh_names = [] {
 	{# MSH_CERBERUS						#}	"cerberus/cerberus",
 	
 	{# MSH_PG_DAVID						#}	"photogr/david",
+	{# MSH_PG_STOOL						#}	"photogr/stool",
+	{# MSH_PG_DAVID3					#}	"photogr/david3",
 };
 
 
@@ -325,6 +257,14 @@ tex.names = [] {
 	{# TEX_PG_DAVID_ALBEDO							#}	"photogr/david_albedo",
 	{# TEX_PG_DAVID_NORMAL							#}	"photogr/david.nrm",
 	
+	{# TEX_PG_STOOL_ALB								#}	"photogr/stool.2048.alb",
+	{# TEX_PG_STOOL_NRM_256							#}	"photogr/stool.256.nrm",
+	{# TEX_PG_STOOL_NRM_512							#}	"photogr/stool.512.nrm",
+	{# TEX_PG_STOOL_NRM_1024						#}	"photogr/stool.1024.nrm",
+	{# TEX_PG_STOOL_NRM_2048						#}	"photogr/stool.2048.nrm",
+	{# TEX_PG_DAVID3_ALB							#}	"photogr/david.4096.alb",
+	{# TEX_PG_DAVID3_NRM							#}	"photogr/david.4096.nrm",
+
 };
 
 ^EOF_MARKER^

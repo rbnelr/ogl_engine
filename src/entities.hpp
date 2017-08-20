@@ -496,18 +496,22 @@ struct Entities {
 				auto* msh37_1 = mesh("cuts",	v3(0), quat::ident(),
 						MSH_STRUCTURE_BEAM_CUTS,	MAT_WOODEN_BEAM_CUTS,	TEX_TERRAIN_TREE_CUTS_DIFFUSE);
 			
-		auto* scn4 = scene("normals",			v3(-8.62f, +1.19f, +0.48f), quat(v3(-0.00f, -0.00f, +0.00f), +1.00f));
+		auto* scn4 = scene("normals",			v3(-8.62f, +1.19f, +0.00f), quat(v3(-0.00f, -0.00f, +0.00f), +1.00f));
 			
 			auto* lgh40 = dir_light("Sun",		v3(+1.88f, +2.46f, +3.35f), quat(v3(+0.28f, +0.48f, +0.72f), +0.42f),
 					ON, srgb(244,217,171) * col(2000));
-			auto* msh40 = mesh("brick_wall 1",	v3(+0.00f, +1.15f, +0.53f), quat(v3(+0.61f, +0.36f, +0.36f), +0.61f),
+			auto* msh40 = mesh("brick_wall 1",	v3(+0.00f, +1.15f, +1.01f), quat(v3(+0.61f, +0.36f, +0.36f), +0.61f),
 					MSH_UNIT_PLANE,			MAT_GRASS,		TEX_TEX_DIF_BRICK_00,	TEX_TEX_NRM_BRICK_00); // met Supposed to be rough stone
-			auto* msh43 = mesh("brick_wall 2",	v3(+1.09f, +2.94f, +0.51f), quat(v3(+0.62f, +0.33f, +0.33f), +0.62f),
+			auto* msh41 = mesh("brick_wall 2",	v3(+1.09f, +2.94f, +0.9f), quat(v3(+0.62f, +0.33f, +0.33f), +0.62f),
 					MSH_UNIT_PLANE,			MAT_GRASS,		TEX_TEX_DIF_BRICK_01,	TEX_TEX_NRM_BRICK_01); // met Supposed to be rough stone
-			auto* msh41 = mesh("weird plane",	v3(-0.73f, -1.07f, -0.21f), quat(v3(+0.06f, +0.08f, +0.80f), +0.59f),
+			auto* msh42 = mesh("weird plane",	v3(-0.73f, -1.07f, +0.24f), quat(v3(+0.06f, +0.08f, +0.80f), +0.59f),
 					MSH_NORM_TEST_00,		MAT_PLASTIC,	TEX_IDENT,				TEX_NORM_TEST_00);
-			auto* msh42 = mesh("david",			v3(+0.59f, +0.31f, -0.47f), quat(v3(-0.00f, +0.00f, -0.76f), +0.65f),
+			auto* msh43 = mesh("david",			v3(+1.54f, +0.80f, -0.01f), quat(v3(-0.00f, +0.00f, -0.76f), +0.65f),
 					MSH_PG_DAVID,			MAT_ROUGH_MARBLE,	TEX_PG_DAVID_ALBEDO,	TEX_PG_DAVID_NORMAL);
+			auto* msh44 = mesh("stool",			v3(+1.60f, +1.5f, +0.4f), quat(v3(-0.00f, +0.00f, -0.76f), +0.65f),
+					MSH_PG_STOOL,			MAT_WOODEN_BEAM,	TEX_PG_STOOL_ALB,		TEX_PG_STOOL_NRM_256);
+			auto* msh45 = mesh("david3",		v3(+1.61f, +1.54f, +0.4f), quat(v3(-0.00f, +0.00f, -0.76f), +0.65f),
+					MSH_PG_DAVID3,			MAT_GLASS,	TEX_PG_DAVID3_ALB,		TEX_PG_DAVID3_NRM);
 			
 		auto* scn5 = scene("PBR showcase",
 				v3(+9.67f, +0.16f, +0.00f), quat(v3(-0.00f, -0.00f, +0.71f), +0.71f));
@@ -615,9 +619,11 @@ struct Entities {
 			scene_tree(scn4,
 				lgh40,
 				msh40,
-				msh43,
 				msh41,
-				msh42
+				msh42,
+				msh43,
+				msh44,
+				msh45
 			),
 			scene_tree(scn5,
 				lgh50,

@@ -1,4 +1,7 @@
-	
+
+DECLD Stack					env_viewer_loader_thr_stk =		makeStack(0, mebi<uptr>(256));
+DECLD Stack					texture_load_stk =				makeStack(0, mebi<uptr>(1024));
+
 //// OpenGL
 	#include "oglInterface.hpp"
 	
@@ -120,12 +123,6 @@ namespace platform {
 		return OK;
 	}
 }
-	
-	enum img_color_channels_e : u32 {
-		CH_RED =	1,
-		CH_BGR =	3,
-		CH_BGRA =	4,
-	};
 	
 ////
 DECLD constexpr cstr		WINDOW_TITLE =							"OpenGL \"Engine\"";

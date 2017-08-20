@@ -65,9 +65,7 @@
 	#include "stack.hpp"
 	#include "dynarr.hpp"
 	
-	DECLD thread_local Stack	working_stk =					makeStack(0, mebi<uptr>(32));
-	DECLD Stack					env_viewer_loader_thr_stk =		makeStack(0, mebi<uptr>(256));
-	DECLD Stack					texture_load_stk =				makeStack(0, mebi<uptr>(1024));
+	DECLD thread_local Stack	working_stk =					makeStack(0, WORKING_STK_CAP);
 	
 //// windows header #include
 	#include "windows_h_helper.hpp"

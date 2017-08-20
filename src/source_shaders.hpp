@@ -672,8 +672,8 @@ void main () {
 	flt	roughness =	g_mat.roughness *	texture(roughness_tex, vs_interp_uv).r;
 	flt	metallic =	g_mat.metallic *	texture(metallic_tex, vs_interp_uv).r;
 	
-	if ((get_screen_pos().x -get_mouse_pos().x) < -0.25)	normal_dir_cam = vs_interp_norm_cam;
-	if ((get_screen_pos().x -get_mouse_pos().x) < +0.25)	albedo = g_mat.albedo;
+	//if ((get_screen_pos().x -get_mouse_pos().x) < -0.25)	normal_dir_cam = vs_interp_norm_cam;
+	//if ((get_screen_pos().x -get_mouse_pos().x) < +0.25)	albedo = g_mat.albedo;
 	
 	v4 col = brfd_test(vs_interp_pos_cam, normal_dir_cam,
 			albedo, metallic, roughness, g_mat.IOR);

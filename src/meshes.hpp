@@ -54,7 +54,9 @@
 	\
 	X(	MSH_CERBERUS ) \
 	 \
-	X(	MSH_PG_DAVID )
+	X(	MSH_PG_DAVID ) \
+	X(	MSH_PG_STOOL ) \
+	X(	MSH_PG_DAVID3 )
 
 #define X0(name)	name=0,
 #define X(name)		name,
@@ -85,7 +87,7 @@ DECLD constexpr mesh_id_e		MSH_NOUV_END =					(mesh_id_e)(MSH_nouv_SHADOW_TEST_0
 DECLD constexpr u32				MSH_NOUV_COUNT =				MSH_NOUV_END -MSH_NOUV_FIRST;
 
 DECLD constexpr mesh_id_e		MSH_COMMON_FIRST =				MSH_UNIT_PLANE;
-DECLD constexpr mesh_id_e		MSH_COMMON_END =				(mesh_id_e)(MSH_PG_DAVID +1);
+DECLD constexpr mesh_id_e		MSH_COMMON_END =				(mesh_id_e)(MSH_PG_DAVID3 +1);
 DECLD constexpr u32				MSH_COMMON_COUNT =				MSH_COMMON_END -MSH_COMMON_FIRST;
 
 DECLD char const*				mesh_names[MESHES_COUNT];

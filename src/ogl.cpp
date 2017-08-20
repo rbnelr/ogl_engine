@@ -1,4 +1,6 @@
 
+#define WORKING_STK_CAP mebi<uptr>(32)
+
 #include "global_includes.hpp"
 
 void global_init () {

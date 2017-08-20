@@ -439,10 +439,9 @@ DONE:
  
  got david bust photogrammetry'ed and into the engine with albedo and normal textures
  
+ 
 TODO
 -FEATURES:
- 
- investigate if gamma (srgb) on textures is correct (normal maps and roughness/metallic should be in linear space)
  
  add local enviroment map to scenes
  -just draw a inverted box at the bounding box (or whatever works artisticly) as 'skybox'
