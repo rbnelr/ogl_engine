@@ -1,27 +1,101 @@
 	
+DECL s32 comp_str (lstr cr l, lstr cr r) { // (same as strcmp) -: l<r  0: l==r  +: l>r
+	u32 cnt = MIN(l.len, r.len);
+	for (u32 i=0; i<cnt; ++i) {
+		if (l[i] != r[i]) {
+			return (si)(u8)l[i] -(si)(u8)r[i];
+			break;
+		}
+	}
+	if (		l.len == r.len)	return 0;
+	else if	(	l.len < r.len)	return 0 -(si)(u8)r[l.len]; // if l/r is a prefix of r/l then the longer string counts as higher (as if the next character is compared to the null terminator)
+	else						return (si)(u8)l[r.len] -0;
+}
+
+template <typename T>
+DECL void inplace_sort (T* arr, u32 len) { // bubble sort
+	
+	u32 n = len;
+	for (;;) {
+		u32 new_n = 0;
+		for (u32 i=1; i<n; ++i) {
+			if (comp(arr[i-1], arr[i]) > 0) {
+				{ // swap
+					auto tmp = arr[i-1];
+					arr[i-1] = arr[i];
+					arr[i] = tmp;
+				}
+				new_n = i;
+			}
+		}
+		
+		n = new_n;
+		if (n == 0) break;
+	}
+	
+}
+
+template <typename T>
+DECL T* binary_search (lstr cr str, T* arr, u32 len) { // not sure which element this returns if there are equal elements
+	assert(len != 0);
+	if (len == 0) return nullptr;
+	
+	u32 lo = 0;
+	u32 hi = len -1;
+	
+	do {
+		u32 mid = (lo +hi) / 2;
+		
+		auto c = comp(arr[mid], str);
+		if (		c < 0 ) {
+			lo = mid +1;
+		} else if ( c > 0 ) {
+			hi = mid -1;
+		} else {
+			return &arr[mid];
+		}
+		
+	} while (lo <= hi);
+	
+	return nullptr;
+}
+
 namespace var {
+	
+	struct Str_Enum {
+		lstr	str;
+		u32		e;
+	};
+	
+	DECL s32 comp (Str_Enum cr l, Str_Enum cr r) {
+		return comp_str(l.str, r.str);
+	}
+	DECL s32 comp (Str_Enum cr l, lstr cr r) {
+		return comp_str(l.str, r);
+	}
+	
 	struct Token;
 }
+
+DECLD char*					prev_var_file_data =			nullptr;
+DECLD var::Token*			prev_var_file_tokens =			nullptr;
+DECLD char*					write_copy_cur = 0; // stop 'may be used uninitialized' warning
+
+DECLD HANDLE				var_file_h;
+DECLD FILETIME				var_file_filetime;
+
+DECL void write_copy_until (char* until) {
 	
-	DECLD char*					prev_var_file_data =			nullptr;
-	DECLD var::Token*			prev_var_file_tokens =			nullptr;
-	DECLD char*					write_copy_cur = 0; // stop 'may be used uninitialized' warning
+	uptr len = until -write_copy_cur;
+	char* cur = working_stk.pushArr<char>(len);
 	
-	DECLD HANDLE				var_file_h;
-	DECLD FILETIME				var_file_filetime;
-	
-	DECL void write_copy_until (char* until) {
-		
-		uptr len = until -write_copy_cur;
-		char* cur = working_stk.pushArr<char>(len);
-		
-		cmemcpy(cur, write_copy_cur, len);
-		write_copy_cur += len;
-	}
-	DECL void write_skip_until (char* until) {
-		write_copy_cur = until;
-	}
-	
+	cmemcpy(cur, write_copy_cur, len);
+	write_copy_cur += len;
+}
+DECL void write_skip_until (char* until) {
+	write_copy_cur = until;
+}
+
 namespace var {
 	using namespace parse_n;
 	
@@ -330,13 +404,6 @@ namespace var {
 		return (Var*)working_stk.push<Var_Struct>({nullptr, pdata, name, VT_ENTITY_TREE, members});
 	}
 	
-	#if 0
-	Entity* ent_parent;
-	void begin_enities () {
-		ent_parent = 
-	}
-	#endif
-	
 	DECLD Var*		root_var;
 	
 	void init_vars () {
@@ -434,19 +501,17 @@ namespace var {
 	#undef DYNARR
 	#undef DYNARR_S
 	
+	u64 match_iden_time;
+	
 	DECL bool comp_iden (lstr cr iden, lstr cr str) {
 		return str::comp(iden, str);
 	}
-	DECL u32 match_iden (lstr cr iden, lstr const* tbl, u32 tbl_size) {
+	DECL u32 match_iden (lstr cr iden, Str_Enum* tbl, u32 tbl_size) {
+		//PROFILE_SCOPED(THR_ENGINE, "match_iden");
+		QPC_SCOPED_ADD(&match_iden_time);
 		
-		u32 i = 0;
-		for (; i<tbl_size; ++i) {
-			if (str::comp(tbl[i], iden)) {
-				break;
-			}
-		}
-		
-		return i; // Return tbl_size if no match is found
+		auto res = binary_search(iden, tbl, tbl_size);
+		return res ? res->e : tbl_size;
 	}
 	
 	////
@@ -478,30 +543,56 @@ namespace var {
 	};
 	DEFINE_ENUM_ITER_OPS(keyword_e, u32)
 	
-	DECLD constexpr lstr KEYWORDS[KEYWORDS_COUNT] = {
-		"rad",
-		"deg",
-		"col",
-		"srgb",
-		"v2",
-		"v3",
-		"v4",
-		"sv2",
-		"sv3",
-		"sv4",
-		"uv2",
-		"uv3",
-		"uv4",
-		"quat",
-		"m2",
-		"m3",
-		"m4",
-		"PI",
-		"false",
-		"true",
-		"null",
-		"ident",
+	DECLD lstr KEYWORDS[KEYWORDS_COUNT] = {
+		"rad",		
+		"deg",		
+		"col",		
+		"srgb",		
+		"v2",		
+		"v3",		
+		"v4",		
+		"sv2",		
+		"sv3",		
+		"sv4",		
+		"uv2",		
+		"uv3",		
+		"uv4",		
+		"quat",		
+		"m2",		
+		"m3",		
+		"m4",		
+		"PI",		
+		"false",	
+		"true",		
+		"null",		
+		"ident",	
 		"normalize",
+	};
+	
+	DECLD Str_Enum keywords[KEYWORDS_COUNT] = {
+		{"rad",			UNIT_RAD		},
+		{"deg",			UNIT_DEG		},
+		{"col",			UNIT_COL		},
+		{"srgb",		UNIT_SRGB		},
+		{"v2",			TYPE_V2			},
+		{"v3",			TYPE_V3			},
+		{"v4",			TYPE_V4			},
+		{"sv2",			TYPE_SV2		},
+		{"sv3",			TYPE_SV3		},
+		{"sv4",			TYPE_SV4		},
+		{"uv2",			TYPE_UV2		},
+		{"uv3",			TYPE_UV3		},
+		{"uv4",			TYPE_UV4		},
+		{"quat",		TYPE_QUAT		},
+		{"m2",			TYPE_M2			},
+		{"m3",			TYPE_M3			},
+		{"m4",			TYPE_M4			},
+		{"PI",			LIT_PI			},
+		{"false",		LIT_FALSE		},
+		{"true",		LIT_TRUE		},
+		{"null",		LIT_NULL		},
+		{"ident",		LIT_IDENTITY	},
+		{"normalize",	FUNC_NORMALIZE	},
 	};
 	
 	DECL constexpr bool is_angle_unit (keyword_e kw) {			return kw >= UNIT_RAD && kw <= UNIT_DEG; }
@@ -535,7 +626,7 @@ namespace var {
 	#define KW_FUNC_CALL_CASES				KW_UNIT_CASES: case KW_CONSTRUCTOR_CASES: case FUNC_NORMALIZE
 	
 	DECL keyword_e match_keyword (lstr cr iden) {
-		return (keyword_e)match_iden(iden, KEYWORDS, KEYWORDS_COUNT);
+		return (keyword_e)match_iden(iden, keywords, KEYWORDS_COUNT);
 	}
 	
 	enum dollar_command_e : u32 {
@@ -545,14 +636,14 @@ namespace var {
 		DOLLAR_COMMAND_COUNT
 	};
 	
-	DECLD constexpr lstr DOLLAR_COMMANDS[] = {
-		"",
-		"i",
-		"s",
+	DECLD Str_Enum dollar_commands[] = {
+		{"",	DC_CURRENT	},
+		{"i",	DC_INITIAL	},
+		{"s",	DC_SAVE		},
 	};
 	
 	DECL dollar_command_e match_dollar_command (lstr cr iden) {
-		return (dollar_command_e)match_iden(iden, DOLLAR_COMMANDS, DOLLAR_COMMAND_COUNT);
+		return (dollar_command_e)match_iden(iden, dollar_commands, DOLLAR_COMMAND_COUNT);
 	}
 	
 	enum parse_flags_e : u32 {
@@ -661,6 +752,12 @@ namespace var {
 			return ptr_sub(line_begin, begin);
 		}
 	};
+	
+	void init () {
+		inplace_sort(keywords, KEYWORDS_COUNT);
+		inplace_sort(dollar_commands, DOLLAR_COMMAND_COUNT);
+		init_vars();
+	}
 	
 	#define VAR_PARSE_ERROR_REPORTING 1
 	
@@ -1034,6 +1131,7 @@ namespace var {
 	}
 	
 	_DECL u32 tokenize (char* source_data) {
+		PROFILE_SCOPED(THR_ENGINE, "tokenize");
 		
 		char*	cur = source_data;
 		Token*	tokens = working_stk.getTop<Token>();
@@ -1421,6 +1519,7 @@ namespace var {
 	}
 	
 	_DECL Token* number_literal (Token* tok, Expr_Val* val, parse_flags_e flags) {
+		//PROFILE_SCOPED(THR_ENGINE, "number_literal");
 		
 		assert(tok->tok == NUMBER);
 		
@@ -1628,6 +1727,7 @@ namespace var {
 	}
 	
 	_DECL Token* unary_expression (Token* tok, Expr_Val* val, parse_flags_e flags) {
+		//PROFILE_SCOPED(THR_ENGINE, "unary_expression");
 		
 		Token* op_tok = tok++;
 		token_e op = op_tok->tok;
@@ -1664,6 +1764,7 @@ namespace var {
 		return tok;
 	}
 	_DECL Token* binary_expression (Token* tok, Expr_Val* val, parse_flags_e flags, ui prec) {
+		//PROFILE_SCOPED(THR_ENGINE, "binary_expression");
 		
 		Token* op_tok = tok++;
 		token_e op = op_tok->tok;
@@ -1767,6 +1868,7 @@ namespace var {
 	constexpr u32 MAX_CALL_ARGS = 16;
 	
 	_DECL Token* call_expression (Token* tok, Expr_Val* val, parse_flags_e flags) {
+		//PROFILE_SCOPED(THR_ENGINE, "call_expression");
 		
 		struct Arg_Tok {
 			Token*	f;
@@ -2180,6 +2282,7 @@ namespace var {
 	}
 	
 	_DECL Token* expression (Token* tok, Expr_Val* val, parse_flags_e flags, ui prec) {
+		//PROFILE_SCOPED(THR_ENGINE, "expression");
 		
 		Token* expr = tok;
 		
@@ -3014,6 +3117,7 @@ namespace var {
 	
 	_DECL Token* array (Token* tok, Var_Array cr aray, parse_flags_e flags, void* pdata,
 			ui depth) {
+		//PROFILE_SCOPED(THR_ENGINE, "array");
 		
 		assert(depth > 0);
 		
@@ -3190,6 +3294,7 @@ namespace var {
 	
 	_DECL Token* structure (Token* tok, Var_Struct cr strct, parse_flags_e flags, void* pdata,
 			ui depth) {
+		//PROFILE_SCOPED(THR_ENGINE, "structure");
 		
 		Var const*	ordered_vars = strct.members;
 		lstr		iden;
@@ -3584,6 +3689,13 @@ namespace var {
 	DECL bool parse_var_file (var::parse_flags_e flags) {
 		PROFILE_SCOPED(THR_ENGINE, "parse_var_file");
 		
+		var::match_iden_time = 0;
+		u64 begin = time::QPC::get_time();
+		defer {
+			u64 diff = time::QPC::get_time() -begin;
+			print(">> parse_var_file: % match_iden: %\n", diff, var::match_iden_time);
+		};
+		
 		//print("parsing var file:\n");
 		
 		// Zero all cstr and lstrs in VARS since the string data becomes invalid as soon as we do
@@ -3618,6 +3730,7 @@ namespace var {
 			
 			var::Token* tok;
 			if (tok_count >= 2 && tokens[tok_count -2].tok == var::EOF_MARKER && tokens[tok_count -1].tok == var::EOF_) {
+				
 				tok = var::file(tokens, flags);
 				
 				if (!tok && i == 0) {

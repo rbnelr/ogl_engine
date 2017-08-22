@@ -1,109 +1,112 @@
 
+to fix accidental adding of large files in git
+git filter-branch --prune-empty -d D:\Cproj\ogl_engine\tmp --index-filter "git rm -r --cached -f --ignore-unmatch assets_src/" --tag-name-filter cat -- --all
+
 how to read back convolved luminance framebuffer without stalling cpu:
-    
-    https://www.opengl.org/discussion_boards/showthread.php/165657-PBO-for-async-glGetTexImage-random-slowdowns
-    No.. use FBO and glReadPixels with PBO. Before glReadPixels set glReadBuffer to GL_COLOR_ATTACHMENT0.
-    So...
-    1. bind fbo
-    2. render
-    3. bind PBO
-    4. glReadBuffer(GL_COLOR_ATTACHMENT0)
-    5. glReadPixels
-    6. unbind PBO
-    7. unbind FBO
+	
+	https://www.opengl.org/discussion_boards/showthread.php/165657-PBO-for-async-glGetTexImage-random-slowdowns
+	No.. use FBO and glReadPixels with PBO. Before glReadPixels set glReadBuffer to GL_COLOR_ATTACHMENT0.
+	So...
+	1. bind fbo
+	2. render
+	3. bind PBO
+	4. glReadBuffer(GL_COLOR_ATTACHMENT0)
+	5. glReadPixels
+	6. unbind PBO
+	7. unbind FBO
 
-    do some CPU work
+	do some CPU work
 
-    1. bind PBO
-    2. map buffer
-    3. copy data
-    4. unmap buffer
-    5. unbind PBO.
+	1. bind PBO
+	2. map buffer
+	3. copy data
+	4. unmap buffer
+	5. unbind PBO.
 
-    Works like charm on NVidia.. I dont know how it works on ATI.
-    btw.. Be aware of older NV driver version... they have some magic limit of 46MB after that next map buffer takes 20ms. After that everything gets back to normal, until next 46MB has been transfered.
-    Newer drivers doesnt suffer from this "feature". 
+	Works like charm on NVidia.. I dont know how it works on ATI.
+	btw.. Be aware of older NV driver version... they have some magic limit of 46MB after that next map buffer takes 20ms. After that everything gets back to normal, until next 46MB has been transfered.
+	Newer drivers doesnt suffer from this "feature". 
 
 desmos graph stuff:
 
 smoothstep with input and output remap
-    s\left(x,a,b,c,d\right)=\frac{z\left(\frac{x-a}{b-a}\right)-c}{d-c}
+	s\left(x,a,b,c,d\right)=\frac{z\left(\frac{x-a}{b-a}\right)-c}{d-c}
 
 { // Probably needless complex pipe command code
-    // init
-    {
-        auto ret = CreateNamedPipe(RELOAD_PIPE_NAME, PIPE_ACCESS_INBOUND|FILE_FLAG_OVERLAPPED,
-                PIPE_TYPE_MESSAGE|PIPE_READMODE_MESSAGE|PIPE_WAIT, 1, kibi(1), kibi(1), 0, NULL);
-        assert(ret != INVALID_HANDLE_VALUE, "%", GetLastError());
-        pipe_handle = ret;
-    }
+	// init
+	{
+		auto ret = CreateNamedPipe(RELOAD_PIPE_NAME, PIPE_ACCESS_INBOUND|FILE_FLAG_OVERLAPPED,
+				PIPE_TYPE_MESSAGE|PIPE_READMODE_MESSAGE|PIPE_WAIT, 1, kibi(1), kibi(1), 0, NULL);
+		assert(ret != INVALID_HANDLE_VALUE, "%", GetLastError());
+		pipe_handle = ret;
+	}
 
-    {
-        auto ret = CreateEventW(NULL, FALSE, TRUE, NULL);
-        assert(ret != NULL);
-        pipe_ov.hEvent = ret;
-    }
-    
-    //
-    if (!pipe_connection_pending) {
-        
-        auto ret = ConnectNamedPipe(pipe_handle, &pipe_ov);
-        
-        if (ret != 0) {
-            conOut.print("ConnectNamedPipe() completed instantly\n");
-        } else {
-            auto err = GetLastError();
-            assert(err == ERROR_IO_PENDING, "%", err);
-            pipe_connection_pending = true;
-            return false;
-        }
-    } else {
-        
-        auto ret = HasOverlappedIoCompleted(&pipe_ov);
-        if (ret == FALSE) {
-            // still pending
-            return false;
-        } else {
-            pipe_connection_pending = false;
-            conOut.print("ConnectNamedPipe() completed\n");
-        }
-    }
-    
-    
-    constexpr DWORD SIZE = 64;
-    char buf[SIZE];
-    
-    DWORD bytes_read;
-    
-    auto ret = ReadFile(pipe_handle, buf, SIZE, &bytes_read, &pipe_ov);
-    
-    if (ret != 0) {
-        conOut.print("ReadFile() completed instantly\n");
-        assert(bytes_read <= SIZE);
-    } else {
-        auto err = GetLastError();
-        if (err == ERROR_MORE_DATA) {
-            conErr.print("Message recieved over %!, ignoring.\n", RELOAD_PIPE_NAME);
-            return false;
-        } else {
-            
-            assert(err == ERROR_IO_PENDING, "%", err);
-            assert(bytes_read == 0, "%", bytes_read);
-            
-            {
-                auto ret = GetOverlappedResult(pipe_handle, &pipe_ov, &bytes_read, TRUE);
-                assert(ret != 0);
-            }
-            conOut.print("ReadFile() completed after waiting\n");
-            assert(bytes_read <= SIZE);
-        }
-    }
-    
-    bool cmd = cstr::comp(buf, bytes_read, LIT_STR_AND_LEN("test"));
-    
-    {
-        auto ret = DisconnectNamedPipe(pipe_handle);
-        assert(ret != 0, "%", GetLastError());
-    }
-    return cmd;
+	{
+		auto ret = CreateEventW(NULL, FALSE, TRUE, NULL);
+		assert(ret != NULL);
+		pipe_ov.hEvent = ret;
+	}
+	
+	//
+	if (!pipe_connection_pending) {
+		
+		auto ret = ConnectNamedPipe(pipe_handle, &pipe_ov);
+		
+		if (ret != 0) {
+			conOut.print("ConnectNamedPipe() completed instantly\n");
+		} else {
+			auto err = GetLastError();
+			assert(err == ERROR_IO_PENDING, "%", err);
+			pipe_connection_pending = true;
+			return false;
+		}
+	} else {
+		
+		auto ret = HasOverlappedIoCompleted(&pipe_ov);
+		if (ret == FALSE) {
+			// still pending
+			return false;
+		} else {
+			pipe_connection_pending = false;
+			conOut.print("ConnectNamedPipe() completed\n");
+		}
+	}
+	
+	
+	constexpr DWORD SIZE = 64;
+	char buf[SIZE];
+	
+	DWORD bytes_read;
+	
+	auto ret = ReadFile(pipe_handle, buf, SIZE, &bytes_read, &pipe_ov);
+	
+	if (ret != 0) {
+		conOut.print("ReadFile() completed instantly\n");
+		assert(bytes_read <= SIZE);
+	} else {
+		auto err = GetLastError();
+		if (err == ERROR_MORE_DATA) {
+			conErr.print("Message recieved over %!, ignoring.\n", RELOAD_PIPE_NAME);
+			return false;
+		} else {
+			
+			assert(err == ERROR_IO_PENDING, "%", err);
+			assert(bytes_read == 0, "%", bytes_read);
+			
+			{
+				auto ret = GetOverlappedResult(pipe_handle, &pipe_ov, &bytes_read, TRUE);
+				assert(ret != 0);
+			}
+			conOut.print("ReadFile() completed after waiting\n");
+			assert(bytes_read <= SIZE);
+		}
+	}
+	
+	bool cmd = cstr::comp(buf, bytes_read, LIT_STR_AND_LEN("test"));
+	
+	{
+		auto ret = DisconnectNamedPipe(pipe_handle);
+		assert(ret != 0, "%", GetLastError());
+	}
+	return cmd;
 }

@@ -1,4 +1,4 @@
-	
+
 /*-- Preprocessor tricks --*/
 	// STRINGIFY([definition name]) expands to [definition name] as string literal
 	#define STRINGIFY(x) #x

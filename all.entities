@@ -2,27 +2,28 @@
 scene("shadow_test_0", v3(-46.6174, +3.8187, +0.9977), quat(v3(-0.0013, +0.0014, -0.7383), +0.6745)
 {
 	sun_light("Test dir light", v3(+5.4736, -1.8077, +2.4948), quat(v3(+0.3753, +0.4900, +0.6247), +0.4784),
-		srgb(244,217,171) * col(2000), ENABLED|SHADOW);
+		ENABLED|SHADOW, srgb(244,217,171) * col(2000));
 	
 	mesh("shadow_test_0_mesh", v3(0), quat(ident))
 	{
 		point_light("Test point light 1", v3(+0.9410, +1.2415, +1.1063), quat(ident),
-			srgb(200,48,79) * col(100), ENABLED);
+			ENABLED, srgb(200,48,79) * col(100));
 			
 		point_light("Test point light 2", v3(+1.0914, +0.5582, +1.3377), quat(ident),
-			srgb(48,200,79) * col(100), ENABLED|SHADOW(0));
+			ENABLED|SHADOW(0), srgb(48,200,79) * col(100));
 			
 		point_light("Test point light 3", v3(+0.3245, +0.7575, +1.0226), quat(ident),
-			srgb(48,79,200) * col(100), ENABLED);
+			ENABLED, srgb(48,79,200) * col(100));
 	};
 	
 	mesh("Window_Pillar", v3(+3.7783, -5.7335, +0.0000), quat(v3(+0.0005, -0.0004, -0.6161), +0.7877)
+		{# mesh name referred to by string #})
 	{
 		point_light("Torch light L", v3(+4.5799, -6.4858, +1.9066), quat(ident),
-			srgb(240,142,77) * col(60), ENABLED);
+			ENABLED, srgb(240,142,77) * col(60));
 			
 		point_light("Torch light R", v3(+4.1454, -4.6933, +1.8854), quat(ident),
-			srgb(240,142,77) * col(60), ENABLED);
+			ENABLED, srgb(240,142,77) * col(60));
 	};
 	
 	mesh("Nanosuit", v3(-0.6927, -1.1003, +0.5381), quat(v3(+0.0049, -0.0048, -0.6973), +0.7167));

@@ -17,7 +17,7 @@ namespace profile {
 	};
 	
 	//DECLD constexpr u32		FRAME_BUFFER_COUNT =		0; // How many frames to wait to process the data (0 is between the measured frame and the next, etc.) (because gpu samples need to become avalible)
-	DECLD constexpr u32		MAX_SAMPLES =				4096;
+	DECLD constexpr u32		MAX_SAMPLES =				kibi<u32>(64); // 4096
 	
 	DECLD constexpr u32		THREAD_COUNT =				2; // engine and gpu
 	DECLD constexpr cstr 	LATEST_FILE_FILENAME =		"profiling/latest.profile";

@@ -443,6 +443,8 @@ DONE:
 TODO
 -FEATURES:
  
+ maybe ditch current scenes concept in favor of having seperate scenes that are 'portal' boxes into their scene
+ 
  add local enviroment map to scenes
  -just draw a inverted box at the bounding box (or whatever works artisticly) as 'skybox'
  -need to be able to have seperate loaded (and processed) ibl maps
@@ -468,14 +470,19 @@ TODO
  
  maybe switch some things that use Stack to dyn_array or heap allocated
  
- .var support for:
- -default values (the last or last few values in a struct can have default values which get set if they are not specified in the .var file)
-  -default values have to be per struct, evaluation has to be per instance
-	have an extra pointer to a default instance
-	then simply copy the default instance into memory before doing the real parsing
- -enums
- -somehow being able to check which variables changed (leaf var changes carry up to their parent structure nodes)
- 
+ .var file overhaul
+  -it seems that these things can be implemented by keeping some data in the var tree which i currently write in init_vars()
+   there might be a simple elegant solution
+    -fix the problem that if the file fails parsing all already parsed vars are written to memory if changed and all following are not, which can sometimes cause the whole app to render a blackscreen and spit out errors until the file parses again
+    -write changed vars into a buffer and only copy to the real memory if the file parses without errors
+    -add a 'changed'-bool to each instance by having 
+    .var support for:
+    -default values (the last or last few values in a struct can have default values which get set if they are not specified in the .var file)
+     -default values have to be per struct, evaluation has to be per instance
+       have an extra pointer to a default instance
+       then simply copy the default instance into memory before doing the real parsing
+  -enums?
+  
  maybe make shaders be controllable in the .var file?
  
  add interesting scenes

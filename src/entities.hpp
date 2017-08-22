@@ -372,8 +372,12 @@ struct Entities {
 		
 		#define ROUGH(r) TEX_IDENT, TEX_IDENT, r, TEX_IDENT
 		
+		#define GROUND(w,h) mesh("ground", v3(0), quat::ident(), v3(w,h,1), MSH_UNIT_PLANE, MAT_GRASS);
+		
 		auto* scn = scene("shadow_test_0",
 				v3(-6.19f, +12.07f, +1.00f), quat::ident());
+			
+			auto* gnd0 = GROUND(8,6);
 			
 			auto* lgh0 = dir_light("Test dir light",
 					v3(+1.21f, -2.92f, +3.51f), quat(v3(+0.61f, +0.01f, +0.01f), +0.79f),
@@ -381,7 +385,7 @@ struct Entities {
 					srgb(244,217,171) * col(2000));
 			
 			auto* msh0 = mesh("shadow_test_0",
-					v3(+2.67f, +2.47f, +0.00f), quat(v3(+0.00f, -0.00f, -0.04), +1.00f),
+					v3(+2.67f, +2.47f, +0.07f), quat(v3(+0.00f, -0.00f, -0.04), +1.00f),
 					MSH_nouv_SHADOW_TEST_0, MAT_ROUGH_MARBLE);
 				
 				auto* lgh1 = point_light("Test point light 1",
@@ -395,7 +399,7 @@ struct Entities {
 						NOSHAD, srgb(48,7,200) * col(100));
 				
 			auto* msh1 = mesh("Window_Pillar",
-					v3(-3.21f, +0.00f, +0.00f), quat(v3(-0.00f, +0.00f, -1.00f), +0.08f),
+					v3(-3.21f, +0.00f, +0.16f), quat(v3(-0.00f, +0.00f, -1.00f), +0.08f),
 					MSH_nouv_WINDOW_PILLAR, MAT_ROUGH_MARBLE);
 				
 				auto* lgh4 = point_light("Torch light L",
@@ -419,6 +423,8 @@ struct Entities {
 				
 		auto* scn1 = scene("tree_scene",
 				v3(-5.13f, -14.30f, +0.94f), quat(v3(-0.00f, -0.00f, +0.00f), +1.00f));
+			
+			auto* gnd1 = GROUND(5,5);
 			
 			auto* lgh10 = dir_light("Sun",
 					v3(+0.06f, -2.76f, +4.53f), quat(v3(+0.31f, +0.01f, +0.04f), +0.95f),
@@ -457,6 +463,8 @@ struct Entities {
 			
 		auto* scn2 = scene("ugly_scene",
 				v3(+3.70f, -10.70f, +0.94f), quat(v3(-0.00f, -0.00f, +0.00f), +1.00f));
+			
+			auto* gnd2 = GROUND(3,3);
 			
 			auto* lgh20 = dir_light("Sun",
 					v3(-1.83f, +1.37f, +2.05f), quat(v3(+0.21f, -0.45f, -0.78f), +0.37f),
@@ -498,6 +506,8 @@ struct Entities {
 			
 		auto* scn4 = scene("normals",			v3(-8.62f, +1.19f, +0.00f), quat(v3(-0.00f, -0.00f, +0.00f), +1.00f));
 			
+			auto* gnd4 = GROUND(3,3);
+			
 			auto* lgh40 = dir_light("Sun",		v3(+1.88f, +2.46f, +3.35f), quat(v3(+0.28f, +0.48f, +0.72f), +0.42f),
 					ON, srgb(244,217,171) * col(2000));
 			auto* msh40 = mesh("brick_wall 1",	v3(+0.00f, +1.15f, +1.01f), quat(v3(+0.61f, +0.36f, +0.36f), +0.61f),
@@ -515,6 +525,8 @@ struct Entities {
 			
 		auto* scn5 = scene("PBR showcase",
 				v3(+9.67f, +0.16f, +0.00f), quat(v3(-0.00f, -0.00f, +0.71f), +0.71f));
+			
+			auto* gnd5 = GROUND(17,7);
 			
 			auto* lgh50 = dir_light("Sun",		v3(-4.91f, +2.46f, +3.35f), quat(v3(+0.05f, -0.22f, -0.95f), +0.21f),
 					ON, srgb(244,217,171) * col(2000));
@@ -568,6 +580,7 @@ struct Entities {
 		
 		tree(&root,
 			scene_tree(scn,
+				gnd0,
 				lgh0,
 				tree(msh0,
 					lgh1,
@@ -586,6 +599,7 @@ struct Entities {
 				)
 			),
 			scene_tree(scn1,
+				gnd1,
 				lgh10,
 				tree(msh10,
 					msh11,
@@ -598,6 +612,7 @@ struct Entities {
 				)
 			),
 			scene_tree(scn2,
+				gnd2,
 				lgh20,
 				msh20
 			),
@@ -617,6 +632,7 @@ struct Entities {
 				)
 			),
 			scene_tree(scn4,
+				gnd4,
 				lgh40,
 				msh40,
 				msh41,
@@ -626,6 +642,7 @@ struct Entities {
 				msh45
 			),
 			scene_tree(scn5,
+				gnd5,
 				lgh50,
 				msh50,
 				msh51,

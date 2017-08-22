@@ -305,6 +305,8 @@ v4 brfd_test (	v3 pos_cam, v3 normal_dir, v3 albedo, flt metallic, flt roughness
 		//albedo = v3(0);
 	}
 	
+	//DBG_COL(albedo);
+	
 	flt IORs = IOR_air;
 	flt IORd = IOR;
 	

@@ -17,6 +17,14 @@ namespace time {
 		//	return __rdtsc();
 		}
 		
+		#define QPC_SCOPED(pdiff) \
+			auto _qpc_scoped_begin = time::QPC::get_time(); \
+			defer { *(pdiff) = time::QPC::get_time() -_qpc_scoped_begin; }
+		
+		#define QPC_SCOPED_ADD(pdiff) \
+			auto _qpc_scoped_begin = time::QPC::get_time(); \
+			defer { *(pdiff) += time::QPC::get_time() -_qpc_scoped_begin; }
+		
 		DECLD f64 freq;
 		DECLD f64 inv_freq;
 		

@@ -2120,6 +2120,7 @@ DECLD Dbg_Lines				dbg_lines;
 #include "var_file.hpp"
 
 DECL void init () {
+	
 	PROFILE_SCOPED(THR_ENGINE, "engine_init");
 	
 	{
@@ -2166,7 +2167,7 @@ DECL void init () {
 			{
 				PROFILE_SCOPED(THR_ENGINE, "var_file_open");
 				
-				init_vars();
+				var::init();
 				
 				assert(!win32::open_existing_file(ALL_VAR_FILENAME, &var_file_h,
 						GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE));
