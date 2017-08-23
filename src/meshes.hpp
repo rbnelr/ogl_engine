@@ -103,7 +103,9 @@ struct Mesh_Ref {
 namespace meshes_file_n {
 	struct Meshes_File {
 		
-		Header*		header;
+		fHeader*	header;
+		char*		str_tbl;
+		fMesh*		meshes;
 		uptr		file_size;
 		
 		DECLM void reload () {
@@ -115,49 +117,25 @@ namespace meshes_file_n {
 			
 			{
 				Mem_Block file_data;
-				assert(!platform::read_whole_file_onto_heap(MESHES_FILENAME, 0, &file_data));
-				header = reinterpret_cast<Header*>(file_data.ptr);
+				assert(!platform::read_file_onto_heap(MESHES_FILENAME, &file_data));
+				header = (fHeader*)file_data.ptr;
 				file_size = file_data.size;
 			}
 			
-			assert(file_size >= sizeof(Header));
-			assert(cmemcmp(header->magicString, magicString, sizeof(header->magicString)));
+			assert(file_size >= sizeof(fHeader));
+			assert(header->id.i == FILE_ID.i);
 			
-			assert(is_aligned(header->file_size, FILE_ALIGN));
+			str_tbl = (char*)(header +1);
+			
+			meshes = (fMesh*)(str_tbl +header->str_tbl_size);
 		}
 		
-		DECLM Header_Mesh_Entry* query_mesh (const char* name) {
+		DECLM fMesh* query_mesh (const char* name) {
 			
-			if (!name) {
-				return nullptr;
-			}
+			if (!name) return nullptr;
 			
-			char* cur = (char*)ptr_add(header, sizeof(Header));
-			char* end = (char*)ptr_add(header, file_size);
-			
-			for (u32 entry=0; entry<header->meshEntryCount; ++entry) {
-				
-				cur = align_up(cur, HEADER_MESH_ENTRY_ALIGN);
-				
-				auto ret = (Header_Mesh_Entry*)cur;
-				
-				cur += sizeof(Header_Mesh_Entry);
-				
-				assert(cur < end);
-				
-				bool name_matched = true;
-				
-				auto desiredName = name;
-				do {
-					assert(cur != end);
-					if (name_matched && *cur != *desiredName++) {
-						name_matched = false;
-					}
-				} while (*cur++ != '\0');
-				
-				if (name_matched) {
-					return ret;
-				}
+			for (u32 i=0; i<header->meshes_count; ++i) {
+				if (str::comp(str_tbl +meshes[i].mesh_name, name)) return &meshes[i];
 			}
 			return nullptr;
 		}
@@ -167,31 +145,28 @@ namespace meshes_file_n {
 			uptr sizePerIndex;
 			{
 				{
-					assert(format & INTERLEAVED);
-					
-					assert(format & POS_XYZ);
 					sizePerVertex += 3;
 					
-					assert(format & NORM_XYZ);
+					assert(format & F_NORM_XYZ);
 					sizePerVertex += 3;
 					
-					if (format & TANG_XYZW) {
-						sizePerVertex += 4;
-					}
-					
-					if (format & UV_UV) {
+					if (format & F_UV_UV) {
 						sizePerVertex += 2;
 					}
 					
-					if (format & COL_RGB) {
+					if (format & F_TANG_XYZW) {
+						sizePerVertex += 4;
+					}
+					
+					if (format & F_COL_RGB) {
 						sizePerVertex += 3;
 					}
 					
 					sizePerVertex *= sizeof(f32);
 				}
 				{
-					assert((format & INDEX_MASK) ==			INDEX_USHORT);
-					sizePerIndex = sizeof(GLushort);
+					assert((format & F_INDX_MASK) == F_INDX_U16);
+					sizePerIndex = sizeof(u16);
 				}
 			}
 			
@@ -211,26 +186,20 @@ namespace meshes_file_n {
 					continue;
 				}
 				
-				assert(is_aligned(mesh->dataOffset, DATA_ALIGN));
-				
-				if (mesh->dataFormat != format) {
-					auto actual = format_strs(mesh->dataFormat);
-					auto desired = format_strs(format);
-					warning("Wrong format of mesh % got %%%% (%) but wanted %%%% (%), not loaded!\n",
+				if (mesh->format != format) {
+					warning("Wrong format of mesh % got (%) but wanted (%), not loaded!\n",
 							mesh_names[i],
-							actual.f, actual.tang, actual.uv, actual.col,		(u32)mesh->dataFormat,
-							desired.f, desired.tang, desired.uv, desired.col,	(u32)format);
+							(u32)mesh->format,
+							(u32)format);
 					continue;
 				}
 				
 				meshes[i].indx_offsets =	(GLvoid*)(indexCounter * sizePerIndex);
-				meshes[i].indx_count =		safe_cast_assert(GLsizei, mesh->indexCount);
+				meshes[i].indx_count =		safe_cast_assert(GLsizei, mesh->index_count);
 				meshes[i].base_vertecies =	safe_cast_assert(GLint, vertexCounter);
 				
-				GLsizei vertexCount = mesh->vertexCount.glushort;
-				
-				vertexCounter +=	vertexCount;
-				indexCounter +=		mesh->indexCount;
+				vertexCounter +=	safe_cast_assert(GLsizei, mesh->vertex_count);
+				indexCounter +=		mesh->index_count;
 				
 			}
 			
@@ -253,19 +222,19 @@ namespace meshes_file_n {
 					continue;
 				}
 				
-				GLsizei		vertexCount = mesh->vertexCount.glushort;
+				GLsizei		vertexCount = safe_cast_assert(GLsizei, mesh->vertex_count);
 				
 				u64			vertSize = vertexCount * sizePerVertex;
-				u64			indexSize = mesh->indexCount * sizePerIndex;
+				u64			indexSize = mesh->index_count * sizePerIndex;
 				
 				GLsizeiptr	gl_vertSize = safe_cast_assert(GLsizeiptr, vertSize);
 				GLsizeiptr	gl_indexSize = safe_cast_assert(GLsizeiptr, indexSize);
 				
-				assert((mesh->dataOffset +vertSize) <= file_size);
-				assert((mesh->dataOffset +vertSize +indexSize) <= file_size);
+				assert((mesh->data_offs +vertSize) <= file_size);
+				assert((mesh->data_offs +vertSize +indexSize) <= file_size);
 				
-				auto vert_data = align_up(file_data +mesh->dataOffset, sizeof(GLfloat));
-				auto indx_data = align_up(vert_data +vertSize, sizeof(GLushort));
+				auto vert_data = file_data +mesh->data_offs;
+				auto indx_data = vert_data +vertSize;
 				
 				glBufferSubData(GL_ARRAY_BUFFER,
 						safe_cast_assert(GLintptr, vertexCounter * sizePerVertex),
@@ -276,7 +245,7 @@ namespace meshes_file_n {
 						gl_indexSize, indx_data);
 				
 				vertexCounter +=	vertexCount;
-				indexCounter +=		mesh->indexCount;
+				indexCounter +=		mesh->index_count;
 			}
 		}
 		

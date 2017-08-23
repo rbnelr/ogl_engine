@@ -187,15 +187,17 @@ DECL byte* parse_ply_header (Mem_Block cr data,
 	#undef req
 }
 
-DECL bool mesh_type (lstr cr filename, fMesh* fmesh) {
+DECL bool mesh_type (mlstr* filename, fMesh* fmesh) {
+	mlstr fn = *filename;
+	
 	lstr real_ext={0,0}, ext={0,0};
-	for (u32 i=0; i<filename.len; ++i) {
-		if (filename[i] == '.') {
-			ext = {real_ext.str, (u32)ptr_sub(real_ext.str, &filename[i])};
-			real_ext.str = &filename[i +1];
+	for (u32 i=0; i<fn.len; ++i) {
+		if (fn[i] == '.') {
+			ext = {real_ext.str, (u32)ptr_sub(real_ext.str, &fn[i])};
+			real_ext.str = &fn[i +1];
 		}
 	}
-	real_ext.len = (u32)ptr_sub(real_ext.str, &filename[filename.len]);
+	real_ext.len = (u32)ptr_sub(real_ext.str, &fn[fn.len]);
 	
 	assert(real_ext && str::comp(real_ext, "ply"));
 	
@@ -219,6 +221,11 @@ DECL bool mesh_type (lstr cr filename, fMesh* fmesh) {
 		return false;
 	}
 	fmesh->format = dst_format | F_INDX_U16;
+	
+	fn.len -= real_ext.len +1;
+	fn.str[fn.len] = '\0';
+	
+	*filename = fn;
 	return true;
 }
 
@@ -244,21 +251,18 @@ DECL s32 app_main () {
 	dynarr<byte, u64>	f_data(mebi(16));
 	
 	for (u32 i=0; i<src_files.arr.len; ++i) {
-		lstr filename = src_files.get_filename(i);
+		mlstr filename = src_files.get_filename(i);
 		print("%:\n", filename);
 		
 		auto& fmesh = f_meshes.append();
-		fmesh.mesh_name = f_str_tbl.len;
-		f_str_tbl.append_n(filename.len +1, filename.str);
-		
 		fmesh.data_offs = f_data.len;
 		
 		DEFER_POP(&working_stk);
-		filename = print_working_stk("%%\\0", input_foldername, filename);
+		lstr pathname = print_working_stk("%%\\0", input_foldername, filename);
 		
 		Mem_Block	fdata;
-		if (platform::read_file_onto_heap(filename.str, &fdata, RD_NULL_TERMINATE)) {
-			warning("'%' could not be read, skipping mesh!", filename);
+		if (platform::read_file_onto_heap(pathname.str, &fdata, RD_NULL_TERMINATE)) {
+			warning("'%' could not be read, skipping mesh!", pathname);
 			continue;
 		}
 		defer { free(fdata.ptr); };
@@ -281,9 +285,15 @@ DECL s32 app_main () {
 		}
 		fmesh.vertex_count = (u32)vert_count;
 		
-		if (!mesh_type(filename, &fmesh)) continue;
+		if (!mesh_type(&filename, &fmesh)) continue;
+		
+		fmesh.mesh_name = f_str_tbl.len;
+		f_str_tbl.append_n(filename.len +1, filename.str);
 		
 		ui out_vertex_size = get_vertex_size(fmesh.format);
+		
+		u64 out_vert_offs;
+		u64 out_indx_offs;
 		
 		byte* src_vertex_data = mesh_data;
 		byte* src_face_data;
@@ -306,6 +316,7 @@ DECL s32 app_main () {
 			};
 			
 			u64 vertex_size = (u64)out_vertex_size * (u64)fmesh.vertex_count;
+			out_vert_offs = f_data.len;
 			byte* out = f_data.append_n(vertex_size);
 			byte* out_cur = out;
 			
@@ -336,7 +347,7 @@ DECL s32 app_main () {
 					write_v4(	v4(0) ); // tang xyzw // write zero for now, will get filed in in tangent calculation step
 				
 				if (fmesh.format & F_COL_RGB) {
-					write_v3(	cast_v3<v3>( read_uc3() ) ); // vcol rgb
+					write_v3(	cast_v3<v3>( read_uc3() ) / v3(255.0f) ); // vcol rgb
 				}
 				
 			}
@@ -352,6 +363,8 @@ DECL s32 app_main () {
 		
 		fmesh.index_count = 0;
 		{
+			out_indx_offs = f_data.len;
+			
 			byte* cur = src_face_data;
 			auto read_u8 = [&] () {
 				auto ret = *(u8*)cur;
@@ -414,6 +427,7 @@ DECL s32 app_main () {
 		}
 		
 		if (fmesh.format & F_TANG_XYZW) {
+			assert(fmesh.format == (F_INDX_U16|F_NORM_XYZ|F_UV_UV|F_TANG_XYZW));
 			
 			struct Connected_Triangle {
 				uptr				tri_i;
@@ -429,10 +443,99 @@ DECL s32 app_main () {
 			u32 tri_count = fmesh.index_count / 3;
 			
 			DEFER_POP(&working_stk);
-			auto* tri_tangents = working_stk.pushArr<TB>(fmesh.index_count);
+			auto* tri_tangents = working_stk.pushArr<TB>(tri_count);
 			auto* vert_connections = working_stk.pushArr<Connected_Triangle*>(fmesh.vertex_count);
 			cmemzero(vert_connections, sizeof(Connected_Triangle*) * fmesh.vertex_count);
 			
+			struct Vert {
+				v3	pos;
+				v3	norm;
+				v2	uv;
+				v4	tang;
+			};
+			auto* vertex = (Vert*)&f_data[out_vert_offs];
+			auto* index = (u16*)&f_data[out_indx_offs];
+			
+			for (u32 tri_i=0; tri_i<tri_count; ++tri_i) {
+				
+				v3 pos[3];
+				v3 norm[3];
+				v2 uv[3];
+				for (u32 i=0; i<3; ++i) {
+					auto indx = index[(tri_i*3) +i];
+					{ // Insert Connected_Triangle with our tri_i at the front of linked list at vert_connections[indx]
+						auto* conn = vert_connections[indx];
+						
+						auto* new_conn = working_stk.push<Connected_Triangle>();
+						new_conn->tri_i = tri_i;
+						new_conn->next = conn;
+						
+						vert_connections[indx] = new_conn;
+					}
+					
+					pos[i] =	vertex[indx].pos;
+					norm[i] =	vertex[indx].norm;
+					uv[i] =		vertex[indx].uv;
+				}
+				
+				v3 e0 = pos[1] -pos[0];
+				v3 e1 = pos[2] -pos[0];
+				
+				f32 du0 = uv[1].x -uv[0].x;
+				f32 dv0 = uv[1].y -uv[0].y;
+				f32 du1 = uv[2].x -uv[0].x; 
+				f32 dv1 = uv[2].y -uv[0].y; 
+				
+				f32 f = 1.0f / ((du0 * dv1) -(du1 * dv0));
+				
+				v3 tang = v3(f) * ((v3(dv1) * e0) -(v3(dv0) * e1));
+				v3 bitang = v3(f) * ((v3(du0) * e1) -(v3(du1) * e0));
+				
+				tang = normalize(tang);
+				bitang = normalize(bitang);
+				
+				tri_tangents[tri_i].t = tang;
+				tri_tangents[tri_i].b = bitang;
+			}
+			
+			auto calc_bitang_sign = [&] (v3 vp tang, v3 vp bitang, v3 vp norm) -> f32 {
+				return fp::or_sign(1.0f, fp::get_sign( dot(cross(norm, tang), bitang) ));
+			};
+			
+			for (u32 vert_i=0; vert_i<fmesh.vertex_count; ++vert_i) {
+				
+				u32 count = 0;
+				v3	total_tang = v3(0);
+				v3	total_bitang = v3(0);
+				
+				f32 sign = 0.0f;	// What sign we found, to detect handedness mismatches in the shared vertecies,
+									//  so we can know when we need to split them
+				
+				assert(vert_connections[vert_i] != nullptr);
+				auto* cur = vert_connections[vert_i];
+				do {
+					v3 t = tri_tangents[cur->tri_i].t;
+					v3 b = tri_tangents[cur->tri_i].b;
+					
+					total_tang += t;
+					total_bitang += b;
+					
+					++count;
+					cur = cur->next;
+				} while (cur);
+				
+				// average
+				f32 inv_count = 1.0f / (f32)(count);
+				v3 avg_tang = total_tang * v3(inv_count);
+				v3 avg_bitang = total_bitang * v3(inv_count);
+				
+				avg_tang = normalize(avg_tang);
+				avg_bitang = normalize(avg_bitang);
+				
+				f32 bitang_sign = calc_bitang_sign(avg_tang, avg_bitang, vertex[vert_i].norm);
+				
+				vertex[vert_i].tang = v4(avg_tang, bitang_sign);
+			}
 		}
 		
 		++header.meshes_count;

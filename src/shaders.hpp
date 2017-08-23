@@ -205,7 +205,7 @@ namespace shaders_n {
 		lstr real_filename = str::append_term(&working_stk, SHADERS_DIR, virtual_filename);
 		
 		Mem_Block ret;
-		if (platform::read_whole_file_onto(&working_stk, real_filename.str, RD_FILENAME_ON_STK, &ret)) {
+		if (platform::read_file_onto(&working_stk, real_filename.str, &ret, RD_FILENAME_ON_STK)) {
 			return {nullptr, 0};
 		}
 		if (!safe_cast(u32, ret.size)) {

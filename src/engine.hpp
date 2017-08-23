@@ -130,16 +130,16 @@ AABB calc_AABB_model (mesh_id_e id) {
 		auto mesh = meshes_file.query_mesh(mesh_names[id]);
 		assert(mesh);
 		
-		vertex_count = safe_cast_assert(u32, mesh->vertexCount.glushort);
+		vertex_count = mesh->vertex_count;
 		assert(vertex_count > 0);
 		
-		index_count = safe_cast_assert(u32, mesh->indexCount);
+		index_count = mesh->index_count;
 		assert(index_count > 0);
 		
-		switch (mesh->dataFormat) {
+		switch (mesh->format) {
 			using namespace meshes_file_n;
 			
-			case (INTERLEAVED|POS_XYZ|NORM_XYZ|INDEX_USHORT): {
+			case (F_INDX_U16| F_NORM_XYZ): {
 				struct Vertex {
 					v3	pos;
 					v3	norm;
@@ -147,7 +147,7 @@ AABB calc_AABB_model (mesh_id_e id) {
 				vertex_stride = sizeof(Vertex);
 			} break;
 			
-			case (INTERLEAVED|POS_XYZ|NORM_XYZ|COL_RGB|INDEX_USHORT): {
+			case (F_INDX_U16| F_NORM_XYZ|F_COL_RGB): {
 				struct Vertex {
 					v3	pos;
 					v3	norm;
@@ -156,7 +156,7 @@ AABB calc_AABB_model (mesh_id_e id) {
 				vertex_stride = sizeof(Vertex);
 			} break;
 			
-			case (INTERLEAVED|POS_XYZ|NORM_XYZ|UV_UV|INDEX_USHORT): {
+			case (F_INDX_U16| F_NORM_XYZ|F_UV_UV): {
 				struct Vertex {
 					v3	pos;
 					v3	norm;
@@ -165,12 +165,12 @@ AABB calc_AABB_model (mesh_id_e id) {
 				vertex_stride = sizeof(Vertex);
 			} break;
 			
-			case (INTERLEAVED|POS_XYZ|NORM_XYZ|UV_UV|TANG_XYZW|INDEX_USHORT): {
+			case (F_INDX_U16| F_NORM_XYZ|F_UV_UV|F_TANG_XYZW): {
 				struct Vertex {
 					v3	pos;
 					v3	norm;
-					v4	tang;
 					v2	uv;
+					v4	tang;
 				};
 				vertex_stride = sizeof(Vertex);
 			} break; 
@@ -181,11 +181,11 @@ AABB calc_AABB_model (mesh_id_e id) {
 		u32 vert_size = vertex_count * vertex_stride;
 		u32 index_size = index_count * sizeof(GLushort);
 		
-		assert((mesh->dataOffset +vert_size) <= meshes_file.file_size);
-		assert((mesh->dataOffset +vert_size +index_size) <= meshes_file.file_size);
+		assert((mesh->data_offs +vert_size) <= meshes_file.file_size);
+		assert((mesh->data_offs +vert_size +index_size) <= meshes_file.file_size);
 		
-		vertices = (byte*)align_up(file_data +mesh->dataOffset, sizeof(GLfloat));
-		indices = (GLushort*)align_up(((byte*)vertices) +vert_size, sizeof(GLushort));
+		vertices = (byte*)(file_data +mesh->data_offs);
+		indices = (GLushort*)((byte*)vertices +vert_size);
 		
 	}
 	
@@ -212,19 +212,19 @@ DECL void reload_meshes () { // Loading meshes from disk to GPU driver
 	glBindBuffer(GL_ARRAY_BUFFER,			VBOs[NO_UV_COL_ARR_BUF]);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[NO_UV_COL_INDX_BUF]);
 	
-	meshes_file.reload_meshes(INTERLEAVED|INDEX_USHORT|POS_XYZ|NORM_XYZ|COL_RGB, MSH_NOUV_COL_FIRST, MSH_NOUV_COL_COUNT, meshes);
+	meshes_file.reload_meshes(F_INDX_U16|F_NORM_XYZ|F_COL_RGB, MSH_NOUV_COL_FIRST, MSH_NOUV_COL_COUNT, meshes);
 	
 	//
 	glBindBuffer(GL_ARRAY_BUFFER,			VBOs[NO_UV_ARR_BUF]);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[NO_UV_INDX_BUF]);
 	
-	meshes_file.reload_meshes(INTERLEAVED|INDEX_USHORT|POS_XYZ|NORM_XYZ, MSH_NOUV_FIRST, MSH_NOUV_COUNT, meshes);
+	meshes_file.reload_meshes(F_INDX_U16|F_NORM_XYZ, MSH_NOUV_FIRST, MSH_NOUV_COUNT, meshes);
 	
 	//
 	glBindBuffer(GL_ARRAY_BUFFER,			VBOs[COMMON_ARR_BUF]);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[COMMON_INDX_BUF]);
 	
-	meshes_file.reload_meshes(INTERLEAVED|INDEX_USHORT|POS_XYZ|NORM_XYZ|TANG_XYZW|UV_UV, MSH_COMMON_FIRST, MSH_COMMON_COUNT, meshes);
+	meshes_file.reload_meshes(F_INDX_U16|F_NORM_XYZ|F_UV_UV|F_TANG_XYZW, MSH_COMMON_FIRST, MSH_COMMON_COUNT, meshes);
 	
 	for (mesh_id_e id=(mesh_id_e)0; id<MESHES_COUNT; ++id) {
 		meshes_aabb[id] = calc_AABB_model(id);
@@ -326,7 +326,7 @@ bool load_humus_cubemap (lstr cr filename, Stack* stk) {
 			
 			{
 				Mem_Block file;
-				if (platform::read_whole_file_onto(stk, filepath.str, 0, &file)) {
+				if (platform::read_file_onto(stk, filepath.str, &file)) {
 					return false;
 				}
 				
@@ -578,8 +578,15 @@ struct Env_Viewer {
 		glGenTextures(1, &env_illuminance);
 		glGenTextures(1, &pbr_brdf_LUT);
 		
-		humus_folders = list_of_folders_in(ENV_MAPS_HUMUS_DIR);
-		sibl_files = recursive_list_of_files_in(ENV_MAPS_SIBL_DIR);
+		{
+			using namespace list_of_files_in_n;
+			humus_folders = list_of_files_in(ENV_MAPS_HUMUS_DIR, FOLDERS|NO_BASE_PATH);
+		}
+		{
+			using namespace list_of_files_in_n;
+			sibl_files = list_of_files_in(ENV_MAPS_SIBL_DIR, FILES|RECURSIVE|NO_BASE_PATH);
+		}
+		
 		//assert(humus_folders.arr.len > 0,
 		//		"No cubemaps found in % (a cubemap should be a folder with the cubemap faces as images named posx/posy/posz/negx/negy/negz +.file_ext)!\n",
 		//		ENV_MAPS_HUMUS_DIR);
@@ -717,7 +724,7 @@ struct Env_Viewer {
 				int w, h;
 				{
 					Mem_Block file;
-					assert(!platform::read_whole_file_onto(&working_stk, filename.str, 0, &file));
+					assert(!platform::read_file_onto(&working_stk, filename.str, &file));
 					
 					int comp=3;
 					img = stb::stbi_load_from_memory((uchar*)file.ptr, safe_cast_assert(int, file.size), &w, &h, &comp, comp);
@@ -886,7 +893,7 @@ struct Env_Viewer {
 			int w, h;
 			{
 				Mem_Block file;
-				assert(!platform::read_whole_file_onto(&working_stk, filename.str, 0, &file));
+				assert(!platform::read_file_onto(&working_stk, filename.str, &file));
 				
 				int comp=3;
 				img = stb::stbi_loadf_from_memory((uchar*)file.ptr, safe_cast_assert(int, file.size), &w, &h, &comp, comp);
@@ -2275,30 +2282,11 @@ DECL void init () {
 			
 			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((0) * sizeof(f32)));				// pos xyz
 			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +0) * sizeof(f32)));			// normal xyz
-			glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +3 +0) * sizeof(f32)));		// tangent xyzw
-			glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +3 +4 +0) * sizeof(f32)));	// uv
+			glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +3 +0) * sizeof(f32)));		// uv
+			glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +3 +2 +0) * sizeof(f32)));	// tangent xyzw
 			
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[COMMON_INDX_BUF]);
 		}
-		#if 0
-		{ //
-			glBindVertexArray(VAOs[GROUND_PLANE_VAO]);
-			
-			glEnableVertexAttribArray(0);
-			glEnableVertexAttribArray(1);
-			glEnableVertexAttribArray(2);
-			
-			glBindBuffer(GL_ARRAY_BUFFER, VBOs[GROUND_PLANE_ARR_BUF]);
-			
-			glBufferData(GL_ARRAY_BUFFER, GROUND_PLANE_BUF_SIZE, NULL, GL_STATIC_DRAW);
-			
-			auto vert_size = GROUND_PLANE_VERT_SIZE;
-			
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((0) * sizeof(f32)));
-			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +0) * sizeof(f32)));
-			glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +3 +0) * sizeof(f32)));
-		}
-		#endif
 		{ //
 			glBindVertexArray(VAOs[VAO_FULLSCREEN_QUAD]);
 			

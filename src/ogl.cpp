@@ -4,6 +4,6 @@
 
 #include "platform.hpp"
 
-DECL app_main () {
+DECL s32 app_main () {
 	return platform::msg_thread_main();
 }

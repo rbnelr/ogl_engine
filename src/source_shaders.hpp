@@ -273,8 +273,8 @@ $include "_global_include.h.vert"
 
 ATTRIB(0)	v3		attrib_pos_model;
 ATTRIB(1)	v3		attrib_norm_model;
-ATTRIB(2)	v4		attrib_tang_model;
-ATTRIB(3)	v2		attrib_uv;
+ATTRIB(2)	v2		attrib_uv;
+ATTRIB(3)	v4		attrib_tang_model;
 
 out Vs_Out {
 	smooth	v3		vs_interp_pos_cam;

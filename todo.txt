@@ -439,9 +439,22 @@ DONE:
  
  got david bust photogrammetry'ed and into the engine with albedo and normal textures
  
+#2017.08.23 di.-mi. nacht-morgen
+ rewrote meshes_gen (now called meshgen)
+ 
+#2017.08.23 mi. abend
+ fix bug with tangents being wrong for some reason
+ -i'm not overwriting stuff by writing the calculated tangent
+ -setting the tangent to the normal also is does not what i expect (make tangen xyz and normal fragment attributes equal)
+ -> VBOs still had uv after tang, but i switched those in meshes_gen
+ -> When debug outputting the normals and tangents in the shader it still seems wierd, but i can see no errors in the actual output, so i assume everything is ok
  
 TODO
 -FEATURES:
+ 
+ rewrite the meshes system to work in the new way
+ 
+ implement all.entities
  
  maybe ditch current scenes concept in favor of having seperate scenes that are 'portal' boxes into their scene
  

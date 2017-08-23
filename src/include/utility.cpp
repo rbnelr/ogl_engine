@@ -407,7 +407,7 @@ namespace units {
 		dynarr<char>		str_data;
 		
 		// lstr becomes invalid if arr or str_data ever do a realloc
-		DECLM lstr get_filename (u32 indx) {
+		DECLM mlstr get_filename (u32 indx) {
 			return { &str_data[arr[indx].offs], arr[indx].len };
 		}
 		
