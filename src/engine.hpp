@@ -200,36 +200,36 @@ AABB calc_AABB_model (mesh_id_e id) {
 }
 
 DECL void reload_meshes () { // Loading meshes from disk to GPU driver
-		using namespace meshes_file_n;
-		
-		PROFILE_SCOPED(THR_ENGINE, "reload_meshes");
-		
-		glBindVertexArray(0); // Unbind VAO so that we don't mess with its GL_ELEMENT_ARRAY_BUFFER binding
-		
-		meshes_file.reload();
-		
-		//
-		glBindBuffer(GL_ARRAY_BUFFER,			VBOs[NO_UV_COL_ARR_BUF]);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[NO_UV_COL_INDX_BUF]);
-		
-		meshes_file.reload_meshes(INTERLEAVED|INDEX_USHORT|POS_XYZ|NORM_XYZ|COL_RGB, MSH_NOUV_COL_FIRST, MSH_NOUV_COL_COUNT, meshes);
-		
-		//
-		glBindBuffer(GL_ARRAY_BUFFER,			VBOs[NO_UV_ARR_BUF]);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[NO_UV_INDX_BUF]);
-		
-		meshes_file.reload_meshes(INTERLEAVED|INDEX_USHORT|POS_XYZ|NORM_XYZ, MSH_NOUV_FIRST, MSH_NOUV_COUNT, meshes);
-		
-		//
-		glBindBuffer(GL_ARRAY_BUFFER,			VBOs[COMMON_ARR_BUF]);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[COMMON_INDX_BUF]);
-		
-		meshes_file.reload_meshes(INTERLEAVED|INDEX_USHORT|POS_XYZ|NORM_XYZ|TANG_XYZW|UV_UV, MSH_COMMON_FIRST, MSH_COMMON_COUNT, meshes);
-		
-		for (mesh_id_e id=(mesh_id_e)0; id<MESHES_COUNT; ++id) {
-			meshes_aabb[id] = calc_AABB_model(id);
-		}
+	using namespace meshes_file_n;
+	
+	PROFILE_SCOPED(THR_ENGINE, "reload_meshes");
+	
+	glBindVertexArray(0); // Unbind VAO so that we don't mess with its GL_ELEMENT_ARRAY_BUFFER binding
+	
+	meshes_file.reload();
+	
+	//
+	glBindBuffer(GL_ARRAY_BUFFER,			VBOs[NO_UV_COL_ARR_BUF]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[NO_UV_COL_INDX_BUF]);
+	
+	meshes_file.reload_meshes(INTERLEAVED|INDEX_USHORT|POS_XYZ|NORM_XYZ|COL_RGB, MSH_NOUV_COL_FIRST, MSH_NOUV_COL_COUNT, meshes);
+	
+	//
+	glBindBuffer(GL_ARRAY_BUFFER,			VBOs[NO_UV_ARR_BUF]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[NO_UV_INDX_BUF]);
+	
+	meshes_file.reload_meshes(INTERLEAVED|INDEX_USHORT|POS_XYZ|NORM_XYZ, MSH_NOUV_FIRST, MSH_NOUV_COUNT, meshes);
+	
+	//
+	glBindBuffer(GL_ARRAY_BUFFER,			VBOs[COMMON_ARR_BUF]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[COMMON_INDX_BUF]);
+	
+	meshes_file.reload_meshes(INTERLEAVED|INDEX_USHORT|POS_XYZ|NORM_XYZ|TANG_XYZW|UV_UV, MSH_COMMON_FIRST, MSH_COMMON_COUNT, meshes);
+	
+	for (mesh_id_e id=(mesh_id_e)0; id<MESHES_COUNT; ++id) {
+		meshes_aabb[id] = calc_AABB_model(id);
 	}
+}
 
 DECLD Textures				tex;
 

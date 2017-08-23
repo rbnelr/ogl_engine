@@ -1,6 +1,7 @@
 	
 namespace str {
 	
+	// These can be replaced by dynarr.append(str.len, str.str) and/or print_working_stk
 	DECLV mlstr __append (dynarr<char, u32>* appendable, ui to_append_count, ...) {
 		
 		va_list	vl0, vl;
@@ -432,143 +433,133 @@ namespace list_of_files_in_n {
 	static constexpr flags_e	FILTER_EXCL=	(flags_e)0b010000;
 	
 }
+
+struct List_Of_Files_In {
+	list_of_files_in_n::flags_e		flags;
+	ui								filters_len;
+	lstr const*						filters;
+	lstr							base_path;
 	
-	struct List_Of_Files_In {
-		list_of_files_in_n::flags_e		flags;
-		ui								filters_len;
-		lstr const*						filters;
-		lstr							base_path;
+	DECLM void recurse (Filenames* out, lstr cr path) const {
+		using namespace list_of_files_in_n;
 		
-		DECLM void recurse (Filenames* out, lstr cr path) const {
-			using namespace list_of_files_in_n;
-			
-			WIN32_FIND_DATAA info;
-			
+		WIN32_FIND_DATAA info;
+		
+		DEFER_POP(&working_stk);
+		char* list = working_stk.getTop<char>();
+		
+		HANDLE search_handle;
+		{
 			DEFER_POP(&working_stk);
-			char* list = working_stk.getTop<char>();
+			lstr search_path = str::append_term(&working_stk, base_path, path, "*");
 			
-			HANDLE search_handle;
-			{
-				DEFER_POP(&working_stk);
-				lstr search_path = str::append_term(&working_stk, base_path, path, "*");
-				
-				search_handle = FindFirstFileA(search_path.str, &info);
-				if (search_handle == INVALID_HANDLE_VALUE) {
-					warning("directory_folder_list:: FindFirstFileA() failed, for path of '%'!", search_path);
-					return;
-				}
+			search_handle = FindFirstFileA(search_path.str, &info);
+			if (search_handle == INVALID_HANDLE_VALUE) {
+				warning("directory_folder_list:: FindFirstFileA() failed, for path of '%'!", search_path);
+				return;
 			}
-			
-			ui	count = 0;
-			
-			for (;;) {
-				if (	(info.cFileName[0] == '.' && info.cFileName[1] == '\0') ||
-						(info.cFileName[0] == '.' && info.cFileName[1] == '.' && info.cFileName[2] == '\0') ) {
-					// Ignore "." and ".." directories
-				} else {
-					bool is_dir = info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
-					lstr filename = lstr::count_cstr(info.cFileName);
-					assert(filename[0] != '\0');
-					
-					bool push = true;
-					if (!is_dir && (flags & FILTER_FILES)) {
-						push = (flags & FILTER_INCL_EXCL) == FILTER_INCL ? false : true;
-						
-						lstr ext = path::find_ext(filename);
-						for (ui i=0; i<filters_len; ++i) {
-							if (str::comp(filters[i], ext)) {
-								push = !push;
-								break;
-							}
-						}
-					}
-					
-					if (push) {
-						working_stk.push<bool>(is_dir);
-						str::append_term(&working_stk, filename);
-						++count;
-					}
-				}
-				{
-					auto ret = FindNextFile(search_handle, &info);
-					if (ret == 0) {
-						auto err = GetLastError();
-						assert(err == ERROR_NO_MORE_FILES);
-						break;
-					}
-				}
-			}
-			
-			{
-				auto ret = FindClose(search_handle);
-				assert(ret != 0);
-			}
-			
-			lstr	base_path_ = base_path;
-			if (flags & NO_BASE_PATH) {
-				base_path_.len = 0;
-			}
-			
-			for (ui i=0; i<count; ++i) {
-				bool		is_dir = (bool)*list++;
-				char const*	filename_cstr = list;
-				
-				lstr filename = lstr::count_cstr(filename_cstr);
-				
-				if (	(!is_dir && (flags & FILES)) ||
-						(is_dir && (flags & FOLDERS)) ) {
-					
-					u32		str_offs = out->str_data.len;
-					
-					lstr	filepath =	str::append_term(&out->str_data, base_path_, path, filename);
-					out->arr.append( {str_offs, filepath.len} );
-					
-				}
-				
-				list += filename.len +1;
-				
-				if (is_dir && (flags & RECURSIVE)) {
-					DEFER_POP(&working_stk);
-					
-					assert(	filename.len > 0 &&
-							filename.str[filename.len -1] != '\\' &&
-							filename.str[filename.len -1] != '/' );
-					
-					lstr folder = str::append_term(&working_stk, path, filename, "/");
-					recurse(out, folder);
-				}
-			}
-			
 		}
 		
-	};
-	
-	// base_path needs to end in a slash '/'
-	DECL Filenames list_of_files_in (lstr cr base_path, list_of_files_in_n::flags_e flags,
-			ui filters_len, lstr const* filters) {
-		using namespace list_of_files_in_n;
+		ui	count = 0;
 		
-		assert(	(flags & ~(FILES|FOLDERS|RECURSIVE|FILTER_FILES|FILTER_INCL_EXCL|NO_BASE_PATH)) == 0);
+		for (;;) {
+			if (	(info.cFileName[0] == '.' && info.cFileName[1] == '\0') ||
+					(info.cFileName[0] == '.' && info.cFileName[1] == '.' && info.cFileName[2] == '\0') ) {
+				// Ignore "." and ".." directories
+			} else {
+				bool is_dir = info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
+				lstr filename = lstr::count_cstr(info.cFileName);
+				assert(filename[0] != '\0');
+				
+				bool push = true;
+				if (!is_dir && (flags & FILTER_FILES)) {
+					push = (flags & FILTER_INCL_EXCL) == FILTER_INCL ? false : true;
+					
+					lstr ext = path::find_ext(filename);
+					for (ui i=0; i<filters_len; ++i) {
+						if (str::comp(filters[i], ext)) {
+							push = !push;
+							break;
+						}
+					}
+				}
+				
+				if (push) {
+					working_stk.push<bool>(is_dir);
+					str::append_term(&working_stk, filename);
+					++count;
+				}
+			}
+			{
+				auto ret = FindNextFile(search_handle, &info);
+				if (ret == 0) {
+					auto err = GetLastError();
+					assert(err == ERROR_NO_MORE_FILES);
+					break;
+				}
+			}
+		}
 		
-		Filenames ret;
-		ret.arr		.alloc(0, 256);
-		ret.str_data.alloc(0, 256 * 32);
+		{
+			auto ret = FindClose(search_handle);
+			assert(ret != 0);
+		}
 		
-		auto builder = List_Of_Files_In{flags, filters_len, filters, base_path};
-		builder.recurse(&ret, lstr(""));
+		lstr	base_path_ = base_path;
+		if (flags & NO_BASE_PATH) {
+			base_path_.len = 0;
+		}
 		
-		ret.arr		.fit_cap_exact();
-		ret.str_data.fit_cap_exact();
+		for (ui i=0; i<count; ++i) {
+			bool		is_dir = (bool)*list++;
+			char const*	filename_cstr = list;
+			
+			lstr filename = lstr::count_cstr(filename_cstr);
+			
+			if (	(!is_dir && (flags & FILES)) ||
+					(is_dir && (flags & FOLDERS)) ) {
+				
+				u32		str_offs = out->str_data.len;
+				
+				lstr	filepath =	str::append_term(&out->str_data, base_path_, path, filename);
+				out->arr.append( {str_offs, filepath.len} );
+				
+			}
+			
+			list += filename.len +1;
+			
+			if (is_dir && (flags & RECURSIVE)) {
+				DEFER_POP(&working_stk);
+				
+				assert(	filename.len > 0 &&
+						filename.str[filename.len -1] != '\\' &&
+						filename.str[filename.len -1] != '/' );
+				
+				lstr folder = str::append_term(&working_stk, path, filename, "/");
+				recurse(out, folder);
+			}
+		}
 		
-		return ret;
 	}
 	
-	DECL Filenames list_of_folders_in (lstr cr base_path) {
-		using namespace list_of_files_in_n;
-		return list_of_files_in(base_path, FOLDERS|NO_BASE_PATH, 0, nullptr);
-	}
-	DECL Filenames recursive_list_of_files_in (lstr cr base_path) {
-		using namespace list_of_files_in_n;
-		return list_of_files_in(base_path, FILES|RECURSIVE|NO_BASE_PATH, 0, nullptr);
-	}
+};
+
+// base_path needs to end in a slash '/'
+DECL Filenames list_of_files_in (lstr cr base_path, list_of_files_in_n::flags_e flags,
+		ui filters_len=0, lstr const* filters=nullptr) {
+	using namespace list_of_files_in_n;
 	
+	assert(	(flags & ~(FILES|FOLDERS|RECURSIVE|FILTER_FILES|FILTER_INCL_EXCL|NO_BASE_PATH)) == 0);
+	
+	Filenames ret;
+	ret.arr		.alloc(0, 256);
+	ret.str_data.alloc(0, 256 * 32);
+	
+	auto builder = List_Of_Files_In{flags, filters_len, filters, base_path};
+	builder.recurse(&ret, lstr(""));
+	
+	ret.arr		.fit_cap_exact();
+	ret.str_data.fit_cap_exact();
+	
+	return ret;
+}

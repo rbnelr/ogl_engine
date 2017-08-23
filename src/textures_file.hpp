@@ -123,12 +123,7 @@ namespace tex_type {
 namespace tex_file {
 #pragma pack (push, 1)
 	
-	union file_id {
-		char	str[8];
-		u64		i;
-	};
-	
-	DECLD constexpr file_id FILE_ID = { {'R','A','Z','_','T','E','X','S'} };
+	DECLD constexpr file_id_8 FILE_ID = {{'R','A','Z','_','T','E','X','S'}};
 	
 	DECLD constexpr uptr TEX_ENTRY_ALIGN = sizeof(u32);
 	struct Tex_Entry {
@@ -148,7 +143,7 @@ namespace tex_file {
 	
 	DECLD constexpr uptr FILE_ALIGN = 16;
 	struct Header {
-		file_id				id;
+		file_id_8			id;
 		u64					file_size;
 		
 		u32					data_offs; // =headers_size

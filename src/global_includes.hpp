@@ -1,109 +1,111 @@
 
 /*-- Preprocessor tricks --*/
-	// STRINGIFY([definition name]) expands to [definition name] as string literal
-	#define STRINGIFY(x) #x
-	// TO_STR([definition name]) expands to definition as string literal
-	#define TO_STR(x) STRINGIFY(x)
-	// Concatenate tokens ex: CONCAT(func, __COUNTER__) -> func0, func1, func2, ...
-	#define _CONCAT(a, b) a##b
-	#define CONCAT(a, b) _CONCAT(a, b)
-	
-	// Allows putting comma into macro arguments
-	//  without being intepreted as macro argument delimiter
-	#define _COMMA ,
-	
-	#define STATIC_ASSERT(cond) static_assert((cond), TO_STR(cond)) // This does not work for some reason???
-	
+// STRINGIFY([definition name]) expands to [definition name] as string literal
+#define STRINGIFY(x) #x
+// TO_STR([definition name]) expands to definition as string literal
+#define TO_STR(x) STRINGIFY(x)
+// Concatenate tokens ex: CONCAT(func, __COUNTER__) -> func0, func1, func2, ...
+#define _CONCAT(a, b) a##b
+#define CONCAT(a, b) _CONCAT(a, b)
+
+// Allows putting comma into macro arguments
+//  without being intepreted as macro argument delimiter
+#define _COMMA ,
+
+#define STATIC_ASSERT(cond) static_assert((cond), TO_STR(cond)) // This does not work for some reason???
+
 //// 
-	#include "comp_arch_platf_specifics.hpp"
-	
-	#define DECLD									static				// declare global data
-	#define DECL									static VECTORCALL	// declare global function
-	#define DECLFP									VECTORCALL			// declare function pointer
-	#define DECLV									static				// declare variadic function
-	#define DECLA									static				// declare API (other calling conv) function
-	#define DECLM									VECTORCALL			// declare method
-	#define DECLT									VECTORCALL			// declare template
-	
+#include "comp_arch_platf_specifics.hpp"
+
+#define DECLD									static				// declare global data
+#define DECL									static VECTORCALL	// declare global function
+#define DECLFP									VECTORCALL			// declare function pointer
+#define DECLV									static				// declare variadic function
+#define DECLA									static				// declare API (other calling conv) function
+#define DECLM									VECTORCALL			// declare method
+#define DECLT									VECTORCALL			// declare template
+
 //// typedefs for basic types
-	#include "types.hpp"
-	#include "type_utils.hpp"
-	
+#include "types.hpp"
+#include "type_utils.hpp"
+
 ////
-	#include "debug.hpp"
-	
-	enum err_e {
-		OK=0,
-		FILE_OPEN_FAIL,
-		FILE_READ_FAIL,
-		FILE_WRITE_FAIL,
-		FILE_HEADER_ERR,
-		OGL_ERROR,
-	};
-	
+#include "debug.hpp"
+
+////
+// global error code to return down the stack
+enum err_e {
+	OK=0,
+	FILE_OPEN_FAIL,
+	FILE_READ_FAIL,
+	FILE_WRITE_FAIL,
+	FILE_CORRUPT,
+	OGL_ERROR,
+};
+
 //// 
-	#include "simd.hpp"
-	#include "floating_point.hpp"
-	
+#include "simd.hpp"
+#include "floating_point.hpp"
+
 ////
-	#include "utility.hpp"
-	
+#include "utility.hpp"
+
 ////
-	#define DBG_MEMORY 0
-	//#define DBG_MEMORY DEBUG
-	//#define DBG_MEMORY 1
-	
-	#define ARRAYS_BOUNDS_ASSERT DEBUG
-	
-	DECLD constexpr byte DBG_MEM_UNALLOCATED_BYTE =			(byte)0xcc;
-	DECLD constexpr byte DBG_MEM_UNINITIALIZED_BYTE =		(byte)0xdd;
-	DECLD constexpr byte DBG_MEM_ALIGN_PADDING_BYTE =		(byte)0xaa;
-	DECLD constexpr byte DBG_MEM_FREED_BYTE =				(byte)0xee;
-	
-	#include <cstdlib>
-	
-	#include "stack.hpp"
-	#include "dynarr.hpp"
-	
-	DECLD thread_local Stack	working_stk =					makeStack(0, WORKING_STK_CAP);
-	
+#define DBG_MEMORY 0
+//#define DBG_MEMORY DEBUG
+//#define DBG_MEMORY 1
+
+#define ARRAYS_BOUNDS_ASSERT DEBUG
+
+DECLD constexpr byte DBG_MEM_UNALLOCATED_BYTE =			(byte)0xcc;
+DECLD constexpr byte DBG_MEM_UNINITIALIZED_BYTE =		(byte)0xdd;
+DECLD constexpr byte DBG_MEM_ALIGN_PADDING_BYTE =		(byte)0xaa;
+DECLD constexpr byte DBG_MEM_FREED_BYTE =				(byte)0xee;
+
+#include <cstdlib>
+
+#include "stack.hpp"
+#include "dynarr.hpp"
+
+DECLD thread_local Stack	working_stk =					makeStack(0, WORKING_STK_CAP);
+
 //// windows header #include
-	#include "windows_h_helper.hpp"
+#include "windows_h_helper.hpp"
 ////
-	#include "print.hpp"
-	using print_n::print_type_e;
-	using print_n::escaped;
-	using print_n::hex;
-	using print_n::bin;
-	using print_n::repeat;
-	
+#include "print.hpp"
+using print_n::print_type_e;
+using print_n::escaped;
+using print_n::hex;
+using print_n::bin;
+using print_n::repeat;
+
 ////
-	#include "windows_utility.hpp"
-	
+#include "windows_utility.hpp"
+
 ////
-	#include "sync.hpp"
-	
+#include "sync.hpp"
+
 ////
-	#include "time.hpp"
-	
+#include "time.hpp"
+
 ////
-	#include "utility.cpp"
-	
+#include "utility.cpp"
+
 ////
-	#include "stack.cpp"
-	#include "dynarr.cpp"
-	
+#include "stack.cpp"
+#include "dynarr.cpp"
+
 ////
-	#include "print.cpp"
-	
+#include "print.cpp"
+
 ////
-	#include "debug.cpp"
-	
+#include "debug.cpp"
+
 ////
-	#include "vector.hpp"
-	
-	typedef tv2<u32>	v2u32;
-	
+#include "vector.hpp"
+
+typedef tv2<u32>	v2u32;
+
 namespace print_n {
 	
 	enum extra_print_type_e : char {
@@ -167,4 +169,3 @@ namespace print_n {
 		return args;
 	}
 }
-	

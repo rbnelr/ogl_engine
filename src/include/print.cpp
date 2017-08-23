@@ -759,6 +759,9 @@ namespace print_n {
 		va_end(vl);
 		
 		ret.len = (u32)ptr_sub(ret.str, this_->stk->getTop<char>());
+		
+		if (ret.len > 0 && ret[ret.len -1] == '\0') ret.len -= 1; // HACK: total hack to prevent null terminator to be included in strings when printing with 'lstr ... = print_working_stk("blah/%.%\\0", ...)' 
+		
 		return ret;
 	}
 	struct _print_base_ret_Wrapper {

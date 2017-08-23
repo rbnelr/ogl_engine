@@ -108,9 +108,7 @@ namespace meshes_file_n {
 		
 		DECLM void reload () {
 			
-			if (header) {
-				free(header);
-			}
+			free(header);
 			
 			//stk->alignTop<FILE_ALIGN>();
 			// Ignore FILE_ALIGN, not sure what to do about alignment for windows heap

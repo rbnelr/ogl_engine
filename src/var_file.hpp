@@ -1,16 +1,27 @@
-	
-DECL s32 comp_str (lstr cr l, lstr cr r) { // (same as strcmp) -: l<r  0: l==r  +: l>r
+
+#if 0
+DECL FORCEINLINE s32 comp_str (lstr cr l, lstr cr r) { // (same as strcmp) -: l<r  0: l==r  +: l>r
 	u32 cnt = MIN(l.len, r.len);
 	for (u32 i=0; i<cnt; ++i) {
-		if (l[i] != r[i]) {
-			return (si)(u8)l[i] -(si)(u8)r[i];
-			break;
-		}
+		if (l[i] != r[i])		return (si)(u8)l[i] -(si)(u8)r[i];
 	}
 	if (		l.len == r.len)	return 0;
 	else if	(	l.len < r.len)	return 0 -(si)(u8)r[l.len]; // if l/r is a prefix of r/l then the longer string counts as higher (as if the next character is compared to the null terminator)
 	else						return (si)(u8)l[r.len] -0;
 }
+#else
+// this one optimizes better, since i don't care about the char differece
+DECL s32 comp_str (lstr cr l, lstr cr r) { // (same as strcmp) -: l<r  0: l==r  +: l>r
+	u32 cnt = MIN(l.len, r.len);
+	for (u32 i=0; i<cnt; ++i) {
+		if (	 (u8)l[i] > (u8)r[i])	return +1;
+		else if ((u8)l[i] < (u8)r[i])	return -1;
+	}
+	if (		l.len == r.len)			return 0;
+	else if	(	l.len < r.len)			return -1; // if l/r is a prefix of r/l then the longer string counts as higher (as if the next character is compared to the null terminator)
+	else								return +1;
+}
+#endif
 
 template <typename T>
 DECL void inplace_sort (T* arr, u32 len) { // bubble sort
@@ -38,25 +49,26 @@ DECL void inplace_sort (T* arr, u32 len) { // bubble sort
 template <typename T>
 DECL T* binary_search (lstr cr str, T* arr, u32 len) { // not sure which element this returns if there are equal elements
 	assert(len != 0);
-	if (len == 0) return nullptr;
-	
-	u32 lo = 0;
-	u32 hi = len -1;
-	
-	do {
-		u32 mid = (lo +hi) / 2;
+	if (len != 0) {
 		
-		auto c = comp(arr[mid], str);
-		if (		c < 0 ) {
-			lo = mid +1;
-		} else if ( c > 0 ) {
-			hi = mid -1;
-		} else {
-			return &arr[mid];
-		}
+		u32 lo = 0;
+		u32 hi = len -1;
 		
-	} while (lo <= hi);
-	
+		do {
+			u32 mid = (lo +hi) / 2;
+			
+			auto c = comp(arr[mid], str);
+			if (		c < 0 ) {
+				lo = mid +1;
+			} else if ( c > 0 ) {
+				hi = mid -1;
+			} else {
+				return &arr[mid];
+			}
+			
+		} while (lo <= hi);
+		
+	}
 	return nullptr;
 }
 
@@ -501,15 +513,10 @@ namespace var {
 	#undef DYNARR
 	#undef DYNARR_S
 	
-	u64 match_iden_time;
-	
 	DECL bool comp_iden (lstr cr iden, lstr cr str) {
 		return str::comp(iden, str);
 	}
 	DECL u32 match_iden (lstr cr iden, Str_Enum* tbl, u32 tbl_size) {
-		//PROFILE_SCOPED(THR_ENGINE, "match_iden");
-		QPC_SCOPED_ADD(&match_iden_time);
-		
 		auto res = binary_search(iden, tbl, tbl_size);
 		return res ? res->e : tbl_size;
 	}
@@ -3688,13 +3695,6 @@ namespace var {
 	
 	DECL bool parse_var_file (var::parse_flags_e flags) {
 		PROFILE_SCOPED(THR_ENGINE, "parse_var_file");
-		
-		var::match_iden_time = 0;
-		u64 begin = time::QPC::get_time();
-		defer {
-			u64 diff = time::QPC::get_time() -begin;
-			print(">> parse_var_file: % match_iden: %\n", diff, var::match_iden_time);
-		};
 		
 		//print("parsing var file:\n");
 		

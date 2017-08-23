@@ -1,10 +1,12 @@
 
+#include "platform_utility.hpp"
+
 DECLD Stack					env_viewer_loader_thr_stk =		makeStack(0, mebi<uptr>(256));
 DECLD Stack					texture_load_stk =				makeStack(0, mebi<uptr>(1024));
 
 //// OpenGL
-	#include "oglInterface.hpp"
-	
+#include "oglInterface.hpp"
+
 namespace time {
 	
 	DECLD u64					qpc_process_begin;
@@ -29,101 +31,7 @@ namespace time {
 		gpu_process_begin = fp::iround(gpu_process_begin_sec / nano<f64>(1));
 	}
 }
-	
-	struct Mem_Block {
-		byte*	ptr;
-		uptr	size;
-	};
-	
-	typedef u32 rd_flags_t;
-	enum rd_flags_e : rd_flags_t {
-		RD_FILENAME_ON_STK =		0x1,
-		RD_NULL_TERMINATE_CHAR =	0x2,
-	};
-	
-namespace platform {
-	
-	DECL err_e read_whole_file_onto_heap (char const* filename, rd_flags_t flags, Mem_Block* out_data) {
-		
-		HANDLE handle;
-		auto err = win32::open_existing_file_rd(filename, &handle);
-		if (err) { return err; }
-		defer {
-			win32::close_file(handle);
-		};
-		
-		u64 file_size = win32::get_file_size(handle);
-		
-		// 
-		bool null_terminate = (flags & RD_NULL_TERMINATE_CHAR) != 0;
-		
-		auto data = (char*)malloc(file_size +(null_terminate ? 1 : 0));
-		
-		err = win32::read_file(handle, data, file_size);
-		if (err) { return err; }
-		
-		if (null_terminate) {
-			data[file_size] = '\0';
-		}
-		
-		*out_data = { (byte*)data, file_size };
-		return OK;
-	}
-	
-	
-	DECLD constexpr u32 FAST_FILE_READ_ALIGN = 64;
-	
-	DECL err_e read_whole_file_onto (Stack* stk, char const* filename, rd_flags_t flags, Mem_Block* out_data) {
-		
-		assert((flags & ~(RD_FILENAME_ON_STK|RD_NULL_TERMINATE_CHAR)) == 0,
-				"read_whole_file_onto_stack flags argument invalid!");
-		
-		HANDLE handle;
-		auto err = win32::open_existing_file_rd(filename, &handle);
-		if (err) { return err; }
-		defer {
-			win32::close_file(handle);
-		};
-		
-		if (flags & RD_FILENAME_ON_STK) {
-			stk->pop(filename);
-		}
-		
-		u64 file_size = win32::get_file_size(handle);
-		
-		// 
-		bool null_terminate = (flags & RD_NULL_TERMINATE_CHAR) != 0;
-		
-		auto data = stk->pushArrNoAlign<byte>(file_size +(null_terminate ? 1 : 0));
-		
-		err = win32::read_file(handle, data, file_size);
-		if (err) { return err; }
-		
-		if (null_terminate) {
-			reinterpret_cast<char*>(data)[file_size] = '\0';
-		}
-		
-		*out_data = { data, file_size };
-		return OK;
-	}
-	
-	DECL err_e write_whole_file (char const* filename, void const* data, u64 size) {
-		HANDLE handle;
-		auto err = win32::overwrite_file_wr(filename, &handle);
-		if (err) { return err; }
-		
-		defer {
-			// Close file
-			win32::close_file(handle);
-		};
-		
-		err = win32::write_file(handle, data, size);
-		if (err) { return err; }
-		
-		return OK;
-	}
-}
-	
+
 ////
 DECLD constexpr cstr		WINDOW_TITLE =							"OpenGL \"Engine\"";
 
@@ -1933,7 +1841,7 @@ namespace platform {
 		
 	}
 	
-	DECL int msg_thread_main () {
+	DECL s32 msg_thread_main () {
 		
 		time::process_begin();
 		

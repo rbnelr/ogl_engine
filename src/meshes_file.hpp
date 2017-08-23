@@ -1,97 +1,59 @@
-#pragma once
-
-#pragma pack (push, 1)
 
 namespace meshes_file_n {
-	
-	enum format_e : u16 {
-						INTERLEAVED=		0b1 << 0,
-						
-						POS_XYZ=			0b1 << 1,
-						
-						NORM_XYZ=			0b1 << 2,
-						
-						TANG_XYZW=			0b1 << 3,
-						
-						UV_UV=				0b1 << 4,
-						
-						COL_RGB=			0b1 << 5,
-						
-						//INDEX_NONE=			0b00 << 6,
-						//INDEX_UBYTE=		0b01 << 6,
-						INDEX_USHORT=		0b10 << 6,
-						//INDEX_UINT=			0b11 << 6,
+	#pragma pack (push, 1)
+
+	enum format_e : u32 {
+								F_NORM_XYZ =				0b00001,
+								F_UV_UV =					0b00010,
+								F_TANG_XYZW =				0b00100,
+								F_COL_RGB =					0b01000,
+								F_INDX_U32 =				0b10000,
 	};
-	DEFINE_ENUM_FLAG_OPS(format_e, u16);
+	DEFINE_ENUM_FLAG_OPS(format_e, u32);
 	
-	DECLD constexpr u16	INDEX_MASK=			0b11 << 6;
+	DECLD constexpr format_e	F_INDX_MASK = (format_e)	0b10000;
+	DECLD constexpr format_e	F_INDX_U16 = (format_e)		0b00000;
 	
-	struct Format_Print {
-		char const*	f;
-		char const*	tang;
-		char const*	uv;
-		char const*	col;
-	};
-	
-	DECL Format_Print format_strs (format_e f) {
-		Format_Print ret;
-		ret.f = "USUAL_FORMAT";
-		
-		switch (f & TANG_XYZW) {
-			case 0:			ret.tang = "";			break;
-			case TANG_XYZW:	ret.tang = "|TANG_XYZW";	break;
-			default: assert(false);
-		}
-		
-		switch (f & UV_UV) {
-			case 0:			ret.uv = "";		break;
-			case UV_UV:		ret.uv = "|UV_UV";	break;
-			default: assert(false);
-		}
-		
-		switch (f & COL_RGB) {
-			case 0:			ret.col = "";			break;
-			case COL_RGB:	ret.col = "|COL_RGB";	break;
-			default: assert(false);
-		}
+	DECL ui get_vertex_size (format_e f) {
+		ui ret =						(ui)sizeof(v3); // pos xyz
+		if (f & F_NORM_XYZ)		ret +=	(ui)sizeof(v3);
+		if (f & F_UV_UV)		ret +=	(ui)sizeof(v2);
+		if (f & F_TANG_XYZW)	ret +=	(ui)sizeof(v4);
+		if (f & F_COL_RGB)		ret +=	(ui)sizeof(v3);
 		return ret;
 	}
 	
-	DECLD constexpr uptr FILE_ALIGN =					64;
-	DECLD constexpr uptr HEADER_MESH_ENTRY_ALIGN =	16;
-	DECLD constexpr uptr DATA_ALIGN =					64;
+	DECLD constexpr file_id_8 FILE_ID = {{'R','A','Z','M','E','S','H','S'}};
 	
-	// values in the mesh data are also aligned to their type alignment f32 to 4 etc.
-	
-	static_assert(is_aligned(FILE_ALIGN, HEADER_MESH_ENTRY_ALIGN), "");
-	static_assert(is_aligned(FILE_ALIGN, DATA_ALIGN), "");
-	
-	struct Header_Mesh_Entry {
-		u64			dataOffset; // From start of file, aligned to DATA_ALIGN
-		GLsizei		indexCount; // 0 for NOT_INDEXED
-		union {
-			GLsizei		glsizei;
-			GLubyte		glubyte;
-			GLushort	glushort;
-			GLuint		gluint;
-		} vertexCount;
-		
-		format_e	dataFormat;
-		
-		//char		meshNameCstr[/* Null terminated */];
-	};
-	
-	DECLD constexpr char magicString[8] = {'R','A','Z','_','M','S','H','S'};
-	
-	struct Header {
-		char		magicString[8];
+	struct fHeader {
+		file_id_8	id;
 		u64			file_size;
 		
-		u64			meshEntryCount;
+		u32			meshes_count;
+		u32			str_tbl_size;
 		
-		u64			totalVertexSize;
-		u64			totalIndexSize;
+		u64			total_vertex_size;
+		u64			total_index_size;
 	};
+	
+	struct fMesh {
+		u64			data_offs; // From start of file
+		u32			index_count;
+		u32			vertex_count;
+		
+		format_e	format;
+		u32			mesh_name; // offs into str_tbl
+	};
+	
+	#if 0
+	struct fFile {
+		fHeader		header;
+		char		str_tbl[header.str_tbl_size];
+		fMesh		meshes[header.meshes_count];
+		
+		byte		mesh_data[];
+	};
+	#endif
+	
+	#pragma pack (pop)
 }
-
-#pragma pack (pop)
