@@ -197,12 +197,12 @@ namespace shaders_n {
 		for (uptr i=0; i<arrlenof(SOURCE_SHADERS); ++i) {
 			if (str::comp(SOURCE_SHADERS[i].virtual_filename, virtual_filename)) {
 				lstr str = SOURCE_SHADERS[i].str;
-				str.str = working_stk.append(str.str, str.len);
+				str.str = working_stk.pushn(str.str, str.len);
 				return str;
 			}
 		}
 		
-		lstr real_filename = str::append_term(&working_stk, SHADERS_DIR, virtual_filename);
+		lstr real_filename = print_working_stk("%%\\0", SHADERS_DIR, virtual_filename);
 		
 		Mem_Block ret;
 		if (platform::read_file_onto(&working_stk, real_filename.str, &ret, RD_FILENAME_ON_STK)) {
@@ -371,7 +371,7 @@ namespace shaders_n {
 					//assert(written_len <= (src_len -1));
 					assert(written_len <= src_len); // BUG: on my AMD desktop written_len was actually the length with null terminator at some point
 					
-					lstr filepath = str::append_term(&working_stk, SHADERS_DIR, "zz_", filename, ".has_error.tmp");
+					lstr filepath = print_working_stk("%zz_%.has_error.tmp\\0", SHADERS_DIR, filename);
 					
 					platform::write_whole_file(filepath.str, buf, src_len -1);
 				}

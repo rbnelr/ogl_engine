@@ -1,7 +1,7 @@
 	
 namespace str {
 	
-	// These can be replaced by dynarr.append(str.len, str.str) and/or print_working_stk
+	#if 0 // These can be replaced by dynarr.append(str.len, str.str) and/or print_working_stk
 	DECLV mlstr __append (dynarr<char, u32>* appendable, ui to_append_count, ...) {
 		
 		va_list	vl0, vl;
@@ -110,41 +110,42 @@ namespace str {
 	}
 	
 	// Can't get implicit constructor call from string literal to lstr with template arguments
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append (APPENDABLE* appendable, lstr a) {
+	template <typename APPENDABLE> DECL DEPRECATED FORCEINLINE mlstr append (APPENDABLE* appendable, lstr a) {
 		return _append(appendable, a);
 	}
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append_term (APPENDABLE* appendable, lstr a) {
+	template <typename APPENDABLE> DECL DEPRECATED FORCEINLINE mlstr append_term (APPENDABLE* appendable, lstr a) {
 		return _append_term(appendable, a);
 	}
 	
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append (APPENDABLE* appendable, lstr a, lstr b) {
+	template <typename APPENDABLE> DECL DEPRECATED FORCEINLINE mlstr append (APPENDABLE* appendable, lstr a, lstr b) {
 		return _append(appendable, a, b);
 	}
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append_term (APPENDABLE* appendable, lstr a, lstr b) {
+	template <typename APPENDABLE> DECL DEPRECATED FORCEINLINE mlstr append_term (APPENDABLE* appendable, lstr a, lstr b) {
 		return _append_term(appendable, a, b);
 	}
 	
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append (APPENDABLE* appendable, lstr a, lstr b, lstr c) {
+	template <typename APPENDABLE> DECL DEPRECATED FORCEINLINE mlstr append (APPENDABLE* appendable, lstr a, lstr b, lstr c) {
 		return _append(appendable, a, b, c);
 	}
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append_term (APPENDABLE* appendable, lstr a, lstr b, lstr c) {
+	template <typename APPENDABLE> DECL DEPRECATED FORCEINLINE mlstr append_term (APPENDABLE* appendable, lstr a, lstr b, lstr c) {
 		return _append_term(appendable, a, b, c);
 	}
 	
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append (APPENDABLE* appendable, lstr a, lstr b, lstr c, lstr d) {
+	template <typename APPENDABLE> DECL DEPRECATED FORCEINLINE mlstr append (APPENDABLE* appendable, lstr a, lstr b, lstr c, lstr d) {
 		return _append(appendable, a, b, c, d);
 	}
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append_term (APPENDABLE* appendable, lstr a, lstr b, lstr c, lstr d) {
+	template <typename APPENDABLE> DECL DEPRECATED FORCEINLINE mlstr append_term (APPENDABLE* appendable, lstr a, lstr b, lstr c, lstr d) {
 		return _append_term(appendable, a, b, c, d);
 	}
 	
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append (APPENDABLE* appendable, lstr a, lstr b, lstr c, lstr d, lstr e) {
+	template <typename APPENDABLE> DECL DEPRECATED FORCEINLINE mlstr append (APPENDABLE* appendable, lstr a, lstr b, lstr c, lstr d, lstr e) {
 		return _append(appendable, a, b, c, d, e);
 	}
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append_term (APPENDABLE* appendable, lstr a, lstr b, lstr c, lstr d, lstr e) {
+	template <typename APPENDABLE> DECL DEPRECATED FORCEINLINE mlstr append_term (APPENDABLE* appendable, lstr a, lstr b, lstr c, lstr d, lstr e) {
 		return _append_term(appendable, a, b, c, d, e);
 	}
 	
+	#endif
 }
 	
 //// Units
@@ -451,7 +452,7 @@ struct List_Of_Files_In {
 		HANDLE search_handle;
 		{
 			DEFER_POP(&working_stk);
-			lstr search_path = str::append_term(&working_stk, base_path, path, "*");
+			lstr search_path = print_working_stk("%%*\\0", base_path, path);
 			
 			search_handle = FindFirstFileA(search_path.str, &info);
 			if (search_handle == INVALID_HANDLE_VALUE) {
@@ -486,7 +487,7 @@ struct List_Of_Files_In {
 				
 				if (push) {
 					working_stk.push<bool>(is_dir);
-					str::append_term(&working_stk, filename);
+					working_stk.pushn(filename.str, filename.len +1);
 					++count;
 				}
 			}
@@ -519,10 +520,11 @@ struct List_Of_Files_In {
 			if (	(!is_dir && (flags & FILES)) ||
 					(is_dir && (flags & FOLDERS)) ) {
 				
-				u32		str_offs = out->str_data.len;
+				auto prin = make_printer_dynarr(&out->str_data);
 				
-				lstr	filepath =	str::append_term(&out->str_data, base_path_, path, filename);
-				out->arr.append( {str_offs, filepath.len} );
+				u32	offs =	out->str_data.len;
+				u32	len =	prin("%%%\\0", base_path_, path, filename);
+				out->arr.push( {offs, len} );
 				
 			}
 			
@@ -535,7 +537,7 @@ struct List_Of_Files_In {
 						filename.str[filename.len -1] != '\\' &&
 						filename.str[filename.len -1] != '/' );
 				
-				lstr folder = str::append_term(&working_stk, path, filename, "/");
+				lstr folder = print_working_stk("%%/\\0", path, filename);
 				recurse(out, folder);
 			}
 		}
@@ -558,8 +560,9 @@ DECL Filenames list_of_files_in (lstr cr base_path, list_of_files_in_n::flags_e 
 	auto builder = List_Of_Files_In{flags, filters_len, filters, base_path};
 	builder.recurse(&ret, lstr(""));
 	
-	ret.arr		.fit_cap_exact();
-	ret.str_data.fit_cap_exact();
+	// Don't have an extra realloc just to save a bit of string-sized memory
+	//ret.arr		.fit_cap_exact();
+	//ret.str_data.fit_cap_exact();
 	
 	return ret;
 }

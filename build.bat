@@ -50,7 +50,7 @@ rem /main
 	if exist !froot!shaders\zz_*.tmp ( del !froot!shaders\zz_*.tmp )
 	
 	if [!release!] == [0] (
-		set dbg=/Od /Zi /DEBUG /DDEBUG=1
+		set dbg=/Od /Zi /DEBUG /DDEBUG=1 /MDd
 	) else  (
 		set dbg=/O2 /Oi /Zi /DEBUG /DDEBUG=0
 	)

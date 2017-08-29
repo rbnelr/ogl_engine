@@ -101,7 +101,7 @@ namespace profile {
 	
 	u32 push_str (dynarr<char>* arr, lstr name) {
 		u32 offs = arr->len;
-		str::append_term(arr, name);
+		arr->pushn(name.str, name.len +1);
 		return offs;
 	}
 	
@@ -197,7 +197,7 @@ namespace profile {
 		
 		if (chunk_i++ == 0) return;
 		
-		str::append_term(&working_stk, lstr::count_cstr(name));
+		working_stk.pushn(name, str::len(name) +1);
 		
 		Sample* cur = &samples[events_to_process_indx];
 		for (u32 remain=events_to_process_count; remain>0; --remain) {
@@ -207,7 +207,7 @@ namespace profile {
 			cpu->index = cur->index;
 			cpu->thread_indx = 0; // engine_game_loop
 			
-			str::append_term(&working_stk, lstr::count_cstr(cur->name));
+			working_stk.pushn(cur->name, str::len(cur->name) +1);
 			++chunk->event_count;
 			++header.threads[0].event_count;
 			
@@ -220,7 +220,7 @@ namespace profile {
 				gpu->index = cur->index;
 				gpu->thread_indx = 1; // gpu_measurement
 				
-				str::append_term(&working_stk, lstr::count_cstr(cur->name));
+				working_stk.pushn(cur->name, str::len(cur->name) +1);
 				++chunk->event_count;
 				++header.threads[1].event_count;
 				

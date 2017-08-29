@@ -13,41 +13,20 @@ namespace engine {
 //// UBO
 #include "ogl_ubo_interface.hpp"
 
-//// VBO
+//// special VBOs and VAOs
 DECLD constexpr GLuint	GLOBAL_UNIFORM_BLOCK_BINDING =		0;
 
-enum vbo_indx_e : u32 {
-	GLOBAL_UNIFORM_BUF,
-	NO_UV_COL_ARR_BUF,
-	NO_UV_COL_INDX_BUF,
-	NO_UV_ARR_BUF,
-	NO_UV_INDX_BUF,
-	COMMON_ARR_BUF,
-	COMMON_INDX_BUF,
-	//GROUND_PLANE_ARR_BUF,
-	VBO_FULLSCREEN_QUAD,
-	VBO_RENDER_CUBEMAP,
-	
-	VBO_COUNT
-};
+DECLD GLuint			global_uniform_buf;
+DECLD GLuint			vbo_fullscreen_quad;
+DECLD GLuint			vbo_render_cubemap;
 
-//// VAO
-enum vao_indx_e : u32 {
-	EMPTY_VAO=0,
-	
-	NO_UV_COL_VAO,
-	NO_UV_VAO,
-	COMMON_VAO,
-	//GROUND_PLANE_VAO,
-	VAO_FULLSCREEN_QUAD,
-	VAO_RENDER_CUBEMAP,
-	
-	VAO_COUNT
-};
+DECLD GLuint			empty_vao;
+DECLD GLuint			vao_fullscreen_quad;
+DECLD GLuint			vao_render_cubemap;
 
 #include "shaders.hpp"
-#include "meshes.hpp"
 #include "textures.hpp"
+#include "meshes.hpp"
 
 //// Materials
 enum materials_e : u32 {
@@ -104,134 +83,8 @@ DECL void set_vsync (s32 swap_interval) {
 
 DECLD GLuint				shaders[SHAD_COUNT];
 
-DECLD GLuint				VBOs[VBO_COUNT];
-DECLD GLuint				VAOs[VAO_COUNT];
-
-DECLD Mesh_Ref				meshes[MESHES_COUNT];
-DECLD AABB					meshes_aabb[MESHES_COUNT];
-
-meshes_file_n::Meshes_File	meshes_file = {}; // init to null
-
-AABB calc_AABB_model (mesh_id_e id) {
-	
-	// AABB returned is in the space between to_world & from_model
-	// gets deplayed in world space
-	
-	byte*		vertices;
-	GLushort*	indices;
-	
-	u32			vertex_stride;
-	
-	u32			vertex_count;
-	u32			index_count;
-	{
-		byte* file_data = (byte*)meshes_file.header;
-		
-		auto mesh = meshes_file.query_mesh(mesh_names[id]);
-		assert(mesh);
-		
-		vertex_count = mesh->vertex_count;
-		assert(vertex_count > 0);
-		
-		index_count = mesh->index_count;
-		assert(index_count > 0);
-		
-		switch (mesh->format) {
-			using namespace meshes_file_n;
-			
-			case (F_INDX_U16| F_NORM_XYZ): {
-				struct Vertex {
-					v3	pos;
-					v3	norm;
-				};
-				vertex_stride = sizeof(Vertex);
-			} break;
-			
-			case (F_INDX_U16| F_NORM_XYZ|F_COL_RGB): {
-				struct Vertex {
-					v3	pos;
-					v3	norm;
-					v3	color;
-				};
-				vertex_stride = sizeof(Vertex);
-			} break;
-			
-			case (F_INDX_U16| F_NORM_XYZ|F_UV_UV): {
-				struct Vertex {
-					v3	pos;
-					v3	norm;
-					v2	uv;
-				};
-				vertex_stride = sizeof(Vertex);
-			} break;
-			
-			case (F_INDX_U16| F_NORM_XYZ|F_UV_UV|F_TANG_XYZW): {
-				struct Vertex {
-					v3	pos;
-					v3	norm;
-					v2	uv;
-					v4	tang;
-				};
-				vertex_stride = sizeof(Vertex);
-			} break; 
-			
-			default: assert(false); vertex_stride = 0; // shut up compiler
-		}
-		
-		u32 vert_size = vertex_count * vertex_stride;
-		u32 index_size = index_count * sizeof(GLushort);
-		
-		assert((mesh->data_offs +vert_size) <= meshes_file.file_size);
-		assert((mesh->data_offs +vert_size +index_size) <= meshes_file.file_size);
-		
-		vertices = (byte*)(file_data +mesh->data_offs);
-		indices = (GLushort*)((byte*)vertices +vert_size);
-		
-	}
-	
-	AABB ret = AABB::inf();
-	
-	for (u32 i=0; i<vertex_count; ++i) {
-		v3 pos = *(v3*)( vertices +vertex_stride * i );
-		ret.minmax(pos);
-	}
-	
-	return ret;
-}
-
-DECL void reload_meshes () { // Loading meshes from disk to GPU driver
-	using namespace meshes_file_n;
-	
-	PROFILE_SCOPED(THR_ENGINE, "reload_meshes");
-	
-	glBindVertexArray(0); // Unbind VAO so that we don't mess with its GL_ELEMENT_ARRAY_BUFFER binding
-	
-	meshes_file.reload();
-	
-	//
-	glBindBuffer(GL_ARRAY_BUFFER,			VBOs[NO_UV_COL_ARR_BUF]);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[NO_UV_COL_INDX_BUF]);
-	
-	meshes_file.reload_meshes(F_INDX_U16|F_NORM_XYZ|F_COL_RGB, MSH_NOUV_COL_FIRST, MSH_NOUV_COL_COUNT, meshes);
-	
-	//
-	glBindBuffer(GL_ARRAY_BUFFER,			VBOs[NO_UV_ARR_BUF]);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[NO_UV_INDX_BUF]);
-	
-	meshes_file.reload_meshes(F_INDX_U16|F_NORM_XYZ, MSH_NOUV_FIRST, MSH_NOUV_COUNT, meshes);
-	
-	//
-	glBindBuffer(GL_ARRAY_BUFFER,			VBOs[COMMON_ARR_BUF]);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[COMMON_INDX_BUF]);
-	
-	meshes_file.reload_meshes(F_INDX_U16|F_NORM_XYZ|F_UV_UV|F_TANG_XYZW, MSH_COMMON_FIRST, MSH_COMMON_COUNT, meshes);
-	
-	for (mesh_id_e id=(mesh_id_e)0; id<MESHES_COUNT; ++id) {
-		meshes_aabb[id] = calc_AABB_model(id);
-	}
-}
-
 DECLD Textures				tex;
+DECLD Meshes				meshes;
 
 DECLD std140_Material		materials[MAT_COUNT] =			{}; // init to zero except for default values
 
@@ -306,6 +159,7 @@ struct Camera {
 	
 };
 
+#if 0
 bool load_humus_cubemap (lstr cr filename, Stack* stk) {
 	
 	u32	w, h;
@@ -493,6 +347,7 @@ bool load_humus_cubemap (lstr cr filename, Stack* stk) {
 	
 	return true;
 }
+#endif
 
 #define DISABLE_ENV_ALL		0
 #define DISABLE_ENV_RENDER	0
@@ -623,7 +478,7 @@ struct Env_Viewer {
 		#if !DISABLE_ENV_RENDER
 		glViewport(0,0, PBR_BRDF_LUT_RES,PBR_BRDF_LUT_RES);
 		
-		glBindVertexArray(VAOs[VAO_FULLSCREEN_QUAD]);
+		glBindVertexArray(vao_fullscreen_quad);
 		glUseProgram(shaders[SHAD_RENDER_IBL_BRDF_LUT]);
 		
 		glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -717,7 +572,7 @@ struct Env_Viewer {
 				bool first_face = face == FACE_ORDER;
 				
 				DEFER_POP(&working_stk);
-				lstr filename = str::append_term(&working_stk, ENV_MAPS_HUMUS_DIR, humus_name, FACES[*face]);
+				lstr filename = print_working_stk("%%%\\0", ENV_MAPS_HUMUS_DIR, humus_name, FACES[*face]);
 				
 				u8*	img;
 				
@@ -884,7 +739,7 @@ struct Env_Viewer {
 			auto sibl_name = sibl_files.get_filename(cur_sibl_indx);
 			
 			DEFER_POP(&working_stk);
-			lstr filename = str::append_term(&working_stk, ENV_MAPS_SIBL_DIR, sibl_name);
+			lstr filename = print_working_stk("%%\\0", ENV_MAPS_SIBL_DIR, sibl_name);
 			
 			print("sIBL environment: [%] '%'\n", cur_sibl_indx, sibl_name);
 			
@@ -918,7 +773,7 @@ struct Env_Viewer {
 				#if !DISABLE_ENV_RENDER
 				glViewport(0,0, luminance_res,luminance_res);
 				
-				glBindVertexArray(VAOs[VAO_RENDER_CUBEMAP]);
+				glBindVertexArray(vao_render_cubemap);
 				glUseProgram(shaders[SHAD_RENDER_EQUIRECTANGULAR_TO_CUBEMAP]);
 				
 				// ENV_LUMINANCE_TEX_UNIT still bound
@@ -939,7 +794,7 @@ struct Env_Viewer {
 			
 		}
 		
-		glBindVertexArray(VAOs[VAO_RENDER_CUBEMAP]);
+		glBindVertexArray(vao_render_cubemap);
 		
 		#if !DISABLE_ENV_RENDER
 		// Source: env_source_cubemap still bound
@@ -1674,7 +1529,7 @@ struct Passes {
 		return;
 		#endif
 		
-		glBindVertexArray(VAOs[VAO_FULLSCREEN_QUAD]);
+		glBindVertexArray(vao_fullscreen_quad);
 		
 		#if !DISABLE_CONVOLUTION_GET
 		{
@@ -2219,81 +2074,32 @@ DECL void init () {
 		}
 	}
 	
-	{ // GL buffer setup
-		PROFILE_SCOPED(THR_ENGINE, "ogl_buffer_alloc");
+	{ // VAO VBO config
+		PROFILE_SCOPED(THR_ENGINE, "ogl_vao_vbo_setup");
 		
-		glGenBuffers(VBO_COUNT, VBOs);
+		glGenBuffers(1, &global_uniform_buf);
+		glGenBuffers(1, &vbo_fullscreen_quad);
+		glGenBuffers(1, &vbo_render_cubemap);
 		
-		glBindBuffer(GL_UNIFORM_BUFFER, VBOs[GLOBAL_UNIFORM_BUF]);
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(std140_Global), NULL, GL_STREAM_DRAW);
+		glGenVertexArrays(1, &empty_vao);
+		glGenVertexArrays(1, &vao_fullscreen_quad);
+		glGenVertexArrays(1, &vao_render_cubemap);
 		
-		glBindBufferRange(GL_UNIFORM_BUFFER, GLOBAL_UNIFORM_BLOCK_BINDING, VBOs[GLOBAL_UNIFORM_BUF],
-				0, sizeof(std140_Global));
-		
-	}
-	{ // VAO config
-		PROFILE_SCOPED(THR_ENGINE, "ogl_vao_setup");
-		
-		glGenVertexArrays(VAO_COUNT, VAOs);
-		
-		{ // Default mesh buffer
-			glBindVertexArray(VAOs[NO_UV_VAO]);
+		{
+			glBindBuffer(GL_UNIFORM_BUFFER, global_uniform_buf);
+			glBufferData(GL_UNIFORM_BUFFER, sizeof(std140_Global), NULL, GL_STREAM_DRAW);
 			
-			glEnableVertexAttribArray(0);
-			glEnableVertexAttribArray(1);
-			
-			glBindBuffer(GL_ARRAY_BUFFER, VBOs[NO_UV_ARR_BUF]);
-			
-			auto vert_size = safe_cast_assert(GLsizei, (3 +3) * sizeof(f32));
-			
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((0) * sizeof(f32)));				// pos xyz
-			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +0) * sizeof(f32)));			// normal xyz
-			
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[NO_UV_INDX_BUF]);
+			glBindBufferRange(GL_UNIFORM_BUFFER, GLOBAL_UNIFORM_BLOCK_BINDING, global_uniform_buf,
+					0, sizeof(std140_Global));
 		}
-		{ // 
-			glBindVertexArray(VAOs[NO_UV_COL_VAO]);
-			
-			glEnableVertexAttribArray(0);
-			glEnableVertexAttribArray(1);
-			glEnableVertexAttribArray(4);
-			
-			glBindBuffer(GL_ARRAY_BUFFER, VBOs[NO_UV_COL_ARR_BUF]);
-			
-			auto vert_size = safe_cast_assert(GLsizei, (3 +3 +3) * sizeof(f32));
-			
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((0) * sizeof(f32)));				// pos xyz
-			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +0) * sizeof(f32)));			// normal xyz
-			glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +3 +0) * sizeof(f32)));		// color rgb
-			
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[NO_UV_COL_INDX_BUF]);
-		}
-		{ // UV TANGENT mesh buffer
-			glBindVertexArray(VAOs[COMMON_VAO]);
-			
-			glEnableVertexAttribArray(0);
-			glEnableVertexAttribArray(1);
-			glEnableVertexAttribArray(2);
-			glEnableVertexAttribArray(3);
-			
-			glBindBuffer(GL_ARRAY_BUFFER, VBOs[COMMON_ARR_BUF]);
-			
-			auto vert_size = safe_cast_assert(GLsizei, (3 +3 +4 +2) * sizeof(f32));
-			
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((0) * sizeof(f32)));				// pos xyz
-			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +0) * sizeof(f32)));			// normal xyz
-			glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +3 +0) * sizeof(f32)));		// uv
-			glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +3 +2 +0) * sizeof(f32)));	// tangent xyzw
-			
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[COMMON_INDX_BUF]);
-		}
-		{ //
-			glBindVertexArray(VAOs[VAO_FULLSCREEN_QUAD]);
+		
+		{ // VAO_FULLSCREEN_QUAD
+			glBindVertexArray(vao_fullscreen_quad);
 			
 			glEnableVertexAttribArray(0);
 			glEnableVertexAttribArray(1);
 			
-			glBindBuffer(GL_ARRAY_BUFFER, VBOs[VBO_FULLSCREEN_QUAD]);
+			glBindBuffer(GL_ARRAY_BUFFER, vbo_fullscreen_quad);
 			
 			struct Vert {
 				v2	pos_ndc;
@@ -2314,13 +2120,13 @@ DECL void init () {
 			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vert), (void*)((0) * sizeof(f32)));
 			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vert), (void*)((2 +0) * sizeof(f32)));
 		}
-		{ //
-			glBindVertexArray(VAOs[VAO_RENDER_CUBEMAP]);
+		{ // VAO_RENDER_CUBEMAP
+			glBindVertexArray(vao_render_cubemap);
 			
 			glEnableVertexAttribArray(0);
 			glEnableVertexAttribArray(1);
 			
-			glBindBuffer(GL_ARRAY_BUFFER, VBOs[VBO_RENDER_CUBEMAP]);
+			glBindBuffer(GL_ARRAY_BUFFER, vbo_render_cubemap);
 			
 			struct Vert {
 				v2	pos_ndc;
@@ -2376,6 +2182,9 @@ DECL void init () {
 			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vert), (void*)((0) * sizeof(f32)));
 			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vert), (void*)((2 +0) * sizeof(f32)));
 		}
+		
+		meshes.setup_vaos();
+		
 		glBindVertexArray(0);
 	}
 	
@@ -2383,6 +2192,11 @@ DECL void init () {
 		PROFILE_SCOPED(THR_ENGINE, "shaders_inital_load");
 		
 		shaders_n::load_warn(shaders);
+	}
+	
+	{
+		PROFILE_SCOPED(THR_ENGINE, "meshes_init");
+		meshes.init();
 	}
 	
 	{
@@ -2399,7 +2213,6 @@ DECL void init () {
 		dbg_lines.init();
 		env_viewer.init();
 		
-		entities.init();
 		entities.calc_mesh_aabb(); // calculate inital AABB
 	}
 	
@@ -2466,11 +2279,6 @@ DECL void frame () {
 		PROFILE_SCOPED(THR_ENGINE, "reload_shaders");
 		
 		shaders_n::reload(shaders);
-	}
-	
-	if (reloaded_vars) {
-		print(frame_number == 0 ? "Loading meshes.\n":"Reloading meshes.\n");
-		reload_meshes();
 	}
 	
 	v2	window_aspect_ratio; // x=w/h y=h/w
@@ -2650,19 +2458,12 @@ DECL void frame () {
 				//print("Drawing scene #%\n", scn_i);
 				//entities.test_enumerate(p_scn);
 				
-				auto draw_mesh = [] (Mesh const* msh, hm mp to_cam, hm mp from_cam) {
+				auto draw_mesh = [] (eMesh const* msh, hm mp to_cam, hm mp from_cam) {
 					PROFILE_SCOPED(THR_ENGINE, "mesh");
 					
 					glUseProgram(shaders[SHAD_PBR_DEV_COMMON]);
 					
-					auto id = msh->mesh_id;
-					if (		id >= MSH_NOUV_FIRST && id < MSH_NOUV_END ) {
-						glBindVertexArray(VAOs[NO_UV_VAO]);
-					} else if (	id >= MSH_COMMON_FIRST && id < MSH_COMMON_END ) {
-						glBindVertexArray(VAOs[COMMON_VAO]);
-					} else {
-						assert(false, "unknown mesh type (id: %)", (u32)id);
-					}
+					meshes.bind_vao(msh->mesh);
 					
 					//print(">>> draw '%' at %\n", msh->name, (to_world * hv(0)).xyz());
 					
@@ -2691,21 +2492,14 @@ DECL void frame () {
 					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_METALLIC);
 					glBindTexture(GL_TEXTURE_2D, msh->tex.metallic == TEX_IDENT ? tex_ident : tex.gl_refs[msh->tex.metallic]);
 					
-					glDrawElementsBaseVertex(GL_TRIANGLES, meshes[msh->mesh_id].indx_count, GL_UNSIGNED_SHORT,
-							meshes[msh->mesh_id].indx_offsets, meshes[msh->mesh_id].base_vertecies);
+					glDrawElementsBaseVertex(GL_TRIANGLES, msh->mesh->vbo_data.indx_count, GL_UNSIGNED_SHORT,
+							msh->mesh->vbo_data.indx_offset, msh->mesh->vbo_data.base_vertex);
 					
 				};
-				auto draw_mesh_shadow = [] (Mesh_Base const* msh, hm mp to_light, hm mp from_light) {
+				auto draw_mesh_shadow = [] (eMesh_Base const* msh, hm mp to_light, hm mp from_light) {
 					PROFILE_SCOPED(THR_ENGINE, "mesh");
 					
-					auto id = msh->mesh_id;
-					if (		id >= MSH_NOUV_FIRST && id < MSH_NOUV_END ) {
-						glBindVertexArray(VAOs[NO_UV_VAO]);
-					} else if (	id >= MSH_COMMON_FIRST && id < MSH_COMMON_END ) {
-						glBindVertexArray(VAOs[COMMON_VAO]);
-					} else {
-						assert(false, "unknown mesh type (id: %)", (u32)id);
-					}
+					meshes.bind_vao(msh->mesh);
 					
 					{
 						std140_Transforms temp;
@@ -2714,23 +2508,16 @@ DECL void frame () {
 						GLOBAL_UBO_WRITE(transforms, &temp);
 					}
 					
-					glDrawElementsBaseVertex(GL_TRIANGLES, meshes[id].indx_count, GL_UNSIGNED_SHORT,
-							meshes[id].indx_offsets, meshes[id].base_vertecies);
+					glDrawElementsBaseVertex(GL_TRIANGLES, msh->mesh->vbo_data.indx_count, GL_UNSIGNED_SHORT,
+							msh->mesh->vbo_data.indx_offset, msh->mesh->vbo_data.base_vertex);
 				};
 				
-				auto draw_mesh_nanosuit = [] (Mesh_Nanosuit const* msh, hm mp to_cam, hm mp from_cam) {
+				auto draw_mesh_nanosuit = [] (eMesh_Nanosuit const* msh, hm mp to_cam, hm mp from_cam) {
 					PROFILE_SCOPED(THR_ENGINE, "mesh");
 					
 					glUseProgram(shaders[SHAD_PBR_DEV_NANOSUIT]);
 					
-					auto id = msh->mesh_id;
-					if (		id >= MSH_NOUV_FIRST && id < MSH_NOUV_END ) {
-						glBindVertexArray(VAOs[NO_UV_VAO]);
-					} else if (	id >= MSH_COMMON_FIRST && id < MSH_COMMON_END ) {
-						glBindVertexArray(VAOs[COMMON_VAO]);
-					} else {
-						assert(false, "unknown mesh type (id: %)", (u32)id);
-					}
+					meshes.bind_vao(msh->mesh);
 					
 					GLOBAL_UBO_WRITE_VAL( std140::uint_, lightbulb_indx, -1);
 					
@@ -2754,8 +2541,8 @@ DECL void frame () {
 					glBindTexture(GL_TEXTURE_2D, tex.gl_refs[msh->tex.specular_roughness]);
 					
 					
-					glDrawElementsBaseVertex(GL_TRIANGLES, meshes[id].indx_count, GL_UNSIGNED_SHORT,
-							meshes[id].indx_offsets, meshes[id].base_vertecies);
+					glDrawElementsBaseVertex(GL_TRIANGLES, msh->mesh->vbo_data.indx_count, GL_UNSIGNED_SHORT,
+							msh->mesh->vbo_data.indx_offset, msh->mesh->vbo_data.base_vertex);
 					
 				};
 				
@@ -2776,13 +2563,12 @@ DECL void frame () {
 					mat.albedo.set(v3(0.91f, 0.92f, 0.92f)); // aluminium
 					
 					glUseProgram(shaders[SHAD_PBR_DEV_NOTEX_INST]);
-					glBindVertexArray(VAOs[NO_UV_VAO]);
+					
+					meshes.bind_vao(e->mesh);
 					
 					glUniform2uiv(unif_steps, 1, &steps.x);
 					glUniform2fv(unif_offs, 1, &e->grid_offs.x);
 					glUniformMatrix2fv(unif_offs_mat, 1, GL_FALSE, &material_showcase_grid_mat.arr[0].x);
-					
-					auto& mesh = meshes[e->mesh_id];
 					
 					GLOBAL_UBO_WRITE_VAL( std140::uint_, lightbulb_indx, -1);
 					{
@@ -2798,8 +2584,8 @@ DECL void frame () {
 					
 					auto inst_count = safe_cast_assert(GLsizei, steps.x*steps.y);
 					
-					glDrawElementsInstancedBaseVertex(GL_TRIANGLES, mesh.indx_count, GL_UNSIGNED_SHORT,
-							mesh.indx_offsets, inst_count, mesh.base_vertecies);
+					glDrawElementsInstancedBaseVertex(GL_TRIANGLES, e->mesh->vbo_data.indx_count, GL_UNSIGNED_SHORT,
+							e->mesh->vbo_data.indx_offset, inst_count, e->mesh->vbo_data.base_vertex);
 					
 				};
 				auto draw_material_showcase_grid_shadow = [&] (Material_Showcase_Grid const* e, hm mp to_light, hm mp from_light) {
@@ -2811,7 +2597,7 @@ DECL void frame () {
 						steps = MIN_v(steps, v2u32(2));
 					}
 					
-					glBindVertexArray(VAOs[NO_UV_VAO]);
+					meshes.bind_vao(e->mesh);
 					
 					for (u32 j=0; j<steps.y; ++j) {
 						for (u32 i=0; i<steps.x; ++i) {
@@ -2825,8 +2611,8 @@ DECL void frame () {
 								GLOBAL_UBO_WRITE(transforms, &temp);
 							}
 							
-							glDrawElementsBaseVertex(GL_TRIANGLES, meshes[e->mesh_id].indx_count, GL_UNSIGNED_SHORT,
-									meshes[e->mesh_id].indx_offsets, meshes[e->mesh_id].base_vertecies);
+							glDrawElementsBaseVertex(GL_TRIANGLES, e->mesh->vbo_data.indx_count, GL_UNSIGNED_SHORT,
+									e->mesh->vbo_data.indx_offset, e->mesh->vbo_data.base_vertex);
 						}
 					}
 					
@@ -2845,7 +2631,7 @@ DECL void frame () {
 							
 							case ET_MESH:
 							case ET_MESH_NANOSUIT:
-								draw_mesh_shadow((Mesh_Base*)e, to_light, from_light);
+								draw_mesh_shadow((eMesh_Base*)e, to_light, from_light);
 								break;
 								
 							case ET_LIGHT:
@@ -3039,19 +2825,19 @@ DECL void frame () {
 						
 						u32 enabled_light_indx =	0;
 						
-						auto draw_light_bulb = [&] (Light_ const* l, hm mp to_cam, hm mp from_cam) {
+						auto draw_light_bulb = [&] (Light const* l, hm mp to_cam, hm mp from_cam) {
 							PROFILE_SCOPED(THR_ENGINE, "light_bulb");
 							
 							glUseProgram(shaders[SHAD_PBR_DEV_LIGHTBULB]);
 							
 							if (!(inp.mouselook & FPS_MOUSELOOK)) {
 								
-								glBindVertexArray(VAOs[NO_UV_COL_VAO]);
+								auto* mesh = l->get_mesh();
+								
+								meshes.bind_vao(mesh);
 								
 								GLOBAL_UBO_WRITE_VAL( std140::uint_, lightbulb_indx,
 										(l->flags & LF_DISABLED) ? -1 : enabled_light_indx );
-								
-								auto mesh = l->type == LT_POINT ? MSH_nouv_col_LIGHT_BULB : MSH_nouv_col_SUN_LAMP;
 								
 								{
 									std140_Transforms_Material temp;
@@ -3064,8 +2850,8 @@ DECL void frame () {
 									GLOBAL_UBO_WRITE(transforms, &temp);
 								}
 								
-								glDrawElementsBaseVertex(GL_TRIANGLES, meshes[mesh].indx_count, GL_UNSIGNED_SHORT,
-										meshes[mesh].indx_offsets, meshes[mesh].base_vertecies);
+								glDrawElementsBaseVertex(GL_TRIANGLES, mesh->vbo_data.indx_count, GL_UNSIGNED_SHORT,
+										mesh->vbo_data.indx_offset, mesh->vbo_data.base_vertex);
 								
 								if (!(l->flags & LF_DISABLED)) {
 									++enabled_light_indx;
@@ -3079,15 +2865,15 @@ DECL void frame () {
 							switch (e->tag) {
 								
 								case ET_MESH:
-									draw_mesh((Mesh*)e, to_cam, from_cam);
+									draw_mesh((eMesh*)e, to_cam, from_cam);
 									break;
 									
 								case ET_MESH_NANOSUIT:
-									draw_mesh_nanosuit((Mesh_Nanosuit*)e, to_cam, from_cam);
+									draw_mesh_nanosuit((eMesh_Nanosuit*)e, to_cam, from_cam);
 									break;
 									
 								case ET_LIGHT:
-									draw_light_bulb((Light_*)e, to_cam, from_cam);
+									draw_light_bulb((Light*)e, to_cam, from_cam);
 									break;
 									
 								case ET_MATERIAL_SHOWCASE_GRID:
@@ -3125,7 +2911,7 @@ DECL void frame () {
 	if (1) { // Global 'skybox' draw
 		PROFILE_SCOPED(THR_ENGINE, "skybox_draw");
 		
-		glBindVertexArray(VAOs[EMPTY_VAO]);
+		glBindVertexArray(empty_vao);
 		glUseProgram(shaders[SHAD_SKY_DRAW_COL]);
 		
 		glDrawArrays(GL_TRIANGLES, 0, 6); // draw attributeless by using gl_VertexID
@@ -3154,16 +2940,13 @@ DECL void frame () {
 		
 		hm m = world_to_cam;
 		
-		glBindVertexArray(VAOs[NO_UV_VAO]);
+		glBindVertexArray(meshes.VAOs[Meshes::NOUV_VAO]);
 		glUseProgram(shaders[SHAD_TINT_AS_FRAG_COL]);
 		
 		{ // Draw 3d manipulator (axis cross)
 			PROFILE_SCOPED(THR_ENGINE, "draw_3d_manipulator");
 			
 			{
-				constexpr mesh_id_e p_msh[3] = { MSH_nouv_AXIS_CROSS_PX, MSH_nouv_AXIS_CROSS_PY, MSH_nouv_AXIS_CROSS_PZ };
-				constexpr mesh_id_e n_msh[3] = { MSH_nouv_AXIS_CROSS_NX, MSH_nouv_AXIS_CROSS_NY, MSH_nouv_AXIS_CROSS_NZ };
-				
 				bool draw =				!(inp.mouselook & FPS_MOUSELOOK) &&
 										(editor.dragging || editor.selected);
 				bool drawAxisLines =	editor.dragging;
@@ -3196,8 +2979,8 @@ DECL void frame () {
 						assert(highl_axis >= 0 && highl_axis < 3);
 					}
 					
-					auto draw_solid_color = [] (mesh_id_e mesh_id, hm mp model_to_cam, hm mp cam_to_model, v3 col) {
-						auto& mesh = meshes[mesh_id];
+					auto draw_solid_color = [] (Meshes::global_mesh_e mesh_id, hm mp model_to_cam, hm mp cam_to_model, v3 col) {
+						auto* mesh = meshes.global_meshes[mesh_id];
 						
 						std140_Material mat;
 						mat.albedo.set(col);
@@ -3216,8 +2999,8 @@ DECL void frame () {
 							GLOBAL_UBO_WRITE(transforms, &temp);
 						}
 						
-						glDrawElementsBaseVertex(GL_TRIANGLES, mesh.indx_count, GL_UNSIGNED_SHORT,
-								mesh.indx_offsets, mesh.base_vertecies);
+						glDrawElementsBaseVertex(GL_TRIANGLES, mesh->vbo_data.indx_count, GL_UNSIGNED_SHORT,
+								 mesh->vbo_data.indx_offset, mesh->vbo_data.base_vertex);
 					};
 					if (drawAxisLines) {
 						assert(highl_axis != u32(-1));
@@ -3232,8 +3015,10 @@ DECL void frame () {
 						
 						hm mat = paren_to_cam * translate_h(editor.selected->pos) * scale_h(scaleCorrect * axisScale);
 						
-						draw_solid_color(p_msh[highl_axis], mat, hm::ident(), p_col); // TODO: maybe pass actual inverse matric here, if needed
-						draw_solid_color(n_msh[highl_axis], mat, hm::ident(), n_col); // TODO: maybe pass actual inverse matric here, if needed
+						draw_solid_color( (Meshes::global_mesh_e)(Meshes::AXIS_CROSS_POS_X +highl_axis),
+								mat, hm::ident(), p_col); // TODO: maybe pass actual inverse matric here, if needed
+						draw_solid_color( (Meshes::global_mesh_e)(Meshes::AXIS_CROSS_NEG_X +highl_axis),
+								mat, hm::ident(), n_col); // TODO: maybe pass actual inverse matric here, if needed
 						
 					}
 					for (u32 axis=0; axis<3; ++axis) {
@@ -3246,8 +3031,10 @@ DECL void frame () {
 						
 						hm mat = paren_to_cam * translate_h(editor.selected->pos) * scale_h(scaleCorrect);
 						
-						draw_solid_color(p_msh[axis], mat, hm::ident(), p_col); // TODO: maybe pass actual inverse matric here, if needed
-						draw_solid_color(n_msh[axis], mat, hm::ident(), n_col); // TODO: maybe pass actual inverse matric here, if needed
+						draw_solid_color( (Meshes::global_mesh_e)(Meshes::AXIS_CROSS_POS_X +axis),
+								mat, hm::ident(), p_col); // TODO: maybe pass actual inverse matric here, if needed
+						draw_solid_color( (Meshes::global_mesh_e)(Meshes::AXIS_CROSS_NEG_X +axis),
+								mat, hm::ident(), n_col); // TODO: maybe pass actual inverse matric here, if needed
 						
 					}
 					
@@ -3270,7 +3057,7 @@ DECL void frame () {
 						return ret;
 					};
 					auto draw_plane = [&] (m3 rot) {
-						draw_solid_color(MSH_nouv_AXIS_CROSS_PLANE_XY,
+						draw_solid_color(Meshes::AXIS_CROSS_PLANE,
 								paren_to_cam * translate_h(editor.selected->pos)
 								* hm::ident().m3(rot) * scale_h(scaleCorrect), hm::ident(), // TODO: maybe pass actual inverse matric here, if needed
 								v3(1.0f, 0.2f, 0.2f));

@@ -10,7 +10,7 @@ DECL void assert_page_size () {
 	}
 }
 
-DECLM NOINLINE void Stack::resize () {
+DECLM void Stack::resize () {
 	uptr new_size = ptr_sub(base, top);
 	
 	uptr cur_cap = ptr_sub(base, end);

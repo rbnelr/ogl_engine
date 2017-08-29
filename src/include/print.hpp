@@ -12,6 +12,8 @@ namespace print_n {
 		F32='f', F64='d',
 		HEX='H', BIN='B',
 		PTR='p',
+		F32_PREC='F',
+		F64_PREC='D',
 	};
 	
 	
@@ -20,19 +22,6 @@ namespace print_n {
 	};
 	struct LStr_Escaped {
 		lstr	str;
-	};
-	
-	// No sizes for now (a s16 with val -1 should print 0xffff not 0xffffffffffffffff for ex.)
-	struct Hex {
-		u64		val;
-	};
-	struct Bin {
-		u64		val;
-	};
-	
-	struct Rep_S {
-		cstr	str;
-		uptr	count;
 	};
 	
 	DECL FORCEINLINE CStr_Escaped escaped (cstr s) {
@@ -48,30 +37,55 @@ namespace print_n {
 		return {lstr(s)};
 	}
 	
+	struct Hex {
+		u64		val;
+		ui		min_digits;
+	};
+	struct Bin {
+		u64		val;
+		ui		min_digits;
+	};
 	
-	DECL FORCEINLINE Hex hex (uchar i) {		return {i}; }
-	DECL FORCEINLINE Hex hex (ushort i) {		return {i}; }
-	DECL FORCEINLINE Hex hex (ui i) {			return {i}; }
-	DECL FORCEINLINE Hex hex (ulong i) {		return {i}; }
-	DECL FORCEINLINE Hex hex (ullong i) {		return {i}; }
-	DECL FORCEINLINE Hex hex (schar i) {		return {(u64)(s64)i}; }
-	DECL FORCEINLINE Hex hex (sshort i) {		return {(u64)(s64)i}; }
-	DECL FORCEINLINE Hex hex (si i) {			return {(u64)(s64)i}; }
-	DECL FORCEINLINE Hex hex (slong i) {		return {(u64)(s64)i}; }
-	DECL FORCEINLINE Hex hex (sllong i) {		return {(u64)(s64)i}; }
+	DECL FORCEINLINE Hex hex (uchar i,	ui min_digits= 2) {	return {i,				min_digits}; }
+	DECL FORCEINLINE Hex hex (ushort i,	ui min_digits= 4) {	return {i,				min_digits}; }
+	DECL FORCEINLINE Hex hex (ui i,		ui min_digits= 8) {	return {i,				min_digits}; }
+	DECL FORCEINLINE Hex hex (ulong i,	ui min_digits= 8) {	return {i,				min_digits}; }
+	DECL FORCEINLINE Hex hex (ullong i,	ui min_digits=16) {	return {i,				min_digits}; }
+	DECL FORCEINLINE Hex hex (schar i,	ui min_digits=2) {	return {(u64)(u8)i,		min_digits}; }
+	DECL FORCEINLINE Hex hex (sshort i,	ui min_digits= 4) {	return {(u64)(u16)i,	min_digits}; }
+	DECL FORCEINLINE Hex hex (si i,		ui min_digits= 8) {	return {(u64)(u32)i,	min_digits}; }
+	DECL FORCEINLINE Hex hex (slong i,	ui min_digits= 8) {	return {(u64)(u32)i,	min_digits}; }
+	DECL FORCEINLINE Hex hex (sllong i,	ui min_digits=16) {	return {(u64)(u64)i,	min_digits}; }
 	
-	DECL FORCEINLINE Bin bin (uchar i) {		return {i}; }
-	DECL FORCEINLINE Bin bin (ushort i) {		return {i}; }
-	DECL FORCEINLINE Bin bin (ui i) {			return {i}; }
-	DECL FORCEINLINE Bin bin (ulong i) {		return {i}; }
-	DECL FORCEINLINE Bin bin (ullong i) {		return {i}; }
-	DECL FORCEINLINE Bin bin (schar i) {		return {(u64)(s64)i}; }
-	DECL FORCEINLINE Bin bin (sshort i) {		return {(u64)(s64)i}; }
-	DECL FORCEINLINE Bin bin (si i) {			return {(u64)(s64)i}; }
-	DECL FORCEINLINE Bin bin (slong i) {		return {(u64)(s64)i}; }
-	DECL FORCEINLINE Bin bin (sllong i) {		return {(u64)(s64)i}; }
+	DECL FORCEINLINE Bin bin (uchar i,	ui min_digits= 8) {	return {i,				min_digits}; }
+	DECL FORCEINLINE Bin bin (ushort i,	ui min_digits=16) {	return {i,				min_digits}; }
+	DECL FORCEINLINE Bin bin (ui i,		ui min_digits=32) {	return {i,				min_digits}; }
+	DECL FORCEINLINE Bin bin (ulong i,	ui min_digits=32) {	return {i,				min_digits}; }
+	DECL FORCEINLINE Bin bin (ullong i,	ui min_digits=64) {	return {i,				min_digits}; }
+	DECL FORCEINLINE Bin bin (schar i,	ui min_digits= 8) {	return {(u64)(u8)i,		min_digits}; }
+	DECL FORCEINLINE Bin bin (sshort i,	ui min_digits=16) {	return {(u64)(u16)i,	min_digits}; }
+	DECL FORCEINLINE Bin bin (si i,		ui min_digits=32) {	return {(u64)(u32)i,	min_digits}; }
+	DECL FORCEINLINE Bin bin (slong i,	ui min_digits=32) {	return {(u64)(u32)i,	min_digits}; }
+	DECL FORCEINLINE Bin bin (sllong i,	ui min_digits=64) {	return {(u64)(u64)i,	min_digits}; }
+	
+	struct Rep_S {
+		cstr	str;
+		uptr	count;
+	};
 	
 	DECL FORCEINLINE Rep_S repeat (cstr str, uptr count) {	return {str, count}; }
+	
+	struct F32_Precision {
+		f32		val;
+		ui		prec;
+	};
+	struct F64_Precision {
+		f64		val;
+		ui		prec;
+	};
+	
+	DECL FORCEINLINE F32_Precision prec (f32 val, ui prec=9) {	return {val, prec}; }
+	DECL FORCEINLINE F64_Precision prec (f64 val, ui prec=17) {	return {val, prec}; }
 	
 	#if _PLATF == PLATF_GENERIC_WIN
 	typedef HANDLE fileh_t;
@@ -93,15 +107,17 @@ namespace print_n {
 			Stack*			stk;
 			uptr			generic_putval;
 		};
+		
+		lstr				result; // to return print result
 		putval_type_e		putval_type;
 		
 		printstr_fp			printstr;
 		
-		constexpr Base_Printer (): arr{nullptr}, putval_type{(putval_type_e)0}, printstr{nullptr} {}
+		constexpr Base_Printer (): arr{nullptr}, result{0,0}, putval_type{(putval_type_e)0}, printstr{nullptr} {}
 		constexpr Base_Printer (dynarr<char>* a, putval_type_e b, printstr_fp d):
-				arr{a}, putval_type{b}, printstr{d} {}
+				arr{a}, result{0,0}, putval_type{b}, printstr{d} {}
 		constexpr Base_Printer (Stack* a, putval_type_e b, printstr_fp d):
-				stk{a}, putval_type{b}, printstr{d} {}
+				stk{a}, result{0,0}, putval_type{b}, printstr{d} {}
 		
 	};
 	
@@ -114,7 +130,7 @@ namespace print_n {
 				Base_Printer{a,b,d} {}
 		
 		template <typename... Ts>
-		FORCEINLINE void operator() (char const* str, Ts... args);
+		FORCEINLINE u32 operator() (char const* str, Ts... args);
 		
 	};
 	struct Printer_Stk : public Base_Printer {
@@ -135,10 +151,10 @@ namespace print_n {
 				Base_Printer{a,b,d}, fhandle{h} {}
 		
 		template <typename... Ts>
-		FORCEINLINE void operator() (char const* str, Ts... args);
+		FORCEINLINE u32 operator() (char const* str, Ts... args);
 		
 		template <typename... Ts>
-		FORCEINLINE void operator() (u32 indent, char const* str, Ts... args);
+		FORCEINLINE u32 operator() (u32 indent, char const* str, Ts... args);
 		
 	};
 	

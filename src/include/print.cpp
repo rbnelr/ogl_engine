@@ -1,6 +1,6 @@
-﻿	
+﻿
 #include "stdio.h"
-	
+
 namespace print_n {
 	
 	DECLD lstr indent_str = "  ";
@@ -269,7 +269,6 @@ namespace print_n {
 		static constexpr print_type_e VAL =								REPS;
 		static FORCEINLINE Rep_S do_ (Rep_S reps) {						return reps; }
 	};
-	
 	#define INT(SIGN, T) \
 			template<> struct ForEach<T> { \
 				static constexpr print_type_e VAL =						sizeof(T) == 8 ? SIGN##64 : SIGN##32; \
@@ -291,11 +290,11 @@ namespace print_n {
 	
 	template<> struct ForEach<Hex> {
 		static constexpr print_type_e VAL =								HEX;
-		static FORCEINLINE u64 do_ (Hex h) {							return h.val; }
+		static FORCEINLINE Hex do_ (Hex h) {							return h; }
 	};
 	template<> struct ForEach<Bin> {
 		static constexpr print_type_e VAL =								BIN;
-		static FORCEINLINE u64 do_ (Bin b) {							return b.val; }
+		static FORCEINLINE Bin do_ (Bin b) {							return b; }
 	};
 	
 	template<> struct ForEach<f32> {
@@ -307,6 +306,14 @@ namespace print_n {
 		static FORCEINLINE f64 do_ (f64 f) {							return f; }
 	};
 	
+	template<> struct ForEach<F32_Precision> {
+		static constexpr print_type_e VAL =								F32_PREC;
+		static FORCEINLINE F32_Precision do_ (F32_Precision f) {		return f; }
+	};
+	template<> struct ForEach<F64_Precision> {
+		static constexpr print_type_e VAL =								F64_PREC;
+		static FORCEINLINE F64_Precision do_ (F64_Precision f) {		return f; }
+	};
 	
 	template <typename... Ts>
 	struct _rdataTypeString {
@@ -339,6 +346,36 @@ namespace print_n {
 		template <typename LAMB, typename... Ts>
 		static DECLM FORCEINLINE void do_ (LAMB& func, Base_Printer* this_, cstr str, print_type_e const * type_arr, LStr_Escaped arg, Ts... args) {
 			_Print_1<N>::do_(func, this_, str, type_arr, args..., arg.str);
+		}
+	};
+	template<uptr N> struct _Print_2<N, Hex> {
+		template <typename LAMB, typename... Ts>
+		static DECLM FORCEINLINE void do_ (LAMB& func, Base_Printer* this_, cstr str, print_type_e const * type_arr, Hex arg, Ts... args) {
+			_Print_1<N>::do_(func, this_, str, type_arr, args..., arg.val, arg.min_digits);
+		}
+	};
+	template<uptr N> struct _Print_2<N, Bin> {
+		template <typename LAMB, typename... Ts>
+		static DECLM FORCEINLINE void do_ (LAMB& func, Base_Printer* this_, cstr str, print_type_e const * type_arr, Bin arg, Ts... args) {
+			_Print_1<N>::do_(func, this_, str, type_arr, args..., arg.val, arg.min_digits);
+		}
+	};
+	template<uptr N> struct _Print_2<N, Rep_S> {
+		template <typename LAMB, typename... Ts>
+		static DECLM FORCEINLINE void do_ (LAMB& func, Base_Printer* this_, cstr str, print_type_e const * type_arr, Rep_S arg, Ts... args) {
+			_Print_1<N>::do_(func, this_, str, type_arr, args..., arg.str, arg.count);
+		}
+	};
+	template<uptr N> struct _Print_2<N, F32_Precision> {
+		template <typename LAMB, typename... Ts>
+		static DECLM FORCEINLINE void do_ (LAMB& func, Base_Printer* this_, cstr str, print_type_e const * type_arr, F32_Precision arg, Ts... args) {
+			_Print_1<N>::do_(func, this_, str, type_arr, args..., reint_flt_as_int(arg.val), arg.prec ); // reint_flt_as_int To prevent the automatic f32->f64 conversion that happens normally when passing f32 to variadic functions
+		}
+	};
+	template<uptr N> struct _Print_2<N, F64_Precision> {
+		template <typename LAMB, typename... Ts>
+		static DECLM FORCEINLINE void do_ (LAMB& func, Base_Printer* this_, cstr str, print_type_e const * type_arr, F64_Precision arg, Ts... args) {
+			_Print_1<N>::do_(func, this_, str, type_arr, args..., arg.val, arg.prec );
 		}
 	};
 	
@@ -381,15 +418,14 @@ namespace print_n {
 		
 		#define GET_VAL(type) va_arg(args, type)
 		
-		u32		arr_str;
-		char*	stk_str;
+		u32		str_offs;
 		switch (this_->putval_type) {
 			case DYNARR:
-				arr_str = this_->arr->len;
+				str_offs = this_->arr->len;
 				break;
 			case STK:
 			case TMP_STK:
-				stk_str = this_->stk->getTop<char>();
+				str_offs = safe_cast_assert(u32, ptr_sub(this_->stk->base, this_->stk->getTop<char>()) );
 				break;
 			default: assert(false);
 		}
@@ -411,11 +447,12 @@ namespace print_n {
 		auto PUTC = [&] (char c) {
 			switch (this_->putval_type) {
 				case DYNARR:
-					this_->arr->append(c);
+					this_->arr->push(c);
 					break;
 				case STK:
 				case TMP_STK:
-				default: // already asserted, shut up compiler warning
+				default: // only assert once, shut up compiler warning
+					safe_cast_assert(u32, ptr_sub(this_->stk->base +str_offs, this_->stk->getTop<char>() +1) );
 					this_->stk->push(c);
 					break;
 			}
@@ -423,11 +460,12 @@ namespace print_n {
 		auto PUTSTR = [&] (lstr cr s) {
 			switch (this_->putval_type) {
 				case DYNARR:
-					this_->arr->append_n(s.len, s.str);
+					this_->arr->pushn(s.str, s.len);
 					break;
 				case STK:
 				case TMP_STK:
 				default: // already asserted, shut up compiler warning
+					safe_cast_assert(u32, ptr_sub(this_->stk->base +str_offs, this_->stk->getTop<char>() +s.len) );
 					cmemcpy(this_->stk->pushArr<char>(s.len), s.str, s.len);
 					break;
 			}
@@ -439,7 +477,7 @@ namespace print_n {
 		auto EXPAND_BUF = [&] (u32 len) -> char* {
 			switch (this_->putval_type) {
 				case DYNARR:
-					return this_->arr->append_n(len);
+					return this_->arr->pushn(len);
 				case STK:
 				case TMP_STK:
 				default: // already asserted, shut up compiler warning
@@ -449,25 +487,31 @@ namespace print_n {
 		auto FIT_BUF = [&] (char* ptr, u32 len) {
 			switch (this_->putval_type) {
 				case DYNARR:
-					this_->arr->grow_to((u32)ptr_sub(this_->arr->arr, ptr) +len);
+					this_->arr->shrink_to((u32)ptr_sub(this_->arr->arr, ptr) +len);
 					break;
 				case STK:
 				case TMP_STK:
 				default: // already asserted, shut up compiler warning
 					this_->stk->pop(ptr +len);
+					safe_cast_assert(u32, ptr_sub(this_->stk->base +str_offs, this_->stk->getTop<char>()) );
 					break;
 			}
 		};
 		
-		#define PRINTF(format, val) \
+		#define PRINTF(format, ...) \
 				{ \
 					u32 len = 512; \
 					char* ptr = EXPAND_BUF(len); \
-					auto ret = snprintf(ptr, len, format, val); \
-					if (ret < 0 || (u32)ret >= len) { \
+					s32 ret = snprintf(ptr, len, format, __VA_ARGS__); \
+					if (ret < 0) { \
 						DBGBREAK_IF_DEBUGGER_PRESENT; \
+						len = 0; \
+					} else if ((u32)ret > len) { \
+						DBGBREAK_IF_DEBUGGER_PRESENT; \
+					} else { \
+						len = (u32)ret; \
 					} \
-					FIT_BUF(ptr, ret); \
+					FIT_BUF(ptr, len); \
 				}
 		
 		ui err = 0;
@@ -522,9 +566,10 @@ namespace print_n {
 				} break;
 				
 				case REPS: {
-					Rep_S rep = GET_VAL(Rep_S);
-					for (uptr i=0; i<rep.count; ++i) {
-						PUTSTR_TERM(rep.str);
+					cstr str = GET_VAL(cstr);
+					uptr count = GET_VAL(u64);
+					for (uptr i=0; i<count; ++i) {
+						PUTSTR_TERM(str);
 					}
 				} break;
 				
@@ -589,40 +634,75 @@ namespace print_n {
 				{
 					char buf[64];
 					
-					case PTR:
-					case HEX: {
-						u64 u = GET_VAL(u64);
-						for (ui i=0; i<16; ++i) {
-							u64 indx = (15 -i) * 4;
-							indx = u >> indx;
-							indx &= 0b1111;
-							buf[i] = hex_digits[indx];
+					case PTR: {
+						u64	u = GET_VAL(u64);
+						
+						for (ui i=16; i!=0;) { --i;
+							u32 digit = (u >> (i * 4)) & 0b1111;
+							buf[15 -i] = hex_digits[digit];
 						}
+						
 						PUTSTR("0x");
 						PUTSTR(lstr(buf, 16));
 					} break;
-					case BIN: {
-						u64 u = GET_VAL(u64);
-						for (ui i=0; i<64; ++i) {
-							u64 indx = (63 -i);
-							indx = u >> indx;
-							indx &= 1;
-							buf[i] = hex_digits[indx];
+					
+					case HEX: {
+						u64	u = GET_VAL(u64);
+						ui	min_digits = GET_VAL(ui);
+						min_digits = MIN<ui>(min_digits,16);
+						
+						ui len = 1;
+						for (ui i=16; i!=0;) { --i;
+							u32 digit = (u >> (i * 4)) & 0b1111;
+							buf[15 -i] = hex_digits[digit];
+							
+							if (len == 1 && (digit != 0 || (i +1) == min_digits)) { // find length to print
+								len = i +1;
+							}
 						}
+						
+						PUTSTR("0x");
+						PUTSTR(lstr(buf +(16 -len), len));
+					} break;
+					
+					case BIN: {
+						u64	u = GET_VAL(u64);
+						ui	min_digits = GET_VAL(ui);
+						min_digits = MIN<ui>(min_digits,64);
+						
+						ui len = 1;
+						for (ui i=64; i!=0;) { --i;
+							u32 digit = (u >> i) & 1;
+							buf[63 -i] = hex_digits[digit];
+							
+							if (len == 1 && (digit != 0 || (i +1) == min_digits)) { // find length to print
+								len = i +1;
+							}
+						}
+						
 						PUTSTR("0b");
-						PUTSTR(lstr(buf, 64));
+						PUTSTR(lstr(buf +(64 -len), len));
 					} break;
 				}
 				
 				case F32: {
-					f32 i = reint_int_as_flt(GET_VAL(u32));
-					cstr format = "%+.2f";
-					PRINTF(format, i)
+					f32 f = reint_int_as_flt(GET_VAL(u32));
+					PRINTF("%+.2g", f)
 				} break;
 				case F64: {
-					f64 i = GET_VAL(f64);
-					cstr format = "%+.4f";
-					PRINTF(format, i)
+					f64 f = GET_VAL(f64);
+					PRINTF("%+.4g", f)
+				} break;
+				
+				case F32_PREC: {
+					f32 f = reint_int_as_flt(GET_VAL(u32));
+					ui prec = GET_VAL(ui);
+					PRINTF("%+.*g", prec, f)
+				} break;
+				case F64_PREC: {
+					f64 f = GET_VAL(u64);
+					ui prec = GET_VAL(ui);
+					PRINTF("%+.*g", prec, f)
 				} break;
 				
 				case TERMINATOR: {
@@ -662,33 +742,25 @@ namespace print_n {
 			}
 		} end_l:;
 		
+		lstr res;
+		switch (this_->putval_type) {
+			case DYNARR:
+				res = lstr( &(*this_->arr)[str_offs], this_->arr->len -str_offs );
+				break;
+			case STK:
+			case TMP_STK:
+			default:
+				res.str = this_->stk->base +str_offs;
+				res.len = (u32)ptr_sub(res.str, this_->stk->getTop<char>());
+				break;
+		}
+		
+		if (res.len > 0 && res[res.len -1] == '\0') res.len -= 1; // HACK: total hack to prevent null terminator to be included in strings when printing with 'lstr ... = print_working_stk("blah/%.%\\0", ...)' 
+		
+		this_->result = res;
+		
 		if (this_->printstr) {
-			lstr str;
-			switch (this_->putval_type) {
-				case DYNARR:
-					str = lstr( &(*this_->arr)[arr_str], this_->arr->len -arr_str );
-					break;
-				case STK:
-				case TMP_STK:
-				default:
-					str = lstr( stk_str, safe_cast_assert(u32, ptr_sub(stk_str, this_->stk->getTop<char>())) );
-					break;
-			}
-			
-			PUTC('\0');
-			
-			this_->printstr(this_, str);
-			
-			switch (this_->putval_type) {
-				case DYNARR:
-					this_->arr->grow_to( this_->arr->len -1 );
-					break;
-				case STK:
-				case TMP_STK:
-				default:
-					this_->stk->pop( this_->stk->top -1 );
-					break;
-			}
+			this_->printstr(this_, res);
 		}
 		
 		switch (this_->putval_type) {
@@ -697,7 +769,7 @@ namespace print_n {
 				break;
 			case TMP_STK:
 			default:
-				this_->stk->pop(stk_str);
+				this_->stk->pop(res.str);
 				break;
 		}
 		
@@ -737,20 +809,25 @@ namespace print_n {
 		return vl;
 	}
 	
-	DECLV void _print_base (Base_Printer* this_, cstr str, print_type_e const * type_arr, ...) {
+	DECLV u32 _print_base (Base_Printer* this_, cstr str, print_type_e const * type_arr, ...) {
 		va_list vl;
 		va_start(vl, type_arr);
 		
 		vl = _print_core(this_, str, type_arr, vl);
 		
 		va_end(vl);
+		
+		return this_->result.len;
 	}
+	struct _print_base_Wrapper {
+		u32 ret;
+		template <typename... Ts>
+		DECLM FORCEINLINE void operator() (Base_Printer* this_, cstr str, print_type_e const * type_arr, Ts... args) {
+			ret = _print_base(this_, str, type_arr, args...);
+		}
+	};
 	
-	DECLV lstr _print_base_ret (Base_Printer* this_, cstr str, print_type_e const * type_arr, ...) {
-		assert(this_->putval_type == STK);
-		lstr ret;
-		ret.str = this_->stk->getTop<char>();
-		
+	DECLV lstr _print_base_lstr (Base_Printer* this_, cstr str, print_type_e const * type_arr, ...) {
 		va_list vl;
 		va_start(vl, type_arr);
 		
@@ -758,38 +835,38 @@ namespace print_n {
 		
 		va_end(vl);
 		
-		ret.len = (u32)ptr_sub(ret.str, this_->stk->getTop<char>());
-		
-		if (ret.len > 0 && ret[ret.len -1] == '\0') ret.len -= 1; // HACK: total hack to prevent null terminator to be included in strings when printing with 'lstr ... = print_working_stk("blah/%.%\\0", ...)' 
-		
-		return ret;
+		return this_->result;
 	}
-	struct _print_base_ret_Wrapper {
+	struct _print_base_lstr_Wrapper {
 		lstr ret;
 		template <typename... Ts>
 		DECLM FORCEINLINE void operator() (Base_Printer* this_, cstr str, print_type_e const * type_arr, Ts... args) {
-			ret = _print_base_ret(this_, str, type_arr, args...);
+			ret = _print_base_lstr(this_, str, type_arr, args...);
 		}
 	};
 	
 	//
 	template <typename... Ts>
-	FORCEINLINE void Printer::operator() (char const* str, Ts... args) {
-		_print_wrapper(_print_base, this, str, args...);
-	}
-	
-	//
-	template <typename... Ts>
-	FORCEINLINE lstr Printer_Stk::operator() (char const* str, Ts... args) {
-		_print_base_ret_Wrapper func;
+	FORCEINLINE u32 Printer::operator() (char const* str, Ts... args) {
+		_print_base_Wrapper func;
 		_print_wrapper(func, this, str, args...);
 		return func.ret;
 	}
 	
 	//
 	template <typename... Ts>
-	FORCEINLINE void Printer_File::operator() (char const* str, Ts... args) {
-		_print_wrapper(_print_base, this, str, args...);
+	FORCEINLINE lstr Printer_Stk::operator() (char const* str, Ts... args) {
+		_print_base_lstr_Wrapper func;
+		_print_wrapper(func, this, str, args...);
+		return func.ret;
+	}
+	
+	//
+	template <typename... Ts>
+	FORCEINLINE u32 Printer_File::operator() (char const* str, Ts... args) {
+		_print_base_Wrapper func;
+		_print_wrapper(func, this, str, args...);
+		return func.ret;
 	}
 	
 	

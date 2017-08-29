@@ -1,4 +1,19 @@
 
+template <typename T, typename LEN_T> DECLM void array<T, LEN_T>:: alloc (LEN_T init_len) {
+	this->arr = (T*)malloc(init_len*sizeof(T));
+	this->len = init_len;
+	
+	#if DBG_MEMORY
+	cmemset(arr, DBG_MEM_UNALLOCATED_BYTE, len*sizeof(T));
+	#endif
+}
+template <typename T, typename LEN_T> DECLM void array<T, LEN_T>:: free () {
+	::free(this->arr);
+	#if DBG_INTERNAL
+	arr = nullptr;
+	#endif
+}
+
 template <typename T, typename LEN_T> DECLM void dynarr<T, LEN_T>:: alloc (LEN_T init_len, LEN_T init_cap) {
 	
 	this->len = init_len;

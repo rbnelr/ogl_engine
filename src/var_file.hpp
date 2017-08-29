@@ -484,7 +484,6 @@ namespace var {
 				VAR(		std140_Material,	roughness,							VT_F32),
 				VAR(		std140_Material,	IOR,								VT_F32)
 			)),
-			GBL_ARRAY(						mesh_names,					sizeof(char const*), VT_CSTR),
 			GBL_VAR(						tex,								STRUCT(
 				ARRAY(		Textures,			names,					sizeof(char const*), VT_CSTR)
 			)),

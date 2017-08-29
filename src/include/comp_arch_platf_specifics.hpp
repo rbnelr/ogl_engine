@@ -28,6 +28,8 @@
 		
 		#define PRAGMA_MSG(msg) __pragma(message(__FILE__ "(" TO_STR(__LINE__) "): " msg))
 		
+		#define DEPRECATED						__declspec(deprecated)
+		
 		#define DLLEXPORT						__declspec(dllexport)
 		#define DLLIMPORT						__declspec(dllimport)
 		#define NORETURN						__declspec(noreturn)
@@ -88,6 +90,8 @@
 		#define DBGBREAK						do { asm volatile ("int3"); } while(0)
 	#elif _COMP == _COMP_GCC
 		#define PRAGMA_MSG(msg) _Pragma( STRINGIFY(message(__FILE__ "(" TO_STR(__LINE__) "): " msg)) )
+		
+		#define DEPRECATED						__attribute__((deprecated))
 		
 		#define DLLEXPORT						__attribute__((dllexport))
 		#define DLLIMPORT						__attribute__((dllimport))

@@ -449,6 +449,18 @@ DONE:
  -> VBOs still had uv after tang, but i switched those in meshes_gen
  -> When debug outputting the normals and tangents in the shader it still seems wierd, but i can see no errors in the actual output, so i assume everything is ok
  
+#2017.08.28 mo. tag
+ generate missing-mesh mesh in meshgen and put it into src code (ie. into the exe)
+ 
+#2017.08.29 di. tag
+ bugfixing
+ 
+ put AABB generation into meshgen
+ 
+ improved printing code, all non-stack prints now return the length of the string printed
+ 
+ got rid of str::append and str::append_term (now handles by stack and dynarr pushn and print_working_stk)
+ 
 TODO
 -FEATURES:
  

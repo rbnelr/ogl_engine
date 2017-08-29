@@ -23,8 +23,7 @@ namespace entities_n {
 	enum light_flags_e : u32 {
 		LF_DISABLED=	0b00000001,
 		LF_NO_SHADOW=	0b00000010,
-	};
-	DEFINE_ENUM_FLAG_OPS(light_flags_e, u32)
+	}; DEFINE_ENUM_FLAG_OPS(light_flags_e, u32)
 	
 	struct Textures_Generic {
 		textures_e	albedo;
@@ -43,10 +42,10 @@ namespace entities_n {
 															 0,-1 );
 	
 	struct Entity {
-		char const*		name;
 		Entity*			next;
 		Entity*			parent;
 		Entity*			children;
+		lstr			name;
 		
 		// Relative to parent space / children are in the space defined by these placement variables
 		//  scale always first, orientation second and position last
@@ -61,35 +60,39 @@ namespace entities_n {
 		entity_tag		tag;
 	};
 	
-	struct Mesh_Base : public Entity {
-		mesh_id_e		mesh_id;
+	struct eMesh_Base : public Entity {
+		Mesh*			mesh;
 		materials_e		material;
 	};
-	struct Mesh : public Mesh_Base {
+	struct eMesh : public eMesh_Base {
 		Textures_Generic	tex;
 	};
-	struct Mesh_Nanosuit : public Mesh_Base {
+	struct eMesh_Nanosuit : public eMesh_Base {
 		Textures_Nanosuit	tex;
 	};
 	struct Material_Showcase_Grid : public Entity {
-		mesh_id_e		mesh_id;
+		Mesh*			mesh;
 		v2				grid_offs;
 	};
 	struct Group : public Entity {
 		
 	};
-	struct Light_ : public Entity {
+	struct Light : public Entity {
 		light_type_e	type;
 		light_flags_e	flags;
 		v3				power;
+		
+		DECLM Mesh* get_mesh () const {
+			return meshes.global_meshes[Meshes::LIGHTBULB_SUN_LAMP +(type & LT_POINT)];
+		}
 	};
 	struct Scene : public Entity {
 		bool			draw;
-		dynarr<Light_*>	lights;
+		dynarr<Light*>	lights;
 	};
 	struct Root : public Entity {
 		constexpr Root (): Entity{
-				"<root>", nullptr, nullptr, nullptr,
+				nullptr, nullptr, nullptr, "<root>",
 			v3(QNAN), quat(v3(QNAN), QNAN), v3(QNAN),
 			{{QNAN,QNAN, QNAN,QNAN, QNAN,QNAN}},	{{QNAN,QNAN, QNAN,QNAN, QNAN,QNAN}},
 			(entity_flag)0, ET_ROOT,
@@ -199,14 +202,14 @@ namespace entities_n {
 		
 		assert(material_showcase_grid_steps.x >= 1 && material_showcase_grid_steps.y >= 1);
 		
-		mesh_id_e mesh_id = m->mesh_id;
-		AABB aabb_mesh = meshes_aabb[mesh_id];
+		AABB aabb_mesh = m->mesh->aabb;
 		
 		auto mat = translate_h(v3( material_showcase_grid_mat * (cast_v2<v2>(material_showcase_grid_steps -v2u32(1)) * m->grid_offs), 0.0f ));
 		auto aabb_outter = mat * aabb_mesh.box_corners();
 		
 		return aabb_mesh.minmax(aabb_outter);
 	}
+	
 };
 using namespace entities_n;
 
@@ -214,18 +217,13 @@ struct Entities {
 	
 	Root					root; // init to root node data
 	
-	void init () {
-		
-	}
-	
 	template <typename T, entity_tag TAG>
-	T* make_entity (char const* name, v3 vp pos, quat vp ori, v3 vp scale=v3(1)) const {
+	T* make_entity (lstr cr name, v3 vp pos, quat vp ori, v3 vp scale=v3(1)) const {
 		T* ret = working_stk.push<T>();
-		ret->name =		name;
-		
 		ret->next =		nullptr;
 		ret->parent =	nullptr;
 		ret->children =	nullptr;
+		ret->name =		name;
 		
 		ret->pos =		pos;
 		ret->ori =		ori;
@@ -238,11 +236,11 @@ struct Entities {
 		return ret;
 	}
 	
-	Mesh* mesh (char const* name, v3 vp pos, quat vp ori, mesh_id_e mesh_id,
+	eMesh* mesh (lstr cr name, v3 vp pos, quat vp ori, lstr cr mesh_name,
 			materials_e mat=MAT_WHITENESS,
 			textures_e albedo=TEX_IDENT, textures_e norm=TEX_IDENT, textures_e roughness=TEX_IDENT, textures_e metallic=TEX_IDENT) {
-		auto* ret = make_entity<Mesh, ET_MESH>(name, pos, ori);
-		ret->mesh_id = mesh_id;
+		auto* ret = make_entity<eMesh, ET_MESH>(name, pos, ori);
+		ret->mesh = meshes.get_mesh(mesh_name);
 		ret->material = mat;
 		ret->tex.albedo =		albedo;
 		ret->tex.normal =		norm;
@@ -250,11 +248,11 @@ struct Entities {
 		ret->tex.metallic =		metallic;
 		return ret;
 	}
-	Mesh* mesh (char const* name, v3 vp pos, quat vp ori, v3 vp scale, mesh_id_e mesh_id,
+	eMesh* mesh (lstr cr name, v3 vp pos, quat vp ori, v3 vp scale, lstr cr mesh_name,
 			materials_e mat=MAT_WHITENESS,
 			textures_e albedo=TEX_IDENT, textures_e norm=TEX_IDENT, textures_e roughness=TEX_IDENT, textures_e metallic=TEX_IDENT) {
-		auto* ret = make_entity<Mesh, ET_MESH>(name, pos, ori, scale);
-		ret->mesh_id = mesh_id;
+		auto* ret = make_entity<eMesh, ET_MESH>(name, pos, ori, scale);
+		ret->mesh = meshes.get_mesh(mesh_name);
 		ret->material = mat;
 		ret->tex.albedo =		albedo;
 		ret->tex.normal =		norm;
@@ -263,10 +261,10 @@ struct Entities {
 		return ret;
 	}
 	
-	Mesh_Nanosuit* mesh_nano (char const* name, v3 vp pos, quat vp ori, mesh_id_e mesh_id, materials_e mat,
+	eMesh_Nanosuit* mesh_nano (lstr cr name, v3 vp pos, quat vp ori, lstr cr mesh_name, materials_e mat,
 			textures_e diff_emiss, textures_e norm, textures_e spec_rough) {
-		auto* ret = make_entity<Mesh_Nanosuit, ET_MESH_NANOSUIT>(name, pos, ori, v3(1));
-		ret->mesh_id = mesh_id;
+		auto* ret = make_entity<eMesh_Nanosuit, ET_MESH_NANOSUIT>(name, pos, ori, v3(1));
+		ret->mesh = meshes.get_mesh(mesh_name);
 		ret->material = mat;
 		ret->tex.diffuse_emissive =		diff_emiss;
 		ret->tex.normal =				norm;
@@ -274,35 +272,35 @@ struct Entities {
 		return ret;
 	}
 	
-	Material_Showcase_Grid* material_showcase_grid (char const* name, v3 vp pos, quat vp ori, v3 vp scale,
-			mesh_id_e mesh_id, v2 vp grid_offs) {
+	Material_Showcase_Grid* material_showcase_grid (lstr cr name, v3 vp pos, quat vp ori, v3 vp scale,
+			lstr cr mesh_name, v2 vp grid_offs) {
 		auto* ret = make_entity<Material_Showcase_Grid, ET_MATERIAL_SHOWCASE_GRID>(name, pos, ori, scale);
-		ret->mesh_id = mesh_id;
+		ret->mesh = meshes.get_mesh(mesh_name);
 		ret->grid_offs = grid_offs;
 		return ret;
 	}
 	
-	Group* group (char const* name, v3 vp pos, quat vp ori) {
+	Group* group (lstr cr name, v3 vp pos, quat vp ori) {
 		auto* ret = make_entity<Group, ET_GROUP>(name, pos, ori);
 		return ret;
 	}
 	
-	Light_* dir_light (char const* name, v3 vp pos, quat vp ori, light_flags_e flags, v3 vp power) {
-		auto* ret = make_entity<Light_, ET_LIGHT>(name, pos, ori);
+	Light* dir_light (lstr cr name, v3 vp pos, quat vp ori, light_flags_e flags, v3 vp power) {
+		auto* ret = make_entity<Light, ET_LIGHT>(name, pos, ori);
 		ret->type = LT_DIRECTIONAL;
 		ret->flags = flags;
 		ret->power = power;
 		return ret;
 	}
-	Light_* point_light (char const* name, v3 vp pos, light_flags_e flags, v3 vp power) {
-		auto* ret = make_entity<Light_, ET_LIGHT>(name, pos, quat::ident());
+	Light* point_light (lstr cr name, v3 vp pos, light_flags_e flags, v3 vp power) {
+		auto* ret = make_entity<Light, ET_LIGHT>(name, pos, quat::ident());
 		ret->type = LT_POINT;
 		ret->flags = flags;
 		ret->power = power;
 		return ret;
 	}
 	
-	Scene* scene (char const* name, v3 vp pos, quat vp ori, bool draw=true) {
+	Scene* scene (lstr cr name, v3 vp pos, quat vp ori, bool draw=true) {
 		auto* ret = make_entity<Scene, ET_SCENE>(name, pos, ori);
 		
 		ret->draw = draw;
@@ -338,7 +336,7 @@ struct Entities {
 		for_entity_subtree(scn,
 			[&] (Entity const* e) {
 				switch (e->tag) {
-					case ET_LIGHT:	scn->lights.append((Light_*)e);		break;
+					case ET_LIGHT:	scn->lights.push((Light*)e);	break;
 					default: {}
 				}
 			}
@@ -372,7 +370,7 @@ struct Entities {
 		
 		#define ROUGH(r) TEX_IDENT, TEX_IDENT, r, TEX_IDENT
 		
-		#define GROUND(w,h) mesh("ground", v3(0), quat::ident(), v3(w,h,1), MSH_UNIT_PLANE, MAT_GRASS);
+		#define GROUND(w,h) mesh("ground", v3(0), quat::ident(), v3(w,h,1), "_unit_plane", MAT_GRASS);
 		
 		auto* scn = scene("shadow_test_0",
 				v3(-6.19f, +12.07f, +1.00f), quat::ident());
@@ -386,7 +384,7 @@ struct Entities {
 			
 			auto* msh0 = mesh("shadow_test_0",
 					v3(+2.67f, +2.47f, +0.07f), quat(v3(+0.00f, -0.00f, -0.04), +1.00f),
-					MSH_nouv_SHADOW_TEST_0, MAT_ROUGH_MARBLE);
+					"shadow_test_0.nouv", MAT_ROUGH_MARBLE);
 				
 				auto* lgh1 = point_light("Test point light 1",
 						v3(+0.9410f, +1.2415f, +1.1063f),
@@ -400,7 +398,7 @@ struct Entities {
 				
 			auto* msh1 = mesh("Window_Pillar",
 					v3(-3.21f, +0.00f, +0.16f), quat(v3(-0.00f, +0.00f, -1.00f), +0.08f),
-					MSH_nouv_WINDOW_PILLAR, MAT_ROUGH_MARBLE);
+					"window_pillar.nouv", MAT_ROUGH_MARBLE);
 				
 				auto* lgh4 = point_light("Torch light L",
 						v3(-0.91969f, +0.610f, +1.880f),
@@ -412,13 +410,13 @@ struct Entities {
 			auto* nano = group("Nanosuit",
 					v3(+1.64f, +3.23f, +0.54f), quat(v3(+0.00f, +0.02f, +1.00f), +0.01f));
 				
-				auto* nano0 = mesh_nano("Torso",	v3(0), quat::ident(), MSH_NANOSUIT_TORSO,	MAT_IDENTITY,
+				auto* nano0 = mesh_nano("Torso",	v3(0), quat::ident(), "nano_suit/nanosuit_torso",	MAT_IDENTITY,
 						TEX_NANOSUIT_BODY_DIFF_EMISS, TEX_NANOSUIT_BODY_NORM, TEX_NANOSUIT_BODY_SPEC_ROUGH);
-				auto* nano1 = mesh_nano("Legs",		v3(0), quat::ident(), MSH_NANOSUIT_LEGS,	MAT_IDENTITY,
+				auto* nano1 = mesh_nano("Legs",		v3(0), quat::ident(), "nano_suit/nanosuit_legs",	MAT_IDENTITY,
 						TEX_NANOSUIT_BODY_DIFF_EMISS, TEX_NANOSUIT_BODY_NORM, TEX_NANOSUIT_BODY_SPEC_ROUGH);
-				auto* nano2 = mesh_nano("Neck",		v3(0), quat::ident(), MSH_NANOSUIT_NECK,	MAT_IDENTITY,
+				auto* nano2 = mesh_nano("Neck",		v3(0), quat::ident(), "nano_suit/nanosuit_neck",	MAT_IDENTITY,
 						TEX_NANOSUIT_NECK_DIFF, TEX_NANOSUIT_NECK_NORM, TEX_NANOSUIT_NECK_SPEC_ROUGH);
-				auto* nano3 = mesh_nano("Helmet",	v3(0), quat::ident(), MSH_NANOSUIT_HELMET,	MAT_IDENTITY,
+				auto* nano3 = mesh_nano("Helmet",	v3(0), quat::ident(), "nano_suit/nanosuit_helmet",	MAT_IDENTITY,
 						TEX_NANOSUIT_HELMET_DIFF_EMISS, TEX_NANOSUIT_HELMET_NORM, TEX_NANOSUIT_HELMET_SPEC_ROUGH);
 				
 		auto* scn1 = scene("tree_scene",
@@ -432,34 +430,34 @@ struct Entities {
 					srgb(244,217,171) * col(2000));
 			auto* msh10 = mesh("terrain",
 					v3(0), quat::ident(),
-					MSH_nouv_TERRAIN,						MAT_TERRAIN);
+					"terrain.nouv",					MAT_TERRAIN);
 				auto* msh11 = mesh("tree",
 						v3(0), quat::ident(),
-						MSH_TERRAIN_TREE,			MAT_TREE_BARK,			TEX_TERRAIN_TREE_DIFFUSE);
+						"terrain_tree",				MAT_TREE_BARK,			TEX_TERRAIN_TREE_DIFFUSE);
 				auto* msh12 = mesh("tree_cuts",
 						v3(0), quat::ident(),
-						MSH_TERRAIN_TREE_CUTS,		MAT_TREE_CUTS,			TEX_TERRAIN_TREE_CUTS_DIFFUSE);
+						"terrain_tree_cuts",		MAT_TREE_CUTS,			TEX_TERRAIN_TREE_CUTS_DIFFUSE);
 				auto* msh13 = mesh("tree_blossoms",
 						v3(0), quat::ident(),
-						MSH_TERRAIN_TREE_BLOSSOMS,	MAT_TREE_BLOSSOMS);
+						"terrain_tree_blossoms",	MAT_TREE_BLOSSOMS);
 				auto* msh14 = mesh("cube",
 						v3(+0.97f, +1.54f, +0.90f),
 						quat(v3(+0.305f, +0.344f, +0.054f), +0.886f),
 						v3(0.226f),
-						MSH_TERRAIN_CUBE,			MAT_RUSTY_METAL,		TEX_TERRAIN_CUBE_DIFFUSE);
+						"terrain_cube",				MAT_RUSTY_METAL,		TEX_TERRAIN_CUBE_DIFFUSE);
 				auto* msh15 = mesh("sphere",
 						v3(-1.49f, +1.45f, +0.86f),
 						quat(v3(0.0f, 0.0f, -0.089f), +0.996f),
 						v3(0.342f),
-						MSH_TERRAIN_SPHERE,			MAT_GLASS,				TEX_TERRAIN_SPHERE_DIFFUSE);
+						"terrain_sphere",			MAT_GLASS,				TEX_TERRAIN_SPHERE_DIFFUSE);
 				auto* msh16 = mesh("obelisk",
 						v3(-1.49f, -1.53f, +0.83f),
 						quat(v3(+0.005f, +0.01f, -0.089f), +0.996f),
-						MSH_TERRAIN_OBELISK,		MAT_OBELISK,			TEX_TERRAIN_OBELISK_DIFFUSE);
+						"terrain_obelisk",			MAT_OBELISK,			TEX_TERRAIN_OBELISK_DIFFUSE);
 				auto* msh17 = mesh("teapot",
 						v3(+1.49f, -1.445f, +0.284f),
 						quat(v3(-0.025f, -0.055f, -0.561f), +0.826f),
-						MSH_nouv_UTAHTEAPOT,				MAT_SHOW_COPPER);
+						"utah_teapot.nouv",			MAT_SHOW_COPPER);
 			
 		auto* scn2 = scene("ugly_scene",
 				v3(+3.70f, -10.70f, +0.94f), quat(v3(-0.00f, -0.00f, +0.00f), +1.00f));
@@ -471,7 +469,7 @@ struct Entities {
 					ON, srgb(244,217,171) * col(2000));
 			auto* msh20 = mesh("ugly",
 					v3(0), quat(v3(-0.00f, +0.00f, -1.00f), +0.00f),
-					MSH_UGLY, MAT_SHINY_PLATINUM,
+					"ugly", MAT_SHINY_PLATINUM,
 					ROUGH(TEX_MAT_ROUGHNESS));
 			
 		auto* scn3 = scene("structure_scene",
@@ -481,28 +479,28 @@ struct Entities {
 					ON, srgb(244,217,171) * col(2000));
 			
 			auto* msh3z = mesh("ground",		v3(0), quat::ident(),
-					MSH_SCENE_GROUND0,		MAT_GRASS,						TEX_GRASS);
+					"scene_ground0",		MAT_GRASS,						TEX_GRASS);
 			auto* msh30 = mesh("ring",			v3(0), quat::ident(),
-					MSH_nouv_STRUCTURE_RING,	MAT_GRIPPED_METAL);
+					"structure_ring.nouv",	MAT_GRIPPED_METAL);
 			auto* msh31 = mesh("walls",			v3(0), quat::ident(),
-					MSH_STRUCTURE_WALLS,	MAT_BLOTCHY_METAL,				TEX_STRUCTURE_WALLS);
+					"structure_walls",		MAT_BLOTCHY_METAL,				TEX_STRUCTURE_WALLS);
 			auto* msh32 = mesh("ground",		v3(0), quat::ident(),
-					MSH_STRUCTURE_GROUND,	MAT_DIRT,						TEX_STRUCTURE_GROUND);
+					"structure_ground",		MAT_DIRT,						TEX_STRUCTURE_GROUND);
 			auto* msh33 = mesh("block 1",		v3(+1.52488f, +0.41832f, -3.31113f), quat(v3(-0.012f, +0.009f, -0.136f), +0.991f),
-					MSH_STRUCTURE_BLOCK1,	MAT_GRIPPED_METAL,				TEX_METAL_GRIPPED_DIFFUSE);
+					"structure_block1",		MAT_GRIPPED_METAL,				TEX_METAL_GRIPPED_DIFFUSE);
 			auto* msh34 = mesh("block 2",		v3(+3.05563f, +5.89111f, +0.53238f), quat(v3(-0.038f, -0.001f, +0.076f), +0.996f),
-					MSH_STRUCTURE_BLOCK2,	MAT_RUSTY_METAL,				TEX_METAL_RUSTY_02);
+					"structure_block2",		MAT_RUSTY_METAL,				TEX_METAL_RUSTY_02);
 			auto* msh35 = mesh("block 3",		v3(-2.84165f, +4.51917f, -2.67442f), quat(v3(-0.059f, -0.002f, +0.056f), +0.997f),
-					MSH_STRUCTURE_BLOCK3,	MAT_RUSTY_METAL,				TEX_METAL_RUSTY_02);
+					"structure_block3",		MAT_RUSTY_METAL,				TEX_METAL_RUSTY_02);
 			auto* msh36 = mesh("block 4",		v3(+0.69161f, +1.3302f, -2.57026f), quat(v3(-0.013f, +0.009f, -0.253f), +0.967f),
-					MSH_STRUCTURE_BLOCK4,	MAT_MARBLE,						TEX_MARBLE);
+					"structure_block4",		MAT_MARBLE,						TEX_MARBLE);
 					
 			auto* msh37 = group("beam",			v3(-3.4297f, +1.47318f, -1.26951f), quat(v3(-0.088f, +0.017f, +0.996f), +0.0008585f));
 				
 				auto* msh37_0 = mesh("beam",	v3(0), quat::ident(),
-						MSH_STRUCTURE_BEAM,	MAT_WOODEN_BEAM,				TEX_WOODEN_BEAM);
+						"structure_beam",	MAT_WOODEN_BEAM,				TEX_WOODEN_BEAM);
 				auto* msh37_1 = mesh("cuts",	v3(0), quat::ident(),
-						MSH_STRUCTURE_BEAM_CUTS,	MAT_WOODEN_BEAM_CUTS,	TEX_TERRAIN_TREE_CUTS_DIFFUSE);
+						"structure_beam_cuts",	MAT_WOODEN_BEAM_CUTS,	TEX_TERRAIN_TREE_CUTS_DIFFUSE);
 			
 		auto* scn4 = scene("normals",			v3(-8.62f, +1.19f, +0.00f), quat(v3(-0.00f, -0.00f, +0.00f), +1.00f));
 			
@@ -511,17 +509,17 @@ struct Entities {
 			auto* lgh40 = dir_light("Sun",		v3(+1.88f, +2.46f, +3.35f), quat(v3(+0.28f, +0.48f, +0.72f), +0.42f),
 					ON, srgb(244,217,171) * col(2000));
 			auto* msh40 = mesh("brick_wall 1",	v3(+0.00f, +1.15f, +1.01f), quat(v3(+0.61f, +0.36f, +0.36f), +0.61f),
-					MSH_UNIT_PLANE,			MAT_GRASS,		TEX_TEX_DIF_BRICK_00,	TEX_TEX_NRM_BRICK_00); // met Supposed to be rough stone
+					"_unit_plane",			MAT_GRASS,		TEX_TEX_DIF_BRICK_00,	TEX_TEX_NRM_BRICK_00); // met Supposed to be rough stone
 			auto* msh41 = mesh("brick_wall 2",	v3(+1.09f, +2.94f, +0.9f), quat(v3(+0.62f, +0.33f, +0.33f), +0.62f),
-					MSH_UNIT_PLANE,			MAT_GRASS,		TEX_TEX_DIF_BRICK_01,	TEX_TEX_NRM_BRICK_01); // met Supposed to be rough stone
+					"_unit_plane",			MAT_GRASS,		TEX_TEX_DIF_BRICK_01,	TEX_TEX_NRM_BRICK_01); // met Supposed to be rough stone
 			auto* msh42 = mesh("weird plane",	v3(-0.73f, -1.07f, +0.24f), quat(v3(+0.06f, +0.08f, +0.80f), +0.59f),
-					MSH_NORM_TEST_00,		MAT_PLASTIC,	TEX_IDENT,				TEX_NORM_TEST_00);
+					"norm_test/test_00",	MAT_PLASTIC,	TEX_IDENT,				TEX_NORM_TEST_00);
 			auto* msh43 = mesh("david",			v3(+1.54f, +0.80f, -0.01f), quat(v3(-0.00f, +0.00f, -0.76f), +0.65f),
-					MSH_PG_DAVID,			MAT_ROUGH_MARBLE,	TEX_PG_DAVID_ALBEDO,	TEX_PG_DAVID_NORMAL);
+					"photogr/david",		MAT_ROUGH_MARBLE,	TEX_PG_DAVID_ALBEDO,	TEX_PG_DAVID_NORMAL);
 			auto* msh44 = mesh("stool",			v3(+1.60f, +1.5f, +0.4f), quat(v3(-0.00f, +0.00f, -0.76f), +0.65f),
-					MSH_PG_STOOL,			MAT_WOODEN_BEAM,	TEX_PG_STOOL_ALB,		TEX_PG_STOOL_NRM_256);
+					"photogr/stool",		MAT_WOODEN_BEAM,	TEX_PG_STOOL_ALB,		TEX_PG_STOOL_NRM_256);
 			auto* msh45 = mesh("david3",		v3(+1.61f, +1.54f, +0.4f), quat(v3(-0.00f, +0.00f, -0.76f), +0.65f),
-					MSH_PG_DAVID3,			MAT_GLASS,	TEX_PG_DAVID3_ALB,		TEX_PG_DAVID3_NRM);
+					"photogr/david3",		MAT_GLASS,	TEX_PG_DAVID3_ALB,		TEX_PG_DAVID3_NRM);
 			
 		auto* scn5 = scene("PBR showcase",
 				v3(+9.67f, +0.16f, +0.00f), quat(v3(-0.00f, -0.00f, +0.71f), +0.71f));
@@ -531,33 +529,33 @@ struct Entities {
 			auto* lgh50 = dir_light("Sun",		v3(-4.91f, +2.46f, +3.35f), quat(v3(+0.05f, -0.22f, -0.95f), +0.21f),
 					ON, srgb(244,217,171) * col(2000));
 			auto* msh50 = material_showcase_grid("ico_sphere",	v3(-4.84f, -1.52f, +0.00f), quat::ident(), v3(0.3f),
-					MSH_nouv_ICO_SPHERE, v2(2.5f));
+					"_ico_sphere.nouv", v2(2.5f));
 			auto* msh51 = material_showcase_grid("bunny",		v3(+0.38f, -1.69f, +0.00f), quat::ident(), v3(2.0f),
-					MSH_nouv_STFD_BUNNY, v2(0.375f));
+					"stanford/bunny.nouv", v2(0.375f));
 			auto* msh52 = material_showcase_grid("buddha",		v3(+1.25f, -4.38f, +0.00f), quat::ident(), v3(1),
-					MSH_nouv_STFD_BUDDHA, v2(0.85f));
+					"stanford/buddha.nouv", v2(0.85f));
 			auto* msh53 = material_showcase_grid("dragon",		v3(-3.41f, +1.48f, +0.00f), quat::ident(), v3(1),
-					MSH_nouv_STFD_DRAGON, v2(0.65f));
+					"stanford/dragon.nouv", v2(0.65f));
 			auto* msh54 = material_showcase_grid("teapot",		v3(+2.09f, +1.42f, +0.00f), quat::ident(), v3(2.5f),
-					MSH_nouv_UTAHTEAPOT, v2(0.3f));
+					"utah_teapot.nouv", v2(0.3f));
 			
 			auto* grp55 = group("materials",	v3(-13.89f, -0.74f, +1.00f), quat(v3(+0.00f, -0.00f, -0.33f), +0.94f));
 				
 				v3 offs = v3(0.65f, 0,0);
 				
-				auto* msh550 = mesh("plastic",	v3(0)*offs, quat::ident(), v3(0.3f),	MSH_nouv_ICO_SPHERE, MAT_SHOW_PLASTIC);
-				auto* msh551 = mesh("glass",	v3(1)*offs, quat::ident(), v3(0.3f),	MSH_nouv_ICO_SPHERE, MAT_SHOW_GLASS);
-				auto* msh552 = mesh("plasic_h",	v3(2)*offs, quat::ident(), v3(0.3f),	MSH_nouv_ICO_SPHERE, MAT_SHOW_PLASIC_H);
-				auto* msh553 = mesh("ruby",		v3(3)*offs, quat::ident(), v3(0.3f),	MSH_nouv_ICO_SPHERE, MAT_SHOW_RUBY);
-				auto* msh554 = mesh("diamond",	v3(4)*offs, quat::ident(), v3(0.3f),	MSH_nouv_ICO_SPHERE, MAT_SHOW_DIAMOND);
-				auto* msh555 = mesh("iron",		v3(5)*offs, quat::ident(), v3(0.3f),	MSH_nouv_ICO_SPHERE, MAT_SHOW_IRON);
-				auto* msh556 = mesh("copper",	v3(6)*offs, quat::ident(), v3(0.3f),	MSH_nouv_ICO_SPHERE, MAT_SHOW_COPPER);
-				auto* msh557 = mesh("gold",		v3(7)*offs, quat::ident(), v3(0.3f),	MSH_nouv_ICO_SPHERE, MAT_SHOW_GOLD);
-				auto* msh558 = mesh("alu",		v3(8)*offs, quat::ident(), v3(0.3f),	MSH_nouv_ICO_SPHERE, MAT_SHOW_ALU);
-				auto* msh559 = mesh("silver",	v3(9)*offs, quat::ident(), v3(0.3f),	MSH_nouv_ICO_SPHERE, MAT_SHOW_SILVER);
+				auto* msh550 = mesh("plastic",	v3(0)*offs, quat::ident(), v3(0.3f),	"_ico_sphere.nouv", MAT_SHOW_PLASTIC);
+				auto* msh551 = mesh("glass",	v3(1)*offs, quat::ident(), v3(0.3f),	"_ico_sphere.nouv", MAT_SHOW_GLASS);
+				auto* msh552 = mesh("plasic_h",	v3(2)*offs, quat::ident(), v3(0.3f),	"_ico_sphere.nouv", MAT_SHOW_PLASIC_H);
+				auto* msh553 = mesh("ruby",		v3(3)*offs, quat::ident(), v3(0.3f),	"_ico_sphere.nouv", MAT_SHOW_RUBY);
+				auto* msh554 = mesh("diamond",	v3(4)*offs, quat::ident(), v3(0.3f),	"_ico_sphere.nouv", MAT_SHOW_DIAMOND);
+				auto* msh555 = mesh("iron",		v3(5)*offs, quat::ident(), v3(0.3f),	"_ico_sphere.nouv", MAT_SHOW_IRON);
+				auto* msh556 = mesh("copper",	v3(6)*offs, quat::ident(), v3(0.3f),	"_ico_sphere.nouv", MAT_SHOW_COPPER);
+				auto* msh557 = mesh("gold",		v3(7)*offs, quat::ident(), v3(0.3f),	"_ico_sphere.nouv", MAT_SHOW_GOLD);
+				auto* msh558 = mesh("alu",		v3(8)*offs, quat::ident(), v3(0.3f),	"_ico_sphere.nouv", MAT_SHOW_ALU);
+				auto* msh559 = mesh("silver",	v3(9)*offs, quat::ident(), v3(0.3f),	"_ico_sphere.nouv", MAT_SHOW_SILVER);
 				
 			auto* msh56 = mesh("cerberus",	v3(-7.41f, -1.04f, +0.70f), quat(v3(-0.07f, +0.01f, -0.13f), +0.99f), v3(1),
-					MSH_CERBERUS,			MAT_IDENTITY,
+					"cerberus/cerberus",			MAT_IDENTITY,
 					TEX_CERBERUS_ALBEDO, TEX_CERBERUS_NORMAL, TEX_CERBERUS_ROUGHNESS, TEX_CERBERUS_METALLIC);
 			
 			auto* lgh57 = point_light("Grey dim",	v3(-6.28f, +0.24f, +0.83f), NOSHAD, srgb(225.0f,228,230) * col(75));
@@ -567,13 +565,13 @@ struct Entities {
 			
 			auto* grp5b = group("nanosuit",		v3(-8.88f, -0.65f, +0.00f), quat(v3(-0.00f, +0.00f, -0.24f), +0.97f));
 				
-				auto* nano50 = mesh_nano("Torso",	v3(0), quat::ident(), MSH_NANOSUIT_TORSO,	MAT_IDENTITY,
+				auto* nano50 = mesh_nano("Torso",	v3(0), quat::ident(), "nano_suit/nanosuit_torso",	MAT_IDENTITY,
 						TEX_NANOSUIT_BODY_DIFF_EMISS, TEX_NANOSUIT_BODY_NORM, TEX_NANOSUIT_BODY_SPEC_ROUGH);
-				auto* nano51 = mesh_nano("Legs",	v3(0), quat::ident(), MSH_NANOSUIT_LEGS,	MAT_IDENTITY,
+				auto* nano51 = mesh_nano("Legs",	v3(0), quat::ident(), "nano_suit/nanosuit_legs",	MAT_IDENTITY,
 						TEX_NANOSUIT_BODY_DIFF_EMISS, TEX_NANOSUIT_BODY_NORM, TEX_NANOSUIT_BODY_SPEC_ROUGH);
-				auto* nano52 = mesh_nano("Neck",	v3(0), quat::ident(), MSH_NANOSUIT_NECK,	MAT_IDENTITY,
+				auto* nano52 = mesh_nano("Neck",	v3(0), quat::ident(), "nano_suit/nanosuit_neck",	MAT_IDENTITY,
 						TEX_NANOSUIT_NECK_DIFF, TEX_NANOSUIT_NECK_NORM, TEX_NANOSUIT_NECK_SPEC_ROUGH);
-				auto* nano53 = mesh_nano("Helmet",	v3(0), quat::ident(), MSH_NANOSUIT_HELMET,	MAT_IDENTITY,
+				auto* nano53 = mesh_nano("Helmet",	v3(0), quat::ident(), "nano_suit/nanosuit_helmet",	MAT_IDENTITY,
 						TEX_NANOSUIT_HELMET_DIFF_EMISS, TEX_NANOSUIT_HELMET_NORM, TEX_NANOSUIT_HELMET_SPEC_ROUGH);
 				
 			
@@ -681,7 +679,7 @@ struct Entities {
 		//scenes[0]->meshes.templ_forall( [] (Mesh* e) { print("  %\n", e->name); } );
 		//
 		//print(">>> Lights:\n");
-		//scenes[0]->lights.templ_forall( [] (Light_* e) { print("  %\n", e->name); } );
+		//scenes[0]->lights.templ_forall( [] (Light* e) { print("  %\n", e->name); } );
 		
 	}
 	
@@ -694,9 +692,8 @@ struct Entities {
 		switch (e->tag) {
 			case ET_MESH:
 			case ET_MESH_NANOSUIT: {
-				auto* m = (Mesh_Base*)e;
-				mesh_id_e mesh_id = m->mesh_id;
-				aabb_mesh = meshes_aabb[mesh_id];
+				auto* m = (eMesh_Base*)e;
+				aabb_mesh = m->mesh->aabb;
 				ret = EF_HAS_MESHES;
 			} break;
 			
@@ -706,14 +703,8 @@ struct Entities {
 			} break;
 			
 			case ET_LIGHT: {
-				auto* l = (Light_*)e;
-				mesh_id_e mesh_id;
-				switch (l->type) {
-					case LT_DIRECTIONAL:	mesh_id = MSH_nouv_col_SUN_LAMP;	break;
-					case LT_POINT:			mesh_id = MSH_nouv_col_LIGHT_BULB;		break;
-					default: assert(false); mesh_id = (mesh_id_e)0;
-				}
-				aabb_mesh = meshes_aabb[mesh_id];
+				auto* l = (Light*)e;
+				aabb_mesh = l->get_mesh()->aabb;
 				ret = EF_HAS_MESHES;
 			} break;
 			
@@ -782,9 +773,8 @@ AABB calc_shadow_cast_aabb (Entity const* e, hm mp parent_to_light) {
 	switch (e->tag) {
 		case ET_MESH:
 		case ET_MESH_NANOSUIT: {
-			auto* m = (Mesh_Base*)e;
-			mesh_id_e mesh_id = m->mesh_id;
-			aabb_me = meshes_aabb[mesh_id];
+			auto* m = (eMesh_Base*)e;
+			aabb_me = m->mesh->aabb;
 		} break;
 		case ET_MATERIAL_SHOWCASE_GRID: {
 			aabb_me = calc_material_showcase_grid_aabb((Material_Showcase_Grid*)e);

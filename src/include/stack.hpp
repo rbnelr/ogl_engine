@@ -7,7 +7,7 @@ struct Stack {
 	uptr	reserveSize;
 	byte*	base;
 	
-	DECLM NOINLINE void resize ();
+	DECLM void resize ();
 	
 	DECLM void purge ();
 	
@@ -152,10 +152,7 @@ struct Stack {
 		pop(base);
 	}
 	
-	template <typename T>	DECLM	T* append (T val) {
-		return push<T>(val);
-	}
-	template <typename T>	DECLM	T* append (T const* arr, uptr count) {
+	template <typename T>	DECLM	T* pushn (T const* arr, uptr count) {
 		T* ret = pushArr<T>(count);
 		cmemcpy(ret, arr, sizeof(T)*count);
 		return ret;

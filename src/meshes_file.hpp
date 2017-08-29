@@ -38,22 +38,70 @@ namespace meshes_file_n {
 	
 	struct fMesh {
 		u64			data_offs; // From start of file
-		u32			index_count;
 		u32			vertex_count;
+		u32			triangle_count;
 		
 		format_e	format;
 		u32			mesh_name; // offs into str_tbl
+		
+		AABB		aabb;
 	};
 	
 	#if 0
+	struct fVertex {
+		f32			attributes[ get_vertex_size(mesh.format) ];
+	};
+	struct fMesh_Data {
+		fVertex		vertex[ mesh.vertex_count ];
+		u16			index[ mesh.index_count ];
+	};
+	
 	struct fFile {
 		fHeader		header;
-		char		str_tbl[header.str_tbl_size];
-		fMesh		meshes[header.meshes_count];
+		char		str_tbl[ header.str_tbl_size ];
+		fMesh		meshes[ header.meshes_count ];
 		
-		byte		mesh_data[];
+		fMesh_Data	mesh_data[ header.meshes_count ];
 	};
 	#endif
 	
+	struct Triangle_Indx16 {
+		u16 arr[3];
+	};
+	
+	struct Vertex_PNUC {
+		v3	pos;
+		v3	norm;
+		v2	uv;
+		v3	col;
+	};
+	struct Vert_PNUT {
+		v3	pos;
+		v3	norm;
+		v2	uv;
+		v4	tang;
+	};
+	
 	#pragma pack (pop)
 }
+
+struct Mesh {
+	lstr								name;
+	meshes_file_n::format_e				format;
+	
+	struct {
+		u32								vertex_count;
+		f32*							vertecies;
+		u32								triangle_count;
+		meshes_file_n::Triangle_Indx16*	triangles;
+	} data;
+	
+	struct {
+		GLsizei							indx_count;
+		GLvoid*							indx_offset;
+		GLint							base_vertex;
+	} vbo_data;
+	
+	AABB								aabb;
+	
+};

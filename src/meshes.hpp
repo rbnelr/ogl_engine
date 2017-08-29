@@ -1,99 +1,336 @@
-#define MESHES \
-	X0(	MSH_nouv_col_LIGHT_BULB ) \
-	X(	MSH_nouv_col_SUN_LAMP ) \
-	 \
-	X(	MSH_nouv_AXIS_CROSS_PX ) \
-	X(	MSH_nouv_AXIS_CROSS_NX ) \
-	X(	MSH_nouv_AXIS_CROSS_PY ) \
-	X(	MSH_nouv_AXIS_CROSS_NY ) \
-	X(	MSH_nouv_AXIS_CROSS_PZ ) \
-	X(	MSH_nouv_AXIS_CROSS_NZ ) \
-	X(	MSH_nouv_AXIS_CROSS_PLANE_XY ) \
-	X(	MSH_nouv_SPHERE ) \
-	 \
-	X(	MSH_nouv_STRUCTURE_RING ) \
-	X(	MSH_nouv_TERRAIN ) \
-	X(	MSH_nouv_UTAHTEAPOT ) \
-	 \
-	X(	MSH_nouv_PLANETARIUM ) \
-	X(	MSH_nouv_PLANETARIUM_PROJECTOR ) \
-	 \
-	X(	MSH_nouv_ICO_SPHERE ) \
-	X(	MSH_nouv_STFD_BUNNY ) \
-	X(	MSH_nouv_STFD_BUDDHA ) \
-	X(	MSH_nouv_STFD_DRAGON ) \
-	 \
-	X(	MSH_nouv_WINDOW_PILLAR ) \
-	X(	MSH_nouv_SHADOW_TEST_0 ) \
-	 \
-	X(	MSH_UNIT_PLANE ) \
-	 \
-	X(	MSH_SCENE_GROUND0 ) \
-	X(	MSH_UGLY ) \
-	X(	MSH_TERRAIN_TREE ) \
-	X(	MSH_TERRAIN_TREE_CUTS ) \
-	X(	MSH_TERRAIN_TREE_BLOSSOMS ) \
-	X(	MSH_TERRAIN_CUBE ) \
-	X(	MSH_TERRAIN_SPHERE ) \
-	X(	MSH_TERRAIN_OBELISK ) \
-	X(	MSH_STRUCTURE_WALLS ) \
-	X(	MSH_STRUCTURE_GROUND ) \
-	X(	MSH_STRUCTURE_BLOCK1 ) \
-	X(	MSH_STRUCTURE_BLOCK2 ) \
-	X(	MSH_STRUCTURE_BLOCK3 ) \
-	X(	MSH_STRUCTURE_BLOCK4 ) \
-	X(	MSH_STRUCTURE_BEAM ) \
-	X(	MSH_STRUCTURE_BEAM_CUTS ) \
-	 \
-	X(	MSH_NANOSUIT_TORSO ) \
-	X(	MSH_NANOSUIT_LEGS ) \
-	X(	MSH_NANOSUIT_NECK ) \
-	X(	MSH_NANOSUIT_HELMET ) \
-	 \
-	X(	MSH_NORM_TEST_00 ) \
-	\
-	X(	MSH_CERBERUS ) \
-	 \
-	X(	MSH_PG_DAVID ) \
-	X(	MSH_PG_STOOL ) \
-	X(	MSH_PG_DAVID3 )
-
-#define X0(name)	name=0,
-#define X(name)		name,
-enum mesh_id_e: u32 {
-	MESHES
-	MESHES_COUNT,
-};
-#undef X0
-#undef X
-DEFINE_ENUM_ITER_OPS(mesh_id_e, u32)
-
-#define X0(name)	TO_STR(name),
-#define X(name)		TO_STR(name),
-DECLD constexpr char const* MESH_ID_NAMES[MESHES_COUNT] {
-	MESHES
-};
-#undef X0
-#undef X
-
-#undef MESHES
-
-DECLD constexpr mesh_id_e		MSH_NOUV_COL_FIRST =			MSH_nouv_col_LIGHT_BULB;
-DECLD constexpr mesh_id_e		MSH_NOUV_COL_END =				(mesh_id_e)(MSH_nouv_col_SUN_LAMP +1);
-DECLD constexpr u32				MSH_NOUV_COL_COUNT =			MSH_NOUV_COL_END -MSH_NOUV_COL_FIRST;
-
-DECLD constexpr mesh_id_e		MSH_NOUV_FIRST =				MSH_nouv_AXIS_CROSS_PX;
-DECLD constexpr mesh_id_e		MSH_NOUV_END =					(mesh_id_e)(MSH_nouv_SHADOW_TEST_0 +1);
-DECLD constexpr u32				MSH_NOUV_COUNT =				MSH_NOUV_END -MSH_NOUV_FIRST;
-
-DECLD constexpr mesh_id_e		MSH_COMMON_FIRST =				MSH_UNIT_PLANE;
-DECLD constexpr mesh_id_e		MSH_COMMON_END =				(mesh_id_e)(MSH_PG_DAVID3 +1);
-DECLD constexpr u32				MSH_COMMON_COUNT =				MSH_COMMON_END -MSH_COMMON_FIRST;
-
-DECLD char const*				mesh_names[MESHES_COUNT];
 
 #include "meshes_file.hpp"
 
+#define MESH_INSTANCE missing_mesh
+#include "missing_mesh.hpp"
+#undef MESH_INSTANCE
+
+struct Meshes {
+	
+	dynarr<Mesh>	loaded_meshes;
+	
+	DECLM bool parse_file (Mem_Block cr data) {
+		using namespace meshes_file_n;
+		
+		//#define require(cond) if (!(cond)) return 0;
+		#define require(cond) if (!(cond)) { warning(STRINGIFY(cond)); return 0; }
+		
+		require(data.size >= sizeof(fHeader));
+		auto* header = (fHeader*)data.ptr;
+		
+		require(header->id.i == FILE_ID.i);
+		require(header->file_size == data.size);
+		
+		
+		
+		return true;
+		
+		#undef require
+	}
+	
+	DECLM void load_file () {
+		Mem_Block data;
+		if (platform::read_file_onto_heap(MESHES_FILENAME, &data)) {
+			warning("meshes file '%' could not be loaded, no meshes loaded!", MESHES_FILENAME);
+			return;
+		}
+		
+		loaded_meshes.alloc(64);
+		
+		if (!parse_file(data)) {
+			warning("meshes file '%' could not be parsed, no meshes loaded!", MESHES_FILENAME);
+			return;
+		}
+		
+	}
+	
+	DECLM Mesh* get_mesh (lstr cr name) {
+		return &missing_mesh;
+	}
+	
+	//// VBO
+	enum vbo_indx_e : u32 {
+		NOUV_VCOL_ARR_BUF=0,
+		NOUV_VCOL_INDX_BUF,
+		NOUV_ARR_BUF,
+		NOUV_INDX_BUF,
+		VCOL_ARR_BUF,
+		VCOL_INDX_BUF,
+		COMMON_ARR_BUF,
+		COMMON_INDX_BUF,
+		
+		VBO_COUNT
+	};
+
+	//// VAO
+	enum vao_indx_e : u32 {
+		NOUV_VCOL_VAO=0,
+		NOUV_VAO,
+		VCOL_VAO,
+		COMMON_VAO,
+		
+		VAO_COUNT
+	};
+	
+	GLuint				VBOs[VBO_COUNT];
+	GLuint				VAOs[VAO_COUNT];
+	
+	// Non-entity meshes
+	enum global_mesh_e : u32 {
+		AXIS_CROSS_POS_X=0,	AXIS_CROSS_POS_Y,	AXIS_CROSS_POS_Z,
+		AXIS_CROSS_NEG_X,	AXIS_CROSS_NEG_Y,	AXIS_CROSS_NEG_Z,
+		AXIS_CROSS_PLANE,
+		
+		LIGHTBULB_SUN_LAMP,	LIGHTBULB_LIGHTBULB,
+		
+		MESH_COUNT,
+	};
+	Mesh* global_meshes[MESH_COUNT] = {
+		(Mesh*)"axis_cross_px.nouv",	(Mesh*)"axis_cross_py.nouv",	(Mesh*)"axis_cross_pz.nouv",
+		(Mesh*)"axis_cross_nx.nouv",	(Mesh*)"axis_cross_ny.nouv",	(Mesh*)"axis_cross_nz.nouv",
+		(Mesh*)"axis_cross_plane_xy.nouv",
+		
+		(Mesh*)"sun_lamp.nouv_vcol",	(Mesh*)"light_bulb.nouv_vcol",
+	};
+	
+	DECLM void init () {
+		
+		load_file();
+		
+		for (auto i=(global_mesh_e)0; i<MESH_COUNT; i=(global_mesh_e)(i+1)) {
+			global_meshes[i] = get_mesh( lstr::count_cstr( (cstr)global_meshes[i] ) );
+		}
+		
+		{
+			using namespace meshes_file_n;
+			assert(missing_mesh.format == F_INDX_U16|F_NORM_XYZ|F_UV_UV|F_COL_RGB);
+			
+			glBindVertexArray(0); // Unbind VAO so that we don't mess with its GL_ELEMENT_ARRAY_BUFFER binding
+			
+			glBindBuffer(GL_ARRAY_BUFFER,			VBOs[VCOL_ARR_BUF]);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[VCOL_INDX_BUF]);
+			
+			missing_mesh.vbo_data.indx_count =	safe_cast_assert(GLsizei, missing_mesh.data.triangle_count*3);
+			missing_mesh.vbo_data.indx_offset =	(GLvoid*)0;
+			missing_mesh.vbo_data.base_vertex =	safe_cast_assert(GLint, 0);
+			
+			glBufferData(GL_ARRAY_BUFFER,
+					safe_cast_assert(GLsizeiptr, missing_mesh.data.vertex_count * sizeof(Vertex_PNUC)),
+					missing_mesh.data.vertecies, GL_STATIC_DRAW);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+					safe_cast_assert(GLsizeiptr, missing_mesh.data.triangle_count * sizeof(Triangle_Indx16)),
+					missing_mesh.data.triangles, GL_STATIC_DRAW);
+			
+		}
+	}
+	
+	DECLM void setup_vaos () {
+		glGenBuffers(VBO_COUNT, VBOs);
+		glGenVertexArrays(VAO_COUNT, VAOs);
+		
+		{ // Default mesh buffer
+			glBindVertexArray(VAOs[NOUV_VAO]);
+			
+			glEnableVertexAttribArray(0);
+			glEnableVertexAttribArray(1);
+			
+			glBindBuffer(GL_ARRAY_BUFFER, VBOs[NOUV_ARR_BUF]);
+			
+			auto vert_size = safe_cast_assert(GLsizei, (3 +3) * sizeof(f32));
+			
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((0) * sizeof(f32)));				// pos xyz
+			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +0) * sizeof(f32)));			// normal xyz
+			
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[NOUV_INDX_BUF]);
+		}
+		{ // 
+			glBindVertexArray(VAOs[NOUV_VCOL_VAO]);
+			
+			glEnableVertexAttribArray(0);
+			glEnableVertexAttribArray(1);
+			glEnableVertexAttribArray(4);
+			
+			glBindBuffer(GL_ARRAY_BUFFER, VBOs[NOUV_VCOL_ARR_BUF]);
+			
+			auto vert_size = safe_cast_assert(GLsizei, (3 +3 +3) * sizeof(f32));
+			
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((0) * sizeof(f32)));				// pos xyz
+			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +0) * sizeof(f32)));			// normal xyz
+			glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +3 +0) * sizeof(f32)));		// color rgb
+			
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[NOUV_VCOL_INDX_BUF]);
+		}
+		{ // 
+			glBindVertexArray(VAOs[VCOL_VAO]);
+			
+			glEnableVertexAttribArray(0);
+			glEnableVertexAttribArray(1);
+			glEnableVertexAttribArray(2);
+			glEnableVertexAttribArray(4);
+			
+			glBindBuffer(GL_ARRAY_BUFFER, VBOs[VCOL_ARR_BUF]);
+			
+			auto vert_size = safe_cast_assert(GLsizei, (3 +3 +2 +3) * sizeof(f32));
+			
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((0) * sizeof(f32)));				// pos xyz
+			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +0) * sizeof(f32)));			// normal xyz
+			glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +3 +0) * sizeof(f32)));		// uv uv
+			glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +3 +2 +0) * sizeof(f32)));	// color rgb
+			
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[VCOL_INDX_BUF]);
+		}
+		{ // UV TANGENT mesh buffer
+			glBindVertexArray(VAOs[COMMON_VAO]);
+			
+			glEnableVertexAttribArray(0);
+			glEnableVertexAttribArray(1);
+			glEnableVertexAttribArray(2);
+			glEnableVertexAttribArray(3);
+			
+			glBindBuffer(GL_ARRAY_BUFFER, VBOs[COMMON_ARR_BUF]);
+			
+			auto vert_size = safe_cast_assert(GLsizei, (3 +3 +4 +2) * sizeof(f32));
+			
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((0) * sizeof(f32)));				// pos xyz
+			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +0) * sizeof(f32)));			// normal xyz
+			glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +3 +0) * sizeof(f32)));		// uv
+			glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, vert_size, (void*)((3 +3 +2 +0) * sizeof(f32)));	// tangent xyzw
+			
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[COMMON_INDX_BUF]);
+		}
+		
+	}
+	
+	DECLM void bind_vao (Mesh const* m) {
+		assert(m == &missing_mesh);
+		
+		glBindVertexArray(VAOs[VCOL_VAO]);
+	}
+	
+	#if 0
+	AABB calc_AABB_model (mesh_id_e id) {
+		
+		// AABB returned is in the space between to_world & from_model
+		// gets deplayed in world space
+		
+		byte*		vertices;
+		GLushort*	indices;
+		
+		u32			vertex_stride;
+		
+		u32			vertex_count;
+		u32			index_count;
+		{
+			byte* file_data = (byte*)meshes_file.header;
+			
+			auto mesh = meshes_file.query_mesh(mesh_names[id]);
+			assert(mesh);
+			
+			vertex_count = mesh->vertex_count;
+			assert(vertex_count > 0);
+			
+			index_count = mesh->index_count;
+			assert(index_count > 0);
+			
+			switch (mesh->format) {
+				using namespace meshes_file_n;
+				
+				case (F_INDX_U16| F_NORM_XYZ): {
+					struct Vertex {
+						v3	pos;
+						v3	norm;
+					};
+					vertex_stride = sizeof(Vertex);
+				} break;
+				
+				case (F_INDX_U16| F_NORM_XYZ|F_COL_RGB): {
+					struct Vertex {
+						v3	pos;
+						v3	norm;
+						v3	color;
+					};
+					vertex_stride = sizeof(Vertex);
+				} break;
+				
+				case (F_INDX_U16| F_NORM_XYZ|F_UV_UV): {
+					struct Vertex {
+						v3	pos;
+						v3	norm;
+						v2	uv;
+					};
+					vertex_stride = sizeof(Vertex);
+				} break;
+				
+				case (F_INDX_U16| F_NORM_XYZ|F_UV_UV|F_TANG_XYZW): {
+					struct Vertex {
+						v3	pos;
+						v3	norm;
+						v2	uv;
+						v4	tang;
+					};
+					vertex_stride = sizeof(Vertex);
+				} break; 
+				
+				default: assert(false); vertex_stride = 0; // shut up compiler
+			}
+			
+			u32 vert_size = vertex_count * vertex_stride;
+			u32 index_size = index_count * sizeof(GLushort);
+			
+			assert((mesh->data_offs +vert_size) <= meshes_file.file_size);
+			assert((mesh->data_offs +vert_size +index_size) <= meshes_file.file_size);
+			
+			vertices = (byte*)(file_data +mesh->data_offs);
+			indices = (GLushort*)((byte*)vertices +vert_size);
+			
+		}
+		
+		AABB ret = AABB::inf();
+		
+		for (u32 i=0; i<vertex_count; ++i) {
+			v3 pos = *(v3*)( vertices +vertex_stride * i );
+			ret.minmax(pos);
+		}
+		
+		return ret;
+	}
+
+	DECL void reload_meshes () { // Loading meshes from disk to GPU driver
+		using namespace meshes_file_n;
+		
+		PROFILE_SCOPED(THR_ENGINE, "reload_meshes");
+		
+		glBindVertexArray(0); // Unbind VAO so that we don't mess with its GL_ELEMENT_ARRAY_BUFFER binding
+		
+		meshes_file.reload();
+		
+		//
+		glBindBuffer(GL_ARRAY_BUFFER,			VBOs[NO_UV_COL_ARR_BUF]);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[NO_UV_COL_INDX_BUF]);
+		
+		meshes_file.reload_meshes(F_INDX_U16|F_NORM_XYZ|F_COL_RGB, MSH_NOUV_COL_FIRST, MSH_NOUV_COL_COUNT, meshes);
+		
+		//
+		glBindBuffer(GL_ARRAY_BUFFER,			VBOs[NO_UV_ARR_BUF]);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[NO_UV_INDX_BUF]);
+		
+		meshes_file.reload_meshes(F_INDX_U16|F_NORM_XYZ, MSH_NOUV_FIRST, MSH_NOUV_COUNT, meshes);
+		
+		//
+		glBindBuffer(GL_ARRAY_BUFFER,			VBOs[COMMON_ARR_BUF]);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,	VBOs[COMMON_INDX_BUF]);
+		
+		meshes_file.reload_meshes(F_INDX_U16|F_NORM_XYZ|F_UV_UV|F_TANG_XYZW, MSH_COMMON_FIRST, MSH_COMMON_COUNT, meshes);
+		
+		for (mesh_id_e id=(mesh_id_e)0; id<MESHES_COUNT; ++id) {
+			meshes_aabb[id] = calc_AABB_model(id);
+		}
+	}
+	#endif
+	
+};
+
+#if 0
 struct Mesh_Ref {
 	GLvoid*				indx_offsets;
 	GLsizei				indx_count;
@@ -251,3 +488,4 @@ namespace meshes_file_n {
 		
 	};
 }
+#endif

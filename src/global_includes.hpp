@@ -17,13 +17,19 @@
 //// 
 #include "comp_arch_platf_specifics.hpp"
 
-#define DECLD									static				// declare global data
-#define DECL									static VECTORCALL	// declare global function
-#define DECLFP									VECTORCALL			// declare function pointer
-#define DECLV									static				// declare variadic function
-#define DECLA									static				// declare API (other calling conv) function
-#define DECLM									VECTORCALL			// declare method
-#define DECLT									VECTORCALL			// declare template
+#if DEBUG
+#define DBG_NOINLINE_ALL	//NOINLINE
+#else
+#define DBG_NOINLINE_ALL
+#endif
+
+#define DECLD			static								// declare global data
+#define DECL			static DBG_NOINLINE_ALL VECTORCALL	// declare global function
+#define DECLFP			VECTORCALL							// declare function pointer
+#define DECLV			static								// declare variadic function
+#define DECLA			static								// declare API (other calling conv) function
+#define DECLM			DBG_NOINLINE_ALL VECTORCALL			// declare method
+#define DECLT			DBG_NOINLINE_ALL VECTORCALL			// declare template
 
 //// typedefs for basic types
 #include "types.hpp"
@@ -78,6 +84,8 @@ using print_n::escaped;
 using print_n::hex;
 using print_n::bin;
 using print_n::repeat;
+using print_n::prec;
+using print_n::make_printer_dynarr;
 
 ////
 #include "windows_utility.hpp"
