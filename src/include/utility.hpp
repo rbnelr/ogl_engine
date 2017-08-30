@@ -144,9 +144,13 @@ template <typename T>
 DECL constexpr uptr ptr_sub (T const* a, T const* b) {
 	return (uptr)b -(uptr)a;
 }
-template <typename T, typename OFFS_T>
-DECL constexpr T* ptr_add (T* a, OFFS_T b) {
+template <typename T>
+DECL constexpr T* ptr_add (T* a, uptr b) {
 	return (T*)((uptr)a +b);
+}
+template <typename L, typename R>
+DECL constexpr L* ptr_add (L* a, R* b) {
+	return (L*)((uptr)a +(uptr)b);
 }
 
 ////

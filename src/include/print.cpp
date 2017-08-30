@@ -700,7 +700,7 @@ namespace print_n {
 					PRINTF("%+.*g", prec, f)
 				} break;
 				case F64_PREC: {
-					f64 f = GET_VAL(u64);
+					f64 f = GET_VAL(f64);
 					ui prec = GET_VAL(ui);
 					PRINTF("%+.*g", prec, f)
 				} break;

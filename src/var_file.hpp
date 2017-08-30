@@ -2846,19 +2846,19 @@ namespace var {
 					
 					switch (var->type & VT_VEC_BIT) {
 						case VT_SCALAR:
-							push_str("%%", v.fm.arr[0].x, lit);
+							push_str("%%",						prec(v.fm.arr[0].x,9), lit);
 							break;
 						case VT_VEC2:
-							push_str("%v2(%, %)%", func, v.fm.arr[0].x, v.fm.arr[0].y, pare);
+							push_str("%v2(%, %)%", func,		prec(v.fm.arr[0].x,9), prec(v.fm.arr[0].y,9), pare);
 							break;
 						case VT_VEC3:
-							push_str("%v3(%, %, %)%", func, v.fm.arr[0].x, v.fm.arr[0].y, v.fm.arr[0].z, pare);
+							push_str("%v3(%, %, %)%", func,		prec(v.fm.arr[0].x,9), prec(v.fm.arr[0].y,9), prec(v.fm.arr[0].z,9), pare);
 							break;
 						case VT_VEC4:
-							push_str("%v4(%, %, %, %)%", func, v.fm.arr[0].x, v.fm.arr[0].y, v.fm.arr[0].z, v.fm.arr[0].w, pare);
+							push_str("%v4(%, %, %, %)%", func,	prec(v.fm.arr[0].x,9), prec(v.fm.arr[0].y,9), prec(v.fm.arr[0].z,9), prec(v.fm.arr[0].w,9), pare);
 							break;
 						case VT_QUAT:
-							push_str("quat(v3(%, %, %), %)", v.fm.arr[0].x, v.fm.arr[0].y, v.fm.arr[0].z, v.fm.arr[0].w);
+							push_str("quat(v3(%, %, %), %)",	prec(v.fm.arr[0].x,9), prec(v.fm.arr[0].y,9), prec(v.fm.arr[0].z,9), prec(v.fm.arr[0].w,9));
 							break;
 						case VT_MAT2:
 						case VT_MAT3:

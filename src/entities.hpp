@@ -82,9 +82,7 @@ namespace entities_n {
 		light_flags_e	flags;
 		v3				power;
 		
-		DECLM Mesh* get_mesh () const {
-			return meshes.global_meshes[Meshes::LIGHTBULB_SUN_LAMP +(type & LT_POINT)];
-		}
+		Mesh*			mesh;
 	};
 	struct Scene : public Entity {
 		bool			draw;
@@ -285,18 +283,22 @@ struct Entities {
 		return ret;
 	}
 	
-	Light* dir_light (lstr cr name, v3 vp pos, quat vp ori, light_flags_e flags, v3 vp power) {
+	Light* sun_lamp (lstr cr name, v3 vp pos, quat vp ori, light_flags_e flags, v3 vp power) {
 		auto* ret = make_entity<Light, ET_LIGHT>(name, pos, ori);
 		ret->type = LT_DIRECTIONAL;
 		ret->flags = flags;
 		ret->power = power;
+		ret->mesh = meshes.get_mesh("sun_lamp.nouv_vcol");
+		//ret->mesh = meshes.get_mesh("missing_mesh.vcol");
 		return ret;
 	}
-	Light* point_light (lstr cr name, v3 vp pos, light_flags_e flags, v3 vp power) {
+	Light* light_bulb (lstr cr name, v3 vp pos, light_flags_e flags, v3 vp power) {
 		auto* ret = make_entity<Light, ET_LIGHT>(name, pos, quat::ident());
 		ret->type = LT_POINT;
 		ret->flags = flags;
 		ret->power = power;
+		ret->mesh = meshes.get_mesh("light_bulb.nouv_vcol");
+		//ret->mesh = meshes.get_mesh("missing_mesh.vcol");
 		return ret;
 	}
 	
@@ -377,7 +379,7 @@ struct Entities {
 			
 			auto* gnd0 = GROUND(8,6);
 			
-			auto* lgh0 = dir_light("Test dir light",
+			auto* lgh0 = sun_lamp("Test dir light",
 					v3(+1.21f, -2.92f, +3.51f), quat(v3(+0.61f, +0.01f, +0.01f), +0.79f),
 					ON,
 					srgb(244,217,171) * col(2000));
@@ -386,13 +388,13 @@ struct Entities {
 					v3(+2.67f, +2.47f, +0.07f), quat(v3(+0.00f, -0.00f, -0.04), +1.00f),
 					"shadow_test_0.nouv", MAT_ROUGH_MARBLE);
 				
-				auto* lgh1 = point_light("Test point light 1",
+				auto* lgh1 = light_bulb("Test point light 1",
 						v3(+0.9410f, +1.2415f, +1.1063f),
 						NOSHAD, srgb(200,48,79) * col(100));
-				auto* lgh2 = point_light("Test point light 2",
+				auto* lgh2 = light_bulb("Test point light 2",
 						v3(+1.0914f, +0.5582f, +1.3377f),
 						NOSHAD, srgb(48,200,79) * col(100));
-				auto* lgh3 = point_light("Test point light 3",
+				auto* lgh3 = light_bulb("Test point light 3",
 						v3(+0.3245f, +0.7575f, +1.0226f),
 						NOSHAD, srgb(48,7,200) * col(100));
 				
@@ -400,10 +402,10 @@ struct Entities {
 					v3(-3.21f, +0.00f, +0.16f), quat(v3(-0.00f, +0.00f, -1.00f), +0.08f),
 					"window_pillar.nouv", MAT_ROUGH_MARBLE);
 				
-				auto* lgh4 = point_light("Torch light L",
+				auto* lgh4 = light_bulb("Torch light L",
 						v3(-0.91969f, +0.610f, +1.880f),
 						NOSHAD, srgb(240,142,77) * col(60));
-				auto* lgh5 = point_light("Torch light R",
+				auto* lgh5 = light_bulb("Torch light R",
 						v3(+0.91969f, +0.610f, +1.880f),
 						NOSHAD, srgb(240,142,77) * col(60));
 			
@@ -424,7 +426,7 @@ struct Entities {
 			
 			auto* gnd1 = GROUND(5,5);
 			
-			auto* lgh10 = dir_light("Sun",
+			auto* lgh10 = sun_lamp("Sun",
 					v3(+0.06f, -2.76f, +4.53f), quat(v3(+0.31f, +0.01f, +0.04f), +0.95f),
 					ON,
 					srgb(244,217,171) * col(2000));
@@ -464,7 +466,7 @@ struct Entities {
 			
 			auto* gnd2 = GROUND(3,3);
 			
-			auto* lgh20 = dir_light("Sun",
+			auto* lgh20 = sun_lamp("Sun",
 					v3(-1.83f, +1.37f, +2.05f), quat(v3(+0.21f, -0.45f, -0.78f), +0.37f),
 					ON, srgb(244,217,171) * col(2000));
 			auto* msh20 = mesh("ugly",
@@ -475,7 +477,7 @@ struct Entities {
 		auto* scn3 = scene("structure_scene",
 				v3(0), quat::ident());
 			
-			auto* lgh30 = dir_light("Sun",		v3(-2.84f, +4.70f, +4.90f), quat(v3(+0.15f, -0.12f, -0.62f), +0.76f),
+			auto* lgh30 = sun_lamp("Sun",		v3(-2.84f, +4.70f, +4.90f), quat(v3(+0.15f, -0.12f, -0.62f), +0.76f),
 					ON, srgb(244,217,171) * col(2000));
 			
 			auto* msh3z = mesh("ground",		v3(0), quat::ident(),
@@ -506,7 +508,7 @@ struct Entities {
 			
 			auto* gnd4 = GROUND(3,3);
 			
-			auto* lgh40 = dir_light("Sun",		v3(+1.88f, +2.46f, +3.35f), quat(v3(+0.28f, +0.48f, +0.72f), +0.42f),
+			auto* lgh40 = sun_lamp("Sun",		v3(+1.88f, +2.46f, +3.35f), quat(v3(+0.28f, +0.48f, +0.72f), +0.42f),
 					ON, srgb(244,217,171) * col(2000));
 			auto* msh40 = mesh("brick_wall 1",	v3(+0.00f, +1.15f, +1.01f), quat(v3(+0.61f, +0.36f, +0.36f), +0.61f),
 					"_unit_plane",			MAT_GRASS,		TEX_TEX_DIF_BRICK_00,	TEX_TEX_NRM_BRICK_00); // met Supposed to be rough stone
@@ -526,7 +528,7 @@ struct Entities {
 			
 			auto* gnd5 = GROUND(17,7);
 			
-			auto* lgh50 = dir_light("Sun",		v3(-4.91f, +2.46f, +3.35f), quat(v3(+0.05f, -0.22f, -0.95f), +0.21f),
+			auto* lgh50 = sun_lamp("Sun",		v3(-4.91f, +2.46f, +3.35f), quat(v3(+0.05f, -0.22f, -0.95f), +0.21f),
 					ON, srgb(244,217,171) * col(2000));
 			auto* msh50 = material_showcase_grid("ico_sphere",	v3(-4.84f, -1.52f, +0.00f), quat::ident(), v3(0.3f),
 					"_ico_sphere.nouv", v2(2.5f));
@@ -558,10 +560,10 @@ struct Entities {
 					"cerberus/cerberus",			MAT_IDENTITY,
 					TEX_CERBERUS_ALBEDO, TEX_CERBERUS_NORMAL, TEX_CERBERUS_ROUGHNESS, TEX_CERBERUS_METALLIC);
 			
-			auto* lgh57 = point_light("Grey dim",	v3(-6.28f, +0.24f, +0.83f), NOSHAD, srgb(225.0f,228,230) * col(75));
-			auto* lgh58 = point_light("Blue",		v3(-7.10f, -3.60f, +1.46f), NOSHAD, srgb(29,54,252) * col(450));
-			auto* lgh59 = point_light("Red bright",	v3(-12.38f, -4.31f, +2.65f), NOSHAD, srgb(237,7,51) * col(750));
-			auto* lgh5a = point_light("Sunlike",	v3(-0.30f, -2.18f, +3.60f), NOSHAD, srgb(244,217,171) * col(1200));
+			auto* lgh57 = light_bulb("Grey dim",	v3(-6.28f, +0.24f, +0.83f), NOSHAD, srgb(225.0f,228,230) * col(75));
+			auto* lgh58 = light_bulb("Blue",		v3(-7.10f, -3.60f, +1.46f), NOSHAD, srgb(29,54,252) * col(450));
+			auto* lgh59 = light_bulb("Red bright",	v3(-12.38f, -4.31f, +2.65f), NOSHAD, srgb(237,7,51) * col(750));
+			auto* lgh5a = light_bulb("Sunlike",	v3(-0.30f, -2.18f, +3.60f), NOSHAD, srgb(244,217,171) * col(1200));
 			
 			auto* grp5b = group("nanosuit",		v3(-8.88f, -0.65f, +0.00f), quat(v3(-0.00f, +0.00f, -0.24f), +0.97f));
 				
@@ -704,7 +706,7 @@ struct Entities {
 			
 			case ET_LIGHT: {
 				auto* l = (Light*)e;
-				aabb_mesh = l->get_mesh()->aabb;
+				aabb_mesh = l->mesh->aabb;
 				ret = EF_HAS_MESHES;
 			} break;
 			

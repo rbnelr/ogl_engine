@@ -461,10 +461,18 @@ DONE:
  
  got rid of str::append and str::append_term (now handles by stack and dynarr pushn and print_working_stk)
  
+#2017.08.29 di. tag
+ meshes_gen rewritten agian, src code meshes ditched for now
+ 
+ rewrote the meshes system to work in the new way
+ 
+ 
 TODO
 -FEATURES:
  
- rewrite the meshes system to work in the new way
+ fix meshes system bug
+ -lightbulb meshes are missing mesh mesh for some reasong
+ -nouv_vcol and vcol both have the missing mesh mesh for some reason?
  
  implement all.entities
  

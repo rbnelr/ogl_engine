@@ -1986,11 +1986,6 @@ DECL void init () {
 	PROFILE_SCOPED(THR_ENGINE, "engine_init");
 	
 	{
-		PROFILE_SCOPED(THR_ENGINE, "test_entities");
-		entities.test_entities();
-	}
-	
-	{
 		PROFILE_SCOPED(THR_ENGINE, "var_file_setup");
 		{
 			PROFILE_SCOPED(THR_ENGINE, "var_file_cmd_pipe_setup");
@@ -2197,6 +2192,11 @@ DECL void init () {
 	{
 		PROFILE_SCOPED(THR_ENGINE, "meshes_init");
 		meshes.init();
+	}
+	
+	{
+		PROFILE_SCOPED(THR_ENGINE, "test_entities");
+		entities.test_entities();
 	}
 	
 	{
@@ -2832,9 +2832,7 @@ DECL void frame () {
 							
 							if (!(inp.mouselook & FPS_MOUSELOOK)) {
 								
-								auto* mesh = l->get_mesh();
-								
-								meshes.bind_vao(mesh);
+								meshes.bind_vao(l->mesh);
 								
 								GLOBAL_UBO_WRITE_VAL( std140::uint_, lightbulb_indx,
 										(l->flags & LF_DISABLED) ? -1 : enabled_light_indx );
@@ -2850,8 +2848,8 @@ DECL void frame () {
 									GLOBAL_UBO_WRITE(transforms, &temp);
 								}
 								
-								glDrawElementsBaseVertex(GL_TRIANGLES, mesh->vbo_data.indx_count, GL_UNSIGNED_SHORT,
-										mesh->vbo_data.indx_offset, mesh->vbo_data.base_vertex);
+								glDrawElementsBaseVertex(GL_TRIANGLES, l->mesh->vbo_data.indx_count, GL_UNSIGNED_SHORT,
+										l->mesh->vbo_data.indx_offset, l->mesh->vbo_data.base_vertex);
 								
 								if (!(l->flags & LF_DISABLED)) {
 									++enabled_light_indx;
@@ -2940,7 +2938,7 @@ DECL void frame () {
 		
 		hm m = world_to_cam;
 		
-		glBindVertexArray(meshes.VAOs[Meshes::NOUV_VAO]);
+		glBindVertexArray(meshes.formats[MF_NOUV].vao);
 		glUseProgram(shaders[SHAD_TINT_AS_FRAG_COL]);
 		
 		{ // Draw 3d manipulator (axis cross)
@@ -2979,8 +2977,9 @@ DECL void frame () {
 						assert(highl_axis >= 0 && highl_axis < 3);
 					}
 					
-					auto draw_solid_color = [] (Meshes::global_mesh_e mesh_id, hm mp model_to_cam, hm mp cam_to_model, v3 col) {
-						auto* mesh = meshes.global_meshes[mesh_id];
+					auto draw_solid_color = [] (Mesh* mesh, hm mp model_to_cam, hm mp cam_to_model, v3 col) {
+						
+						assert(mesh->format == MF_NOUV);
 						
 						std140_Material mat;
 						mat.albedo.set(col);
@@ -3015,9 +3014,9 @@ DECL void frame () {
 						
 						hm mat = paren_to_cam * translate_h(editor.selected->pos) * scale_h(scaleCorrect * axisScale);
 						
-						draw_solid_color( (Meshes::global_mesh_e)(Meshes::AXIS_CROSS_POS_X +highl_axis),
+						draw_solid_color( meshes.non_entity_meshes[AXIS_CROSS_POS_X +highl_axis],
 								mat, hm::ident(), p_col); // TODO: maybe pass actual inverse matric here, if needed
-						draw_solid_color( (Meshes::global_mesh_e)(Meshes::AXIS_CROSS_NEG_X +highl_axis),
+						draw_solid_color( meshes.non_entity_meshes[AXIS_CROSS_NEG_X +highl_axis],
 								mat, hm::ident(), n_col); // TODO: maybe pass actual inverse matric here, if needed
 						
 					}
@@ -3031,9 +3030,9 @@ DECL void frame () {
 						
 						hm mat = paren_to_cam * translate_h(editor.selected->pos) * scale_h(scaleCorrect);
 						
-						draw_solid_color( (Meshes::global_mesh_e)(Meshes::AXIS_CROSS_POS_X +axis),
+						draw_solid_color( meshes.non_entity_meshes[AXIS_CROSS_POS_X +axis],
 								mat, hm::ident(), p_col); // TODO: maybe pass actual inverse matric here, if needed
-						draw_solid_color( (Meshes::global_mesh_e)(Meshes::AXIS_CROSS_NEG_X +axis),
+						draw_solid_color( meshes.non_entity_meshes[AXIS_CROSS_NEG_X +axis],
 								mat, hm::ident(), n_col); // TODO: maybe pass actual inverse matric here, if needed
 						
 					}
@@ -3057,7 +3056,7 @@ DECL void frame () {
 						return ret;
 					};
 					auto draw_plane = [&] (m3 rot) {
-						draw_solid_color(Meshes::AXIS_CROSS_PLANE,
+						draw_solid_color(meshes.non_entity_meshes[AXIS_CROSS_PLANE],
 								paren_to_cam * translate_h(editor.selected->pos)
 								* hm::ident().m3(rot) * scale_h(scaleCorrect), hm::ident(), // TODO: maybe pass actual inverse matric here, if needed
 								v3(1.0f, 0.2f, 0.2f));
