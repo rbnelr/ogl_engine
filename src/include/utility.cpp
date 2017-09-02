@@ -405,8 +405,8 @@ DECL Filenames list_of_files_in (lstr cr base_path, list_of_files_in_n::flags_e 
 	assert(	(flags & ~(FILES|FOLDERS|RECURSIVE|FILTER_FILES|FILTER_INCL_EXCL|NO_BASE_PATH)) == 0);
 	
 	Filenames ret;
-	ret.arr		.alloc(0, 256);
-	ret.str_data.alloc(0, 256 * 32);
+	ret.arr =		ret.arr.alloc(256);
+	ret.str_data =	ret.str_data.alloc(256 * 32);
 	
 	auto builder = List_Of_Files_In{flags, filters_len, filters, base_path};
 	builder.recurse(&ret, lstr(""));

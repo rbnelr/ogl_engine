@@ -36,11 +36,17 @@ struct Meshes {
 	};
 	#undef X
 	
+	Mesh*			_missing_mesh;
+	
 	////
 	
 	DECLM void init () {
 		load_file_and_upload_data();
 		get_non_enity_meshes();
+		_missing_mesh = _get_mesh("missing_mesh.vcol");
+		if (!_missing_mesh) {
+			warning("placeholder mesh for missing meshes '%' not found!", "missing_mesh.vcol");
+		}
 	}
 	
 	DECLM void get_non_enity_meshes () {
@@ -86,6 +92,15 @@ struct Meshes {
 			f.vertex_data = ptr_add(fformats[i].vertex_data, header);
 			f.index_data = ptr_add(fformats[i].index_data, header);
 			
+			#if 0
+			print(">>> % % %\n", f.file_ext, f.vertex_size, f.index_size);
+			
+			for (u32 j=0; j<file_mesh_count; ++j) {
+				if (file_meshes[j].format == i) print(">>    % % %\n", file_meshes[j].name,
+						file_meshes[j].data.vertex_count, file_meshes[j].data.triangle_count);
+			}
+			#endif
+			
 			glBindVertexArray(0); // Unbind VAO so that we don't mess with its GL_ELEMENT_ARRAY_BUFFER binding
 			
 			glBindBuffer(GL_ARRAY_BUFFER,			f.vbo_vert);
@@ -115,12 +130,18 @@ struct Meshes {
 		
 	}
 	
-	DECLM Mesh* get_mesh (lstr cr name) {
+	DECLM Mesh* _get_mesh (lstr cr name) {
 		for (u32 i=0; i<file_mesh_count; ++i) {
 			if (str::comp(file_meshes[i].name, name)) return &file_meshes[i];
 		}
-		warning("mesh '%' not found.", name);
 		return nullptr;
+	}
+	DECLM Mesh* get_mesh (lstr cr name) {
+		Mesh* ret = _get_mesh(name);
+		if (ret) return ret;
+		
+		warning("mesh '%' not found.", name);
+		return _missing_mesh;
 	}
 	
 	DECLM void bind_vao (Mesh const* m) {

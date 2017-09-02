@@ -57,9 +57,7 @@ enum err_e {
 #include "utility.hpp"
 
 ////
-#define DBG_MEMORY 0
-//#define DBG_MEMORY DEBUG
-//#define DBG_MEMORY 1
+#define DBG_MEMORY 0 //DEBUG
 
 #define ARRAYS_BOUNDS_ASSERT DEBUG
 

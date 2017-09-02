@@ -466,13 +466,18 @@ DONE:
  
  rewrote the meshes system to work in the new way
  
- 
-TODO
--FEATURES:
+#2017.09.02 sa. tag
  
  fix meshes system bug
  -lightbulb meshes are missing mesh mesh for some reasong
  -nouv_vcol and vcol both have the missing mesh mesh for some reason?
+ -> i simply overwrote the lightbulb mesh with the missing mesh mesh when exporting from blender
+ 
+ fixed bug which caused crashes
+ -changed .var_file.hpp to use dynarrs and malloc'ed memory instead of working_stk, so now things on the working_stk will no longer randomly corrupt on .var file reload
+ 
+TODO
+-FEATURES:
  
  implement all.entities
  

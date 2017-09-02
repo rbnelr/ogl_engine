@@ -7,13 +7,7 @@ struct array {
 	T*		arr;
 	LEN_T	len;
 	
-	DECLM void alloc (LEN_T init_len);
-	
-	DECLM FORCEINLINE array () {}
-	DECLM array (LEN_T init_len) {
-		alloc(init_len);
-	}
-	
+	DECLM static array alloc (LEN_T len);
 	DECLM void free ();
 	
 	DECLM T cr operator[] (LEN_T indx) const {
@@ -29,33 +23,9 @@ struct array {
 		return arr[indx];
 	}
 	
-	#if 0
-	DECLM T cr get_last () const {
-		#if ARRAYS_BOUNDS_ASSERT
-		assert(len > 0, "array::get_last len: %", len);
-		#endif
-		return arr[len -1];
+	DECLM T* copy_values (LEN_T dst_indx, T const* src_ptr, LEN_T count) {
+		return (T*)cmemcpy(&arr[dst_indx], src_ptr, count * sizeof(T));
 	}
-	DECLM T& get_last () {
-		#if ARRAYS_BOUNDS_ASSERT
-		assert(len > 0, "array::get_last len: %", len);
-		#endif
-		return arr[len -1];
-	}
-	#endif
-	
-	DECLM T* copy_values (LEN_T dst_indx, T const* source_ptr, LEN_T count) {
-		return (T*)cmemcpy(&arr[dst_indx], source_ptr, count * sizeof(T));
-	}
-	
-	#if 0
-	template <typename F>
-	void templ_forall (F func) const {
-		for (LEN_T i=0; i<len; ++i) {
-			func(arr[i]);
-		}
-	}
-	#endif
 	
 };
 
@@ -63,25 +33,33 @@ template <typename T, typename LEN_T=u32>
 struct dynarr : public array<T, LEN_T> { // 'this->' everywhere to fix 'lookup into dependent bases' problem
 	LEN_T	cap;
 	
-	DECLM void alloc (LEN_T init_len, LEN_T init_cap);
-	DECLM void alloc (LEN_T init_cap);
+	DECLM FORCEINLINE dynarr (): array{} {}
+	DECLM FORCEINLINE constexpr dynarr (T* a, LEN_T l, LEN_T c): array{a,l}, cap{c} {}
 	
-	constexpr dynarr (T* p, LEN_T l, LEN_T c): array<T, LEN_T>{p, l}, cap{c} {}
-	
-	//#if DBG_INTERNAL
-	//dynarr (): array{nullptr, 0} {} // 
-	//#else
-	DECLM FORCEINLINE dynarr () {}
-	//#endif
-	
-	DECLM dynarr (LEN_T init_len, LEN_T init_cap) {
-		alloc(init_len, init_cap);
+	DECLM static dynarr null () { return {nullptr, 0, 0}; }
+	DECLM static dynarr alloc (LEN_T cap) {
+		dynarr ret = null();
+		
+		#if DBG_INTERNAL
+		cap = 0; // to catch cases where not ever realloc'ing masks a bug (because we picked a inital capacity large enough to not ever call realloc)
+		#endif
+		
+		ret._realloc( alignup_power_of_two(cap) );
+		return ret;
 	}
-	DECLM dynarr (LEN_T init_cap) {
-		alloc(init_cap);
-	}
-	
 	DECLM void free ();
+	
+	DECLM void clear (LEN_T reset_cap) { // Can be called instead of alloc()
+		free();
+		*this = alloc(reset_cap);
+	}
+	
+	DECLM void realloc (LEN_T cap) {
+		assert(cap >= this->len);
+		_realloc( alignup_power_of_two(cap) );
+	}
+	
+	DECLM void _realloc (LEN_T cap);
 	
 	// 
 	// CAUTION!
@@ -100,7 +78,11 @@ struct dynarr : public array<T, LEN_T> { // 'this->' everywhere to fix 'lookup i
 		return new_len -this->len;
 	}
 	
-	DECLM void _resize_cap (LEN_T new_cap);
+	DECLM void _resize_cap (LEN_T new_cap) {
+		if (new_cap != cap) {
+			realloc(new_cap);
+		}
+	}
 	
 	DECLM void fit_cap (LEN_T req_cap) {
 		_resize_cap( alignup_power_of_two(req_cap) );
@@ -114,20 +96,6 @@ struct dynarr : public array<T, LEN_T> { // 'this->' everywhere to fix 'lookup i
 		_resize_cap( this->len );
 	}
 	#endif
-	
-	DECLM void clear (LEN_T reset_len, LEN_T reset_cap) { // Can be called instead of alloc()
-		
-		if (this->arr) {
-			
-			assert(reset_len <= reset_cap);
-			fit_cap(reset_cap);
-			
-			this->len = reset_len;
-			
-		} else {
-			alloc(reset_len, reset_cap);
-		}
-	}
 	
 	DECLM T* grow_to (LEN_T new_len) {
 		LEN_T old_len = this->len;

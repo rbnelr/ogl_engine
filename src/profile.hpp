@@ -116,7 +116,7 @@ namespace profile {
 		DEFER_POP(&working_stk);
 		auto* header = working_stk.push<Header>();
 		
-		dynarr<char> thr_name_str_tbl (64);
+		auto thr_name_str_tbl = dynarr<char>::alloc(64);
 		defer { thr_name_str_tbl.free(); };
 		
 		header->threads[0].sec_per_unit =	time::QPC::inv_freq;

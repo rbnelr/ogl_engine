@@ -1826,8 +1826,6 @@ struct Dbg_Lines {
 		glGenBuffers(1, &VBO);
 		glGenVertexArrays(1, &VAO);
 		
-		buf.alloc(0, tri_per_line * 128);
-		
 		{
 			glBindVertexArray(VAO);
 			
@@ -1844,6 +1842,10 @@ struct Dbg_Lines {
 			glBindVertexArray(0);
 		}
 		
+	}
+	
+	void begin () {
+		buf.clear(tri_per_line * 128);
 	}
 	
 	void push_line_cam (hm mp to_cam, v3 vp a_space, v3 vp b_space, v3 vp col, f32 width=0.008f) {
@@ -1967,8 +1969,6 @@ struct Dbg_Lines {
 		glBufferData(GL_ARRAY_BUFFER, (u32)sizeof(Tri)*buf.len, &buf[0], GL_STREAM_DRAW);
 		
 		glDrawArrays(GL_TRIANGLES, 0, (GLsizei)buf.len*3);
-		
-		buf.clear(0, tri_per_line * 128);
 		
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
@@ -2254,6 +2254,8 @@ DECL void frame () {
 			parse_prev_file_data( var::PF_ONLY_SYNTAX_CHECK|var::PF_WRITE_CURRENT );
 		}
 	}
+	
+	dbg_lines.begin();
 	
 	tex.incremental_texture_load();
 	

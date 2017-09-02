@@ -760,7 +760,22 @@ namespace print_n {
 		this_->result = res;
 		
 		if (this_->printstr) {
+			
+			PUTC('\0');
+			
 			this_->printstr(this_, res);
+			
+			switch (this_->putval_type) {
+				case DYNARR:
+					this_->arr->pop();
+					break;
+				case STK:
+				case TMP_STK:
+				default:
+					this_->stk->pop(this_->stk->top -1);
+					break;
+			}
+			
 		}
 		
 		switch (this_->putval_type) {

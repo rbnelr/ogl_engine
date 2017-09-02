@@ -147,7 +147,7 @@ void main () {
 	
 	v4 dbg_line = texture(dbg_line_pass, vs_interp_uv);
 	
-	if (0) {
+	if (1) {
 		col += (bloom_0 +bloom_1 +bloom_2 +bloom_3 +bloom_4) * bloom_intensity;
 	}
 	if (1) {

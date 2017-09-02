@@ -309,6 +309,10 @@ struct mlstr {
 		return mlstr(str, str::len(str));
 	}
 	
+	mlstr to_abs (char* str_tbl) const { // convert str_tbl relative mlstr to absolute mlstr
+		return mlstr(ptr_add(str_tbl, str), len);
+	}
+	
 	constexpr operator bool () const { // Check if null
 		return str != nullptr;
 	}
@@ -334,6 +338,10 @@ struct lstr {
 	
 	static lstr count_cstr (char const* str) {
 		return lstr(str, str::len(str));
+	}
+	
+	lstr to_abs (char const* str_tbl) const { // convert str_tbl relative lstr to absolute lstr
+		return lstr(ptr_add(str_tbl, str), len);
 	}
 	
 	constexpr operator bool () const { // Check if null

@@ -1,60 +1,34 @@
 
-template <typename T, typename LEN_T> DECLM void array<T, LEN_T>:: alloc (LEN_T init_len) {
-	this->arr = (T*)malloc(init_len*sizeof(T));
-	this->len = init_len;
+template <typename T, typename LEN_T> DECLM array<T, LEN_T> array<T, LEN_T>:: alloc (LEN_T len) {
+	array ret;
+	ret.arr = (T*)::malloc(len*sizeof(T));
+	ret.len = len;
 	
 	#if DBG_MEMORY
-	cmemset(arr, DBG_MEM_UNALLOCATED_BYTE, len*sizeof(T));
+	cmemset(ret.arr, DBG_MEM_UNALLOCATED_BYTE, len*sizeof(T));
 	#endif
+	return ret;
 }
 template <typename T, typename LEN_T> DECLM void array<T, LEN_T>:: free () {
 	::free(this->arr);
 	#if DBG_INTERNAL
-	arr = nullptr;
+	this->arr = 0xdeadbeefDEADBEEF; // to catch use after free
 	#endif
 }
 
-template <typename T, typename LEN_T> DECLM void dynarr<T, LEN_T>:: alloc (LEN_T init_len, LEN_T init_cap) {
+template <typename T, typename LEN_T> DECLM void dynarr<T, LEN_T>:: _realloc (LEN_T cap) {
 	
-	this->len = init_len;
-	assert(init_cap >= init_len);
-	cap = init_cap;
-	
-	cap = alignup_power_of_two(cap);
-	
-	this->arr = (T*)malloc(cap*sizeof(T));
+	this->cap = cap;
+	this->arr = (T*)::realloc(this->arr, this->cap*sizeof(T));
 	
 	#if DBG_MEMORY
-	cmemset(arr, DBG_MEM_UNALLOCATED_BYTE, cap*sizeof(T));
+	cmemset(arr, DBG_MEM_UNALLOCATED_BYTE, this->cap*sizeof(T));
 	#endif
+	
 }
-template <typename T, typename LEN_T> DECLM void dynarr<T, LEN_T>:: alloc (LEN_T init_cap) {
-	alloc(0, init_cap);
-}
-
 template <typename T, typename LEN_T> DECLM void dynarr<T, LEN_T>:: free () {
-	//assert(this->arr != nullptr); // Might be the correct to happen if we do realloc with size zero
-	
 	::free(this->arr);
-	#if DBG_INTERNAL
-	arr = nullptr;
-	#endif
-}
-
-template <typename T, typename LEN_T> DECLM void dynarr<T, LEN_T>:: _resize_cap (LEN_T new_cap) {
-	
-	if (new_cap != cap) {
-		//assert(this->arr != nullptr); // Might be the correct to happen if we do realloc with size zero
-		this->arr = (T*)realloc((void*)this->arr, new_cap*sizeof(T));
-		
-		#if DBG_MEMORY
-		if (new_cap > cap) {
-			cmemset(arr +cap, DBG_MEM_UNALLOCATED_BYTE, (new_cap -cap)*sizeof(T));
-		}
-		#endif
-		
-		cap = new_cap;
-	}
+	*this = null();
 }
 
 DECL void _dyn_array_generic__init (dynarr<byte>* arr, u32 init_len, u32 init_cap, uptr stride) {

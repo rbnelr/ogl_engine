@@ -268,10 +268,10 @@ DECL s32 app_main () {
 				FILES|RECURSIVE|FILTER_FILES|NO_BASE_PATH|FILTER_INCL, 1,filt);
 	}
 	
-	fHeader				header = { FILE_ID };
-	dynarr<char>		f_str_tbl(512);
-	dynarr<Mesh>		f_meshes(64);
-	fMesh_Format		fformats[MESH_FORMAT_COUNT];
+	fHeader			header = { FILE_ID };
+	auto			f_str_tbl = dynarr<char>::alloc(512);
+	auto			f_meshes = dynarr<Mesh>::alloc(64);
+	fMesh_Format	fformats[MESH_FORMAT_COUNT];
 	
 	for (auto i=MESH_FORMAT_FIRST; i<MESH_FORMAT_COUNT; ++i) {
 		formats[i].vertex_data.alloc(mebi(32));

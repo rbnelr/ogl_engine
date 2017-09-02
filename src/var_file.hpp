@@ -89,24 +89,24 @@ namespace var {
 	struct Token;
 }
 
-DECLD char*					prev_var_file_data =			nullptr;
-DECLD var::Token*			prev_var_file_tokens =			nullptr;
-DECLD char*					write_copy_cur = 0; // stop 'may be used uninitialized' warning
+DECLD dynarr<char>			out_file_data;
+DECLD char*					write_copy_cur;
 
-DECLD HANDLE				var_file_h;
-DECLD FILETIME				var_file_filetime;
-
+DECL void write_copy (lstr cr str) {
+	out_file_data.pushn(str.str, str.len);
+}
 DECL void write_copy_until (char* until) {
-	
 	uptr len = until -write_copy_cur;
-	char* cur = working_stk.pushArr<char>(len);
-	
-	cmemcpy(cur, write_copy_cur, len);
+	write_copy(lstr(write_copy_cur, safe_cast_assert(u32, until -write_copy_cur)));
 	write_copy_cur += len;
 }
 DECL void write_skip_until (char* until) {
 	write_copy_cur = until;
 }
+
+
+DECLD char		string_buf[kibi(2)]; // TODO: HACK: use this until i intruduce a temporary variable buffer that gets copied into the in memory variables after parsing succeeds, which will allow putting str data onto a dynarr and patching the pointers on sucessful parse
+DECLD char*		string_buf_cur;
 
 namespace var {
 	using namespace parse_n;
@@ -677,6 +677,7 @@ namespace var {
 	#define _DECLV DECLV
 	
 	#define require(cond) if (!(cond)) { return 0; }
+	#define requiret(cond) if (!(cond)) { return array<Token>{nullptr,0}; }
 	
 	enum token_e : u32 {
 		EOF_=				0,
@@ -1015,6 +1016,9 @@ namespace var {
 	#define syntax(cond, first, last, ...)	require(_syntax(cond, first, last, __VA_ARGS__))
 	#define syntaxdev(cond, ...)			require(_dev_syntax_error(cond, __VA_ARGS__))
 	
+	#define syntaxt(cond, first, last, ...)	requiret(_syntax(cond, first, last, __VA_ARGS__))
+	#define syntaxdevt(cond, ...)			requiret(_dev_syntax_error(cond, __VA_ARGS__))
+	
 	_DECL char* line_comment (char* cur, u32* line_num, char** line_begin) {
 		require(*cur == '#');
 		
@@ -1136,18 +1140,17 @@ namespace var {
 		}
 	}
 	
-	_DECL u32 tokenize (char* source_data) {
+	_DECL array<Token> tokenize (array<char> cr source_data) {
 		PROFILE_SCOPED(THR_ENGINE, "tokenize");
 		
-		char*	cur = source_data;
-		Token*	tokens = working_stk.getTop<Token>();
+		auto	tokens = dynarr<Token>::alloc(kibi(4));
+		
+		char*	cur = (char*)&source_data[0];
 		
 		u32		line_num = 1;
 		char*	line_begin = cur;
 		
-		Token*	tok;
-		
-		do {
+		for (;;) {
 			
 			for (;;) {
 				switch (*cur) {
@@ -1157,7 +1160,7 @@ namespace var {
 					
 					case '{':
 						if (*cur == '{' && cur[1] == '#') {
-							syntaxdev(cur = comment(cur, &line_num, &line_begin), "tokenize:: comment()");
+							syntaxdevt(cur = comment(cur, &line_num, &line_begin), "tokenize:: comment()");
 							//print("comment\n");
 							break;
 						} else {
@@ -1180,25 +1183,25 @@ namespace var {
 				}
 			} end_l:;
 			
-			tok = working_stk.push<Token>();
+			auto& tok = tokens.push();
 			
 			#if DBG_INTERNAL
-			tok->kw = (keyword_e)-1;
+			tok.kw = (keyword_e)-1;
 			#endif
 			
-			tok->line_num = line_num;
-			tok->line_begin = line_begin;
+			tok.line_num = line_num;
+			tok.line_begin = line_begin;
 			
-			tok->begin = cur;
+			tok.begin = cur;
 			char* tok_end = cur +1; // default 1 char token
 			
 			lstr str;
 			
 			switch (*cur) {
-				case '\0':						tok->tok = EOF_;
+				case '\0':						tok.tok = EOF_;
 					break;
 				
-				case '^':						tok->tok = EOF_MARKER; {
+				case '^':						tok.tok = EOF_MARKER; {
 					
 					++cur; // consume inital '^'
 					
@@ -1210,15 +1213,15 @@ namespace var {
 					
 					switch(*cur) {
 						case '\0': {
-							tok->len = (u32)ptr_sub(tok->begin, cur);
+							tok.len = (u32)ptr_sub(tok.begin, cur);
 							Token tokl = { EOF_, {(keyword_e)0}, cur, 1, line_num, line_begin };
-							syntax(false, tok, &tokl, "eof_marker:: EOF_ encountered inside eof maker (^EOF_MARKER^).");
+							syntaxt(false, &tok, &tokl, "eof_marker:: EOF_ encountered inside eof maker (^EOF_MARKER^).");
 						}
 						case NEWLINE_C_CASES: {
-							tok->len = (u32)ptr_sub(tok->begin, cur);
+							tok.len = (u32)ptr_sub(tok.begin, cur);
 							Token tokl = { ERROR_REP_NEWLINE, {(keyword_e)0},
 									cur, (u32)ptr_sub(cur, newline(cur)), line_num, line_begin };
-							syntax(false, tok, &tokl, "eof_marker:: Newline encountered inside eof maker (^EOF_MARKER^).");
+							syntaxt(false, &tok, &tokl, "eof_marker:: Newline encountered inside eof maker (^EOF_MARKER^).");
 						}
 						default: {}
 					}
@@ -1228,8 +1231,8 @@ namespace var {
 					++cur; // consume terminating '^'
 					
 					if (!str::comp(str, "EOF_MARKER")) {
-						tok->len = (u32)ptr_sub(tok->begin, cur);
-						syntax(false, tok,tok, "eof_marker:: expected ^EOF_MARKER^.");
+						tok.len = (u32)ptr_sub(tok.begin, cur);
+						syntaxt(false, &tok,&tok, "eof_marker:: expected ^EOF_MARKER^.");
 					}
 					
 				tok_end = cur;
@@ -1251,18 +1254,18 @@ namespace var {
 					
 					auto kw = match_keyword(str);
 					if (kw != KEYWORDS_COUNT) {
-						tok->tok = KEYWORD;
-						tok->kw = kw;
+						tok.tok = KEYWORD;
+						tok.kw = kw;
 						
 					} else { // No keyword matched
-						tok->tok = VAR_IDENTIFIER;
+						tok.tok = VAR_IDENTIFIER;
 						
 					}
 					
 				tok_end = cur;
 				} break;
 				
-				case NUMBER_START_CASES:		tok->tok = NUMBER; {
+				case NUMBER_START_CASES:		tok.tok = NUMBER; {
 					
 					bool hex_or_bin = *cur == '0';
 					if (hex_or_bin) {
@@ -1314,7 +1317,7 @@ namespace var {
 				tok_end = cur;
 				} break;
 				
-				case '"':						tok->tok = STRING; {
+				case '"':						tok.tok = STRING; {
 					
 					++cur; // consume inital '"'
 					
@@ -1324,8 +1327,8 @@ namespace var {
 							if (cur[1] == '`' || cur[1] == '"') {
 								++cur; // escaped '"' or '`'
 							} else {
-								tok->len = (u32)ptr_sub(tok->begin, cur +1);
-								syntax(false, tok, tok, "Escape character '`' has to always be escaped (``) for consistency.");
+								tok.len = (u32)ptr_sub(tok.begin, cur +1);
+								syntaxt(false, &tok, &tok, "Escape character '`' has to always be escaped (``) for consistency.");
 							}
 						}
 						
@@ -1334,15 +1337,15 @@ namespace var {
 					
 					switch(*cur) {
 						case '\0': {
-							tok->len = (u32)ptr_sub(tok->begin, cur);
+							tok.len = (u32)ptr_sub(tok.begin, cur);
 							Token tokl = { EOF_, {(keyword_e)0}, cur, 1, line_num, line_begin };
-							syntax(false, tok, &tokl, "quoted_string:: EOF_ encountered inside string literal.");
+							syntaxt(false, &tok, &tokl, "quoted_string:: EOF_ encountered inside string literal.");
 						}
 						case NEWLINE_C_CASES: {
-							tok->len = (u32)ptr_sub(tok->begin, cur);
+							tok.len = (u32)ptr_sub(tok.begin, cur);
 							Token tokl = { ERROR_REP_NEWLINE, {(keyword_e)0},
 									cur, (u32)ptr_sub(cur, newline(cur)), line_num, line_begin };
-							syntax(false, tok, &tokl, "quoted_string:: Newline encountered inside string literal.");
+							syntaxt(false, &tok, &tokl, "quoted_string:: Newline encountered inside string literal.");
 						}
 						default: {}
 					}
@@ -1352,7 +1355,7 @@ namespace var {
 				tok_end = cur;
 				} break;
 				
-				case '$':						tok->tok = DOLLAR_CMD; {
+				case '$':						tok.tok = DOLLAR_CMD; {
 					
 					str.str = cur +1;
 					
@@ -1362,52 +1365,52 @@ namespace var {
 					
 					str.len = safe_cast_assert(u32, ptr_sub(str.str, cur));
 					
-					tok->dollar_cmd = match_dollar_command(str);
+					tok.dollar_cmd = match_dollar_command(str);
 					
 				tok_end = cur;
 				} break;
 				
-				case '%':						tok->tok = PERCENT; {
+				case '%':						tok.tok = PERCENT; {
 					assert(false);
 				} break;
 				
-				case '.':						tok->tok = MEMBER_DOT;		break;
-				case '=':						tok->tok = EQUALS;			break;
-				case ';':						tok->tok = SEMICOLON;		break;
-				case ',':						tok->tok = COMMA;			break;
-				case '?':						tok->tok = NNARY_COND;	break;
-				case ':':						tok->tok = NNARY_SEPER; break;
-				case '(':						tok->tok = PAREN_OPEN;		break;
-				case ')':						tok->tok = PAREN_CLOSE;		break;
-				case '[':						tok->tok = BRACKET_OPEN;	break;
-				case ']':						tok->tok = BRACKET_CLOSE;	break;
-				case '{':						tok->tok = CURLY_OPEN;		break;
-				case '}':						tok->tok = CURLY_CLOSE;		break;
-				case '-':						tok->tok = MINUS;			break;
-				case '+':						tok->tok = PLUS;			break;
-				case '*':						tok->tok = MULTIPLY;		break;
-				case '/':						tok->tok = DIVIDE;			break;
+				case '.':						tok.tok = MEMBER_DOT;		break;
+				case '=':						tok.tok = EQUALS;			break;
+				case ';':						tok.tok = SEMICOLON;		break;
+				case ',':						tok.tok = COMMA;			break;
+				case '?':						tok.tok = NNARY_COND;	break;
+				case ':':						tok.tok = NNARY_SEPER; break;
+				case '(':						tok.tok = PAREN_OPEN;		break;
+				case ')':						tok.tok = PAREN_CLOSE;		break;
+				case '[':						tok.tok = BRACKET_OPEN;	break;
+				case ']':						tok.tok = BRACKET_CLOSE;	break;
+				case '{':						tok.tok = CURLY_OPEN;		break;
+				case '}':						tok.tok = CURLY_CLOSE;		break;
+				case '-':						tok.tok = MINUS;			break;
+				case '+':						tok.tok = PLUS;			break;
+				case '*':						tok.tok = MULTIPLY;		break;
+				case '/':						tok.tok = DIVIDE;			break;
 				default: {
 					Token fake_tok = { ERROR_REP_TOKENIZER, {(keyword_e)0}, cur, 1, line_num, line_begin };
-					syntax(false, &fake_tok, &fake_tok, "Unexpected character '%' in tokenizer!", *cur);
+					syntaxt(false, &fake_tok, &fake_tok, "Unexpected character '%' in tokenizer!", *cur);
 				}
 			}
 			
 			cur = tok_end;
 			
-			tok->len = safe_cast_assert(u32, ptr_sub(tok->begin, tok_end));
+			tok.len = safe_cast_assert(u32, ptr_sub(tok.begin, tok_end));
 			
 			#if 0
 			{
 				lstr str = "<unknown>";
-				switch (tok->tok) {
+				switch (tok.tok) {
 					case EOF_:					str = "\\0";							break;
-					case EOF_MARKER:			str = tok->get_lstr();					break;
-					case VAR_IDENTIFIER:		str = tok->get_lstr();					break;
-					case KEYWORD:				str = KEYWORDS[tok->kw];				break;
-					case NUMBER:				str = tok->get_lstr();					break;
-					case STRING:				str = tok->get_lstr();					break;
-					case DOLLAR_CMD:			str = DOLLAR_COMMANDS[tok->dollar_cmd]; break;
+					case EOF_MARKER:			str = tok.get_lstr();					break;
+					case VAR_IDENTIFIER:		str = tok.get_lstr();					break;
+					case KEYWORD:				str = KEYWORDS[tok.kw];				break;
+					case NUMBER:				str = tok.get_lstr();					break;
+					case STRING:				str = tok.get_lstr();					break;
+					case DOLLAR_CMD:			str = DOLLAR_COMMANDS[tok.dollar_cmd]; break;
 					case PERCENT:				str = "%";							break;
 					case MEMBER_DOT:			str = ".";							break;
 					case EQUALS:				str = "=";							break;
@@ -1429,13 +1432,14 @@ namespace var {
 				}
 				
 				print("%: %:% % '%'\n", safe_cast_assert(u32, tok -tokens),
-						tok->line_num, tok->get_char_pos(), TOKEN_NAME[tok->tok], str);
+						tok.line_num, tok.get_char_pos(), TOKEN_NAME[tok.tok], str);
 			}
 			#endif
 			
-		} while (tok->tok != EOF_);
+			if (tok.tok == EOF_) break;
+		}
 		
-		return safe_cast_assert(u32, working_stk.getTop<Token>() -tokens);
+		return tokens;
 	}
 	
 	#define syntax_token(ptok, type, ...) { \
@@ -2249,12 +2253,15 @@ namespace var {
 			assert(tok->len >= 2);
 			assert(*cur++ == '"');
 			
-			char* str_copy = working_stk.getTop<char>();
+			char const* str_copy = string_buf_cur;
+			
 			if (flags & PF_STRING_APPEND) {
 				assert(val->type == VT_LSTR);
-				assert(str_copy[-1] == '\0');
-				working_stk.pop(--str_copy);
+				
+				assert(ptr_sub(string_buf, string_buf_cur) >= 1 && string_buf_cur[-1] == '\0');
+				--string_buf_cur;
 			}
+			
 			val->type = VT_LSTR;
 			
 			char const* end = cur +(tok->len -2);
@@ -2269,19 +2276,22 @@ namespace var {
 					}
 				}
 				
-				working_stk.push(*cur++);
+				assert(string_buf_cur < (string_buf +arrlenof<u32>(string_buf)));
+				*string_buf_cur++ = *cur++;
 			}
 			
 			assert(*cur++ == '"');
 			
-			u32 len = safe_cast_assert(u32, ptr_sub(str_copy, working_stk.getTop<char>()));
+			assert(string_buf_cur < (string_buf +arrlenof<u32>(string_buf)));
+			*string_buf_cur++ = '\0';
+			
+			u32 len = safe_cast_assert(u32, ptr_sub(str_copy, string_buf_cur -1));
 			if (flags & PF_STRING_APPEND) {
 				val->lstr.len += len;
 			} else {
 				val->lstr = lstr{ str_copy, len };
 			}
 			
-			working_stk.push('\0');
 		}
 		
 		return ++tok;
@@ -2842,7 +2852,7 @@ namespace var {
 						pare=")";
 					}
 					
-					char* str = working_stk.getTop<char>();
+					auto str = out_file_data.len;
 					
 					switch (var->type & VT_VEC_BIT) {
 						case VT_SCALAR:
@@ -2868,12 +2878,12 @@ namespace var {
 						default: assert(false);
 					}
 					
-					char* end = working_stk.getTop<char>();
+					auto end = out_file_data.len;
 					
 					while (str != end) {	// Windows generates codes when printing special flaot values like infiniy or NaN (for ex. 1.#IND)
 											//	since we use '#' for comments we have to replace those with something else ('@' in our case)
-						if (*str == '#') {
-							*str = '@';
+						if (out_file_data[str] == '#') {
+							out_file_data[str] = '@';
 						}
 						++str;
 					}
@@ -3110,7 +3120,7 @@ namespace var {
 				}
 				
 				if (!whitespace_exists) {
-					working_stk.push(' ');
+					write_copy(" ");
 				}
 				
 				insert_val(var, pdata, depth);
@@ -3583,210 +3593,199 @@ namespace var {
 	#endif
 	
 }
+
+#undef S
+
+DECLD HANDLE				var_file_h;
+DECLD FILETIME				var_file_filetime;
+
+DECLD array<char>			var_file_data;
+DECLD array<var::Token>		var_file_tokens;
+
+DECLD HANDLE				cmd_pipe_handle;
+DECLD OVERLAPPED			cmd_pipe_ov =					{}; // initialize to zero
+
+DECL bool pipe_test () {
 	
-	#undef S
+	if (cmd_pipe_handle == INVALID_HANDLE_VALUE) {
+		return false;
+	}
 	
-	DECLD HANDLE			cmd_pipe_handle;
-	DECLD OVERLAPPED		cmd_pipe_ov =					{}; // initialize to zero
-	
-	DECL bool pipe_test () {
-		
-		if (cmd_pipe_handle == INVALID_HANDLE_VALUE) {
+	{
+		auto ret = HasOverlappedIoCompleted(&cmd_pipe_ov);
+		if (ret == FALSE) {
+			// still pending
 			return false;
+		} else {
+			//print("ConnectNamedPipe() completed\n");
 		}
+	}
+	
+	bool cmd_read = false;
+	
+	do {
+		constexpr DWORD SIZE = 64;
+		char buf[SIZE +1];
 		
+		DWORD bytes_read;
 		{
-			auto ret = HasOverlappedIoCompleted(&cmd_pipe_ov);
-			if (ret == FALSE) {
-				// still pending
-				return false;
-			} else {
-				//print("ConnectNamedPipe() completed\n");
-			}
-		}
-		
-		bool cmd_read = false;
-		
-		do {
-			constexpr DWORD SIZE = 64;
-			char buf[SIZE +1];
+			auto ret = ReadFile(cmd_pipe_handle, buf, SIZE, &bytes_read, &cmd_pipe_ov);
 			
-			DWORD bytes_read;
-			{
-				auto ret = ReadFile(cmd_pipe_handle, buf, SIZE, &bytes_read, &cmd_pipe_ov);
-				
-				if (ret != 0) {
-					//print("ReadFile() completed instantly\n");
-					assert(bytes_read <= SIZE);
+			if (ret != 0) {
+				//print("ReadFile() completed instantly\n");
+				assert(bytes_read <= SIZE);
+			} else {
+				auto err = GetLastError();
+				if (err == ERROR_MORE_DATA) {
+					warning("Message bigger than buffer recieved over %!, ignoring.\n", CMD_PIPE_NAME);
+					break;
 				} else {
-					auto err = GetLastError();
-					if (err == ERROR_MORE_DATA) {
-						warning("Message bigger than buffer recieved over %!, ignoring.\n", CMD_PIPE_NAME);
-						break;
-					} else {
-						
-						assert(err == ERROR_IO_PENDING, "%", err);
-						assert(bytes_read == 0, "%", bytes_read);
-						
-						{
-							auto ret = GetOverlappedResult(cmd_pipe_handle, &cmd_pipe_ov, &bytes_read, TRUE);
-							assert(ret != 0);
-						}
-						print("ReadFile() completed after waiting\n");
-						assert(bytes_read <= SIZE);
-						
+					
+					assert(err == ERROR_IO_PENDING, "%", err);
+					assert(bytes_read == 0, "%", bytes_read);
+					
+					{
+						auto ret = GetOverlappedResult(cmd_pipe_handle, &cmd_pipe_ov, &bytes_read, TRUE);
+						assert(ret != 0);
 					}
+					print("ReadFile() completed after waiting\n");
+					assert(bytes_read <= SIZE);
+					
 				}
 			}
-			buf[bytes_read] = '\0';
+		}
+		buf[bytes_read] = '\0';
+		
+		lstr iden = { "", 0 };
+		{
+			char* cur = buf;
+			char* res;
 			
-			lstr iden = { "", 0 };
-			{
-				char* cur = buf;
-				char* res;
+			res = parse_n::whitespace(cur);
+			if (res) { cur = res; }
+			
+			if (parse_n::is_identifier_start_c(*cur)) {
+				
+				cur = var::identifier(cur, &iden);
 				
 				res = parse_n::whitespace(cur);
 				if (res) { cur = res; }
-				
-				if (parse_n::is_identifier_start_c(*cur)) {
-					
-					cur = var::identifier(cur, &iden);
-					
-					res = parse_n::whitespace(cur);
-					if (res) { cur = res; }
-				}
-				
-				res = parse_n::newline(cur);
-				if (res) { cur = res; }
 			}
 			
-			if (	str::comp(iden, "update") ) {
-				//print("update cmd recieved.\n");
-				cmd_read = true;
-			} else {
-				print("unknown cmd(-format) recieved (cmd: '%')\n",
-						escaped( lstr{buf, bytes_read} ) );
-			}
-			//bool cmd = str::comp(buf, bytes_read, "var_write_save");
-			//bool cmd = str::comp(buf, bytes_read, "var_read");
-			
-		} while (0);
-		
-		{
-			auto ret = DisconnectNamedPipe(cmd_pipe_handle);
-			assert(ret != 0, "%", GetLastError());
+			res = parse_n::newline(cur);
+			if (res) { cur = res; }
 		}
 		
-		{
-			auto ret = ConnectNamedPipe(cmd_pipe_handle, &cmd_pipe_ov);
-			
-			if (ret != 0) {
-				print("ConnectNamedPipe() completed instantly\n");
-			} else {
-				auto err = GetLastError();
-				assert(err == ERROR_IO_PENDING, "%", err);
-				//print("ConnectNamedPipe() pending\n");
-			}
+		if (	str::comp(iden, "update") ) {
+			//print("update cmd recieved.\n");
+			cmd_read = true;
+		} else {
+			print("unknown cmd(-format) recieved (cmd: '%')\n",
+					escaped( lstr{buf, bytes_read} ) );
 		}
+		//bool cmd = str::comp(buf, bytes_read, "var_write_save");
+		//bool cmd = str::comp(buf, bytes_read, "var_read");
 		
-		return cmd_read;
+	} while (0);
+	
+	{
+		auto ret = DisconnectNamedPipe(cmd_pipe_handle);
+		assert(ret != 0, "%", GetLastError());
 	}
 	
-	DECL bool parse_var_file (var::parse_flags_e flags) {
-		PROFILE_SCOPED(THR_ENGINE, "parse_var_file");
+	{
+		auto ret = ConnectNamedPipe(cmd_pipe_handle, &cmd_pipe_ov);
 		
-		//print("parsing var file:\n");
-		
-		// Zero all cstr and lstrs in VARS since the string data becomes invalid as soon as we do
-		//	working_stk.pop(prev_var_file_data)
-		//	since the string data is currently stored after the loaded file data
-		//var::zero_strings();
-		
-		constexpr ui MAX_RETRIES = 2;
-		for (ui i=0;; ++i) {
-			
-			u64 file_size = win32::get_file_size(var_file_h);
-			
-			if (prev_var_file_data) {
-				working_stk.pop(prev_var_file_data);
-			}
-			
-			auto data = working_stk.pushArr<char>(file_size +1);
-			prev_var_file_data = data;
-			
-			
-			win32::set_filepointer(var_file_h, 0);
-			
-			assert(!win32::read_file(var_file_h, data, file_size));
-			
-			data[file_size] = '\0';
-			
-			
-			var::Token* tokens = working_stk.getTop<var::Token>();
-			prev_var_file_tokens = tokens;
-			
-			u32 tok_count = var::tokenize(data);
-			
-			var::Token* tok;
-			if (tok_count >= 2 && tokens[tok_count -2].tok == var::EOF_MARKER && tokens[tok_count -1].tok == var::EOF_) {
-				
-				tok = var::file(tokens, flags);
-				
-				if (!tok && i == 0) {
-					platform::write_whole_file("wierd_file_parse_error.txt", data, file_size);
-				}
-				
-				if (tok) {
-					break; // success
-				}
-				
-			} else {
-				platform::write_whole_file("wierd_file_parse_error.txt", data, file_size);
-				warning("tokenize() error or ^EOF_MARKER^ missing (which might mean the file was incomplete)");
-			}
-			
-			platform::write_whole_file("wierd_file_parse_error.txt", data, file_size);
-			
-			if (i < MAX_RETRIES) {
-				warning("File parse error, trying again.");
-			} else {
-				warning("File parse error, MAX_RETRIES reached, failed to parse!");
-				return false;
-			}
-			
-			Sleep(i);
+		if (ret != 0) {
+			print("ConnectNamedPipe() completed instantly\n");
+		} else {
+			auto err = GetLastError();
+			assert(err == ERROR_IO_PENDING, "%", err);
+			//print("ConnectNamedPipe() pending\n");
 		}
-		
-		//heap.dbg_enumerate_heap();
-		
-		print("File parse sucessful.\n");
-		return true;
 	}
-	DECL void parse_prev_file_data (var::parse_flags_e flags) {
-		PROFILE_SCOPED(THR_ENGINE, "parse_prev_file_data");
+	
+	return cmd_read;
+}
+
+DECL bool parse_var_file (var::parse_flags_e flags) {
+	PROFILE_SCOPED(THR_ENGINE, "parse_var_file");
+	
+	//print("parsing var file:\n");
+	
+	constexpr ui MAX_RETRIES = 2;
+	for (ui i=0;; ++i) {
 		
-		DEFER_POP(&working_stk);
-		char* out_data = working_stk.getTop<char>();
+		var_file_data.free();
+		var_file_tokens.free();
 		
-		write_copy_cur = prev_var_file_data;
-		
-		var::Token* tok = var::file(prev_var_file_tokens, flags);
-		if (!tok) { return; }
-		
-		write_copy_until(tok->begin);
-		
-		uptr size = ptr_sub(out_data, working_stk.getTop<char>());
-		
-		#if 1
-		win32::set_filepointer_and_eof(var_file_h, 0);
-		
-		assert(!win32::write_file(var_file_h, out_data, size));
-		#else
-		assert(!platform::write_whole_file("test.var", out_data, size));
+		#if DBG_MEMORY
+		cmemset(string_buf, DBG_MEM_UNINITIALIZED_BYTE, arrlenof(string_buf));
 		#endif
+		string_buf_cur = string_buf;
 		
-		assert(GetFileTime(var_file_h, NULL, NULL, &var_file_filetime) != 0); // Try to prevent the CompareFileTime in frame() from triggering on our own changes, although we still seem to do sometimes
+		var_file_data = var_file_data.alloc(win32::get_file_size(var_file_h) +1);
 		
+		
+		win32::set_filepointer(var_file_h, 0);
+		
+		assert(!win32::read_file(var_file_h, var_file_data.arr, var_file_data.len -1));
+		var_file_data[var_file_data.len -1] = '\0';
+		
+		var_file_tokens = var::tokenize(var_file_data);
+		
+		var::Token* tok;
+		if (var_file_tokens.len >= 2 && var_file_tokens[var_file_tokens.len -2].tok == var::EOF_MARKER && var_file_tokens[var_file_tokens.len -1].tok == var::EOF_) {
+			
+			tok = var::file(&var_file_tokens[0], flags);
+			
+			if (!tok && i == 0) {
+				platform::write_whole_file("wierd_file_parse_error.txt", var_file_data.arr, var_file_data.len -1);
+			}
+			
+			if (tok) {
+				break; // success
+			}
+			
+		} else {
+			platform::write_whole_file("wierd_file_parse_error.txt", var_file_data.arr, var_file_data.len -1);
+			warning("tokenize() error or ^EOF_MARKER^ missing (which might mean the file was incomplete)");
+		}
+		
+		platform::write_whole_file("wierd_file_parse_error.txt", var_file_data.arr, var_file_data.len -1);
+		
+		if (i < MAX_RETRIES) {
+			warning("File parse error, trying again.");
+		} else {
+			warning("File parse error, MAX_RETRIES reached, failed to parse!");
+			return false;
+		}
+		
+		Sleep(i);
 	}
 	
+	//heap.dbg_enumerate_heap();
 	
+	print("File parse sucessful.\n");
+	return true;
+}
+DECL void parse_prev_file_data (var::parse_flags_e flags) {
+	PROFILE_SCOPED(THR_ENGINE, "parse_prev_file_data");
+	
+	write_copy_cur = &var_file_data[0];
+	out_file_data = out_file_data.alloc(var_file_data.len +(var_file_data.len / 4));
+	defer { out_file_data.free(); };
+	
+	var::Token* tok = var::file(&var_file_tokens[0], flags);
+	if (!tok) { return; }
+	
+	write_copy_until(tok->begin);
+	
+	win32::set_filepointer_and_eof(var_file_h, 0);
+	
+	assert(!win32::write_file(var_file_h, out_file_data.arr, out_file_data.len));
+	
+	assert(GetFileTime(var_file_h, NULL, NULL, &var_file_filetime) != 0); // Try to prevent the CompareFileTime in frame() from triggering on our own changes, although we still seem to do sometimes
+	
+}
+
