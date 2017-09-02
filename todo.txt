@@ -507,6 +507,7 @@ TODO
  figure out how to support enitity trees with the .var file
  
  maybe switch some things that use Stack to dyn_array or heap allocated
+ -> var file is now non-stack to fix bug
  
  .var file overhaul
   -it seems that these things can be implemented by keeping some data in the var tree which i currently write in init_vars()

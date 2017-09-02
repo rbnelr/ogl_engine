@@ -91,6 +91,7 @@ namespace var {
 
 DECLD dynarr<char>			out_file_data;
 DECLD char*					write_copy_cur;
+DECLD print_n::Printer		print_copy;
 
 DECL void write_copy (lstr cr str) {
 	out_file_data.pushn(str.str, str.len);
@@ -2731,7 +2732,7 @@ namespace var {
 	}
 	
 	template<typename... Ts> DECL FORCEINLINE void push_str (cstr format, Ts... args) {
-		lstr str = print_working_stk(format, args...);
+		print_copy(format, args...);
 	}
 	
 	_DECL void print_basic_type (Var const* var, void const* pdata) {
@@ -3775,6 +3776,8 @@ DECL void parse_prev_file_data (var::parse_flags_e flags) {
 	write_copy_cur = &var_file_data[0];
 	out_file_data = out_file_data.alloc(var_file_data.len +(var_file_data.len / 4));
 	defer { out_file_data.free(); };
+	
+	print_copy = print_n::make_printer_dynarr(&out_file_data);
 	
 	var::Token* tok = var::file(&var_file_tokens[0], flags);
 	if (!tok) { return; }
