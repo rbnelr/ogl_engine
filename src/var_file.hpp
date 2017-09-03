@@ -55,12 +55,13 @@ DECL T* binary_search (lstr cr str, T* arr, u32 len) { // not sure which element
 		u32 hi = len -1;
 		
 		do {
-			u32 mid = (lo +hi) / 2;
+			u32 mid = lo +((hi -lo) / 2);
 			
 			auto c = comp(arr[mid], str);
 			if (		c < 0 ) {
 				lo = mid +1;
 			} else if ( c > 0 ) {
+				if (mid == 0) break;
 				hi = mid -1;
 			} else {
 				return &arr[mid];
@@ -683,7 +684,7 @@ namespace var {
 	enum token_e : u32 {
 		EOF_=				0,
 		EOF_MARKER,
-		VAR_IDENTIFIER,
+		IDENTIFIER,
 		KEYWORD,
 		NUMBER,
 		STRING,
@@ -705,6 +706,8 @@ namespace var {
 		PLUS,
 		MULTIPLY,
 		DIVIDE,
+		OR,
+		AND,
 		
 		ERROR_REP_NEWLINE,
 		ERROR_REP_IN_COMMENT,
@@ -713,7 +716,7 @@ namespace var {
 	char const* TOKEN_NAME[] = {
 		"EOF_",
 		"EOF_MARKER",
-		"VAR_IDENTIFIER",
+		"IDENTIFIER",
 		"KEYWORD",
 		"NUMBER",
 		"STRING",
@@ -735,6 +738,8 @@ namespace var {
 		"PLUS",
 		"MULTIPLY",
 		"DIVIDE",
+		"OR",
+		"AND",
 		"<newline>",
 		"<in_comment>",
 		"<in_tokenizer>",
@@ -760,12 +765,6 @@ namespace var {
 			return ptr_sub(line_begin, begin);
 		}
 	};
-	
-	void init () {
-		inplace_sort(keywords, KEYWORDS_COUNT);
-		inplace_sort(dollar_commands, DOLLAR_COMMAND_COUNT);
-		init_vars();
-	}
 	
 	#define VAR_PARSE_ERROR_REPORTING 1
 	
@@ -1259,7 +1258,7 @@ namespace var {
 						tok.kw = kw;
 						
 					} else { // No keyword matched
-						tok.tok = VAR_IDENTIFIER;
+						tok.tok = IDENTIFIER;
 						
 					}
 					
@@ -1379,18 +1378,20 @@ namespace var {
 				case '=':						tok.tok = EQUALS;			break;
 				case ';':						tok.tok = SEMICOLON;		break;
 				case ',':						tok.tok = COMMA;			break;
-				case '?':						tok.tok = NNARY_COND;	break;
-				case ':':						tok.tok = NNARY_SEPER; break;
+				case '?':						tok.tok = NNARY_COND;		break;
+				case ':':						tok.tok = NNARY_SEPER;		break;
 				case '(':						tok.tok = PAREN_OPEN;		break;
 				case ')':						tok.tok = PAREN_CLOSE;		break;
-				case '[':						tok.tok = BRACKET_OPEN;	break;
+				case '[':						tok.tok = BRACKET_OPEN;		break;
 				case ']':						tok.tok = BRACKET_CLOSE;	break;
 				case '{':						tok.tok = CURLY_OPEN;		break;
 				case '}':						tok.tok = CURLY_CLOSE;		break;
 				case '-':						tok.tok = MINUS;			break;
-				case '+':						tok.tok = PLUS;			break;
-				case '*':						tok.tok = MULTIPLY;		break;
+				case '+':						tok.tok = PLUS;				break;
+				case '*':						tok.tok = MULTIPLY;			break;
 				case '/':						tok.tok = DIVIDE;			break;
+				case '|':						tok.tok = OR;				break;
+				case '&':						tok.tok = AND;				break;
 				default: {
 					Token fake_tok = { ERROR_REP_TOKENIZER, {(keyword_e)0}, cur, 1, line_num, line_begin };
 					syntaxt(false, &fake_tok, &fake_tok, "Unexpected character '%' in tokenizer!", *cur);
@@ -1407,7 +1408,7 @@ namespace var {
 				switch (tok.tok) {
 					case EOF_:					str = "\\0";							break;
 					case EOF_MARKER:			str = tok.get_lstr();					break;
-					case VAR_IDENTIFIER:		str = tok.get_lstr();					break;
+					case IDENTIFIER:		str = tok.get_lstr();					break;
 					case KEYWORD:				str = KEYWORDS[tok.kw];				break;
 					case NUMBER:				str = tok.get_lstr();					break;
 					case STRING:				str = tok.get_lstr();					break;
@@ -3324,7 +3325,7 @@ namespace var {
 		}
 		
 		if (depth == 0) {
-			named_members = tok->tok == VAR_IDENTIFIER;
+			named_members = tok->tok == IDENTIFIER;
 		} else {
 			named_members = tok->tok == MEMBER_DOT;
 		}
@@ -3335,7 +3336,7 @@ namespace var {
 			{
 				bool	member_named;
 				if (depth == 0) {
-					member_named = tok->tok == VAR_IDENTIFIER;
+					member_named = tok->tok == IDENTIFIER;
 				} else {
 					member_named = tok->tok == MEMBER_DOT;
 					if (member_named) {
@@ -3356,7 +3357,7 @@ namespace var {
 					auto inline_strct = strct;
 					
 					for (;; ++inline_depth) {
-						syntax_token(&tok, VAR_IDENTIFIER, "structure:: named var iden");
+						syntax_token(&tok, IDENTIFIER, "structure:: named var iden");
 						
 						auto tmp = inline_strct;
 						var = match_var_identifier(tok-1, inline_strct);
@@ -3592,6 +3593,434 @@ namespace var {
 		zero_strings_n::member_list(root_var, nullptr, 0, 0);
 	}
 	#endif
+	
+	//////
+	
+	namespace entities {
+		
+		enum ctor_e : u32 {
+			CTOR_SCENE=0,
+			CTOR_LIGHT_SUNLIGHT,
+			CTOR_LIGHT_LIGHTBULB,
+			CTOR_MESH,
+			CTOR_MESH_NANOSUIT,
+			CTOR_GROUP,
+			CTOR_COUNT
+		};
+		
+		DECLD Str_Enum ctors[] = {
+			{"scene",			CTOR_SCENE				},
+			{"sunlight",		CTOR_LIGHT_SUNLIGHT		},
+			{"lightbulb",		CTOR_LIGHT_LIGHTBULB	},
+			{"mesh",			CTOR_MESH				},
+			{"mesh_nanosuit",	CTOR_MESH_NANOSUIT		},
+			{"group",			CTOR_GROUP				},
+		};
+		
+		DECL ctor_e match_ctor (lstr cr iden) {
+			return (ctor_e)match_iden(iden, ctors, CTOR_COUNT);
+		}
+		
+		DECLD dynarr<char> str_storage;
+		
+		_DECL Token* quoted_string_ (Token* tok, Expr_Val* val, parse_flags_e flags) {
+			
+			syntax(tok->tok == STRING, tok,tok, "entities::quoted_string need string");
+			
+			if (flags & PF_ONLY_SYNTAX_CHECK) {
+				val->type = VT_LSTR;
+				val->lstr = lstr{ nullptr, 0 };
+				
+				while ((++tok)->tok == STRING) {} 
+				
+			} else {
+				
+				bool append = false;
+				for (;;) {
+					
+					char const* cur = tok->begin;
+					assert(tok->len >= 2);
+					assert(*cur++ == '"');
+					
+					auto str_copy = str_storage.len;
+					
+					if (append) {
+						assert(val->type == VT_LSTR);
+						
+						assert(str_storage.len >= 1 && str_storage[str_storage.len -1] == '\0');
+						str_storage.pop();
+					}
+					
+					val->type = VT_LSTR;
+					
+					char const* end = cur +(tok->len -2);
+					while (cur != end) {
+						assert(*cur != '\0' && *cur != '"');
+						
+						if (*cur == '`') {
+							if (cur[1] == '`' || cur[1] == '"') {
+								++cur; // escaped '"' or '`'
+							} else {
+								assert(false);
+							}
+						}
+						
+						str_storage.push(*cur++);
+					}
+					
+					assert(*cur++ == '"');
+					
+					str_storage.push('\0');
+					
+					u32 len = (str_storage.len -str_copy) -1;
+					if (append) {
+						val->lstr.len += len;
+					} else {
+						val->lstr = lstr{ (char*)(uptr)str_copy, len };
+					}
+					
+					if ((++tok)->tok != STRING) break;
+					
+					append = true;
+				}
+			}
+			
+			return tok;
+		}
+		
+		_DECL Token* position (Token* tok, v3* val) {
+			auto* tok_expr = tok;
+			
+			Expr_Val pos;
+			syntaxdev(tok = expression(tok, &pos, (parse_flags_e)0, 0), "position:: expression()");
+			syntax(pos.type == VT_FV3, tok_expr,tok, "position:: need v3 expression");
+			
+			*val = cast_v3<v3>(pos.fm.arr[0].xyz());
+			return tok;
+		}
+		_DECL Token* orientation (Token* tok, quat* val) {
+			auto* tok_expr = tok;
+			
+			Expr_Val ori;
+			syntaxdev(tok = expression(tok, &ori, (parse_flags_e)0, 0), "orientation:: expression()");
+			syntax(ori.type == VT_FQUAT, tok_expr,tok, "orientation:: need quat expression");
+			
+			auto tmp = cast_v4<v4>(ori.fm.arr[0]);
+			*val = quat(v3(tmp.xyz()), tmp.w);
+			return tok;
+		}
+		
+		_DECL Token* pos_ori (Token* tok, v3* pos, quat* ori) {
+			syntaxdev(tok = position(tok, pos), "pos_ori:: position()");
+			
+			syntax_token(&tok, COMMA, "pos_ori:: comma");
+			
+			syntaxdev(tok = orientation(tok, ori), "pos_ori:: orientation()");
+			
+			return tok;
+		}
+		
+		_DECL Token* luminance (Token* tok, v3* val) {
+			auto* tok_expr = tok;
+			
+			Expr_Val pos;
+			syntaxdev(tok = expression(tok, &pos, (parse_flags_e)0, 0), "luminance:: expression()");
+			syntax(pos.type == (VT_FV3|VT_COLOR), tok_expr,tok, "luminance:: need col expression");
+			
+			*val = cast_v3<v3>(pos.fm.arr[0].xyz());
+			return tok;
+		}
+		
+		struct Enum_Member {
+			lstr			identifier;
+			union {
+				struct {
+					u8		bit_offs;
+					u8		bit_len;
+					//u16		sub_members;
+				};
+				//u32			
+			};
+		};
+		
+		_DECL Token* enum_expression (Token* tok, u64* val, u64* mask, ::array<Enum_Member> cr en) {
+			
+			*val = 0;
+			*mask = 0;
+			
+			for (;;) {
+				
+				auto* ident = tok++;
+				switch (ident->tok) {
+					case IDENTIFIER: {
+						
+						lstr str = ident->get_lstr();
+						
+						Enum_Member const* m = nullptr;
+						for (u32 i=0; i<en.len; ++i) {
+							if (str::comp(en[i].identifier, str)) m = &en[i];
+						}
+						syntax(m, ident,ident, "enum_expression:: identifier '%' not found for enum", str);
+						
+						u64 tmp;
+						
+						if (tok->tok == PAREN_OPEN) { ++tok;
+							auto* expr_tok = tok;
+							
+							Expr_Val tmp_;
+							syntaxdev(tok = expression(tok, &tmp_, (parse_flags_e)0, 0), "enum_expression:: MEMBER(VALUE) syntax:: VALUE expression()");
+							syntax(tmp_.type == VT_SINT && tmp_.im.arr[0].x >= 0, expr_tok,tok, "enum_expression:: MEMBER(VALUE) syntax:: need uint for VALUE");
+							
+							tmp = tmp_.im.arr[0].x;
+							
+							u64 valid_range = ((u64)0b1 << m->bit_len) -1;
+							syntax((tmp & ~valid_range) == 0, expr_tok,tok, "enum_expression:: MEMBER(VALUE) syntax:: VALUE out of range");
+							
+							syntax_token(&tok, PAREN_CLOSE, "enum_expression:: paren close");
+						} else {
+							syntax(m->bit_len == 1, ident,ident, "enum_expression:: multi-bit enum members require MEMBER(VALUE) syntax");
+							
+							tmp = (u64)0b1;
+						}
+						
+						tmp <<= m->bit_offs;
+						
+						syntax((*mask & tmp) == 0, ident,ident, "enum_expression:: some bit in enum set twice by orring %", m->identifier);
+						*mask |= tmp;
+						*val |= tmp;
+						
+					} break;
+					case NUMBER: {
+						
+					} break;
+					default: syntax(false, tok,tok, "enum_expression need nember or enum expression");
+				}
+				
+				if (tok->tok == OR) {
+					
+					
+					++tok;
+				} else {
+					return tok;
+				}
+			}
+			
+		}
+		
+		
+		enum light_flags_e_ : u32 {
+			DISABLED =	0b01,
+			SHADOW =	0b10,
+		};
+		DECLD constexpr Enum_Member _LIGHT_FLAGS_E[] = {
+			{ "DISABLED",	0,1 },
+			{ "SHADOW",		1,1 },
+		};
+		#define LIGHT_FLAGS_E ::array<Enum_Member>{(Enum_Member*)_LIGHT_FLAGS_E, arrlenof<u32>(_LIGHT_FLAGS_E)}
+		
+		_DECL Token* light_flags (Token* tok, light_flags_e_* val) {
+			u64 flags, mask;
+			syntaxdev(tok = enum_expression(tok, &flags,&mask, LIGHT_FLAGS_E), "light_flags:: expression()");
+			assert(safe_cast(u32, mask));
+			
+			*val = (light_flags_e_)flags;
+			return tok;
+		}
+		
+		_DECL Token* e_scene (Token* tok, lstr cr name) {
+			syntax_token(&tok, COMMA, "e_scene:: comma");
+			
+			v3 pos;
+			quat ori;
+			syntaxdev(tok = pos_ori(tok, &pos, &ori), "e_scene:: pos_ori()");
+			
+			print("scene % % %\n", name, pos, ori);
+			
+			return tok;
+		}
+		_DECL Token* e_light_sunlight (Token* tok, lstr cr name) {
+			syntax_token(&tok, COMMA, "e_light_sunlight:: comma");
+			
+			v3 pos;
+			quat ori;
+			syntaxdev(tok = pos_ori(tok, &pos, &ori), "e_light_sunlight:: pos_ori()");
+			
+			syntax_token(&tok, COMMA, "e_light_sunlight:: comma");
+			
+			light_flags_e_ flags;
+			syntaxdev(tok = light_flags(tok, &flags), "e_light_sunlight:: light_flags()");
+			
+			syntax_token(&tok, COMMA, "e_light_sunlight:: comma");
+			
+			v3 lum;
+			syntaxdev(tok = luminance(tok, &lum), "e_light_sunlight:: luminance()");
+			
+			print("sunlight % % % % %\n", name, pos, ori, (u32)flags, lum);
+			
+			return tok;
+		}
+		_DECL Token* e_light_lightbulb (Token* tok, lstr cr name) {
+			syntax_token(&tok, COMMA, "e_light_lightbulb:: comma");
+			
+			v3 pos;
+			quat ori;
+			syntaxdev(tok = pos_ori(tok, &pos, &ori), "e_light_lightbulb:: pos_ori()");
+			
+			syntax_token(&tok, COMMA, "e_light_lightbulb:: comma");
+			
+			light_flags_e_ flags;
+			syntaxdev(tok = light_flags(tok, &flags), "e_light_lightbulb:: light_flags()");
+			
+			syntax_token(&tok, COMMA, "e_light_lightbulb:: comma");
+			
+			v3 lum;
+			syntaxdev(tok = luminance(tok, &lum), "e_light_lightbulb:: luminance()");
+			
+			print("lightbulb % % % % %\n", name, pos, ori, (u32)flags, lum);
+			
+			return tok;
+		}
+		_DECL Token* e_mesh (Token* tok, lstr cr name) {
+			syntax_token(&tok, COMMA, "e_mesh:: comma");
+			
+			v3 pos;
+			quat ori;
+			syntaxdev(tok = pos_ori(tok, &pos, &ori), "e_mesh:: pos_ori()");
+			
+			syntax_token(&tok, COMMA, "e_mesh:: comma");
+			
+			Expr_Val mesh;
+			syntaxdev(tok = quoted_string_(tok, &mesh, (parse_flags_e)0), "e_mesh:: quoted_string_()");
+			
+			print("mesh % % % %\n", name, pos, ori, mesh.lstr.to_abs(str_storage.arr));
+			
+			return tok;
+		}
+		_DECL Token* e_mesh_nanosuit (Token* tok, lstr cr name) {
+			syntax_token(&tok, COMMA, "e_mesh_nanosuit:: comma");
+			
+			v3 pos;
+			quat ori;
+			syntaxdev(tok = pos_ori(tok, &pos, &ori), "e_mesh_nanosuit:: pos_ori()");
+			
+			syntax_token(&tok, COMMA, "e_mesh_nanosuit:: comma");
+			
+			Expr_Val mesh;
+			syntaxdev(tok = quoted_string_(tok, &mesh, (parse_flags_e)0), "e_mesh_nanosuit:: quoted_string_()");
+			
+			print("mesh_nanosuit % % % %\n", name, pos, ori, mesh.lstr.to_abs(str_storage.arr));
+			
+			return tok;
+		}
+		_DECL Token* e_group (Token* tok, lstr cr name) {
+			syntax_token(&tok, COMMA, "e_group:: comma");
+			
+			v3 pos;
+			quat ori;
+			syntaxdev(tok = pos_ori(tok, &pos, &ori), "e_group:: pos_ori()");
+			
+			print("group % % %\n", name, pos, ori);
+			
+			return tok;
+		}
+		
+		_DECL Token* nodes (Token* tok, u32 depth) {
+			
+			for (;;) {
+				auto* node_iden = tok;
+				syntax_token(&tok, IDENTIFIER, "entities::node:: IDENTIFIER");
+				
+				syntax_token(&tok, PAREN_OPEN, "entities::node:: PAREN_OPEN");
+				{
+					print("%", repeat("  ", depth));
+					
+					auto ctor = match_ctor(node_iden->get_lstr());
+					
+					Expr_Val name;
+					syntaxdev(tok = quoted_string_(tok, &name, (parse_flags_e)0), "e_scene:: quoted_string_()");
+					
+					lstr namestr = name.lstr.to_abs(str_storage.arr);
+					
+					switch (ctor) {
+						case CTOR_SCENE:			tok = e_scene(tok, namestr);			break;
+						case CTOR_LIGHT_SUNLIGHT:	tok = e_light_sunlight(tok, namestr);	break;
+						case CTOR_LIGHT_LIGHTBULB:	tok = e_light_lightbulb(tok, namestr);	break;
+						case CTOR_MESH:				tok = e_mesh(tok, namestr);				break;
+						case CTOR_MESH_NANOSUIT:	tok = e_mesh_nanosuit(tok, namestr);	break;
+						case CTOR_GROUP:			tok = e_group(tok, namestr);			break;
+						default:
+							syntax(false, tok,tok, "entities::node:: unknown ctor '%'", node_iden->get_lstr());
+					}
+					syntaxdev(tok, "entities::node:: ctor func '%'", node_iden->get_lstr())
+					
+				}
+				syntax_token(&tok, PAREN_CLOSE, "entities::node:: PAREN_CLOSE");
+				
+				if (tok->tok == CURLY_OPEN) { ++tok;
+					
+					syntaxdev(tok = nodes(tok, depth +1), "entities::node:: recurse nodes()");
+					
+					syntax_token(&tok, CURLY_CLOSE, "entities::node:: PAREN_CLOSE");
+				}
+				
+				if (tok->tok == CURLY_CLOSE || tok->tok == EOF_) break;
+			}
+			
+			return tok;
+		}
+		
+		_DECL Token* file (Token* tok) {
+			
+			syntaxdev(tok = nodes(tok, 0), "entities::file:: node()");
+			
+			return tok;
+		}
+	}
+	
+	_DECL void test_parse_entitites () {
+		
+		print(">>>>>>>>>> test_parse_entitites\n");
+		
+		HANDLE fh;
+		assert(!win32::open_existing_file("all.entities", &fh,
+				GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE));
+		
+		//
+		auto data = ::array<char>::alloc(win32::get_file_size(fh) +1);
+		entities::str_storage.free();
+		entities::str_storage = entities::str_storage.alloc(kibi(4));
+		
+		win32::set_filepointer(fh, 0);
+		
+		assert(!win32::read_file(fh, data.arr, data.len -1));
+		data[data.len -1] = '\0';
+		
+		auto tokens = tokenize(data);
+		defer { tokens.free(); };
+		
+		if (tokens.len >= 1 && tokens[tokens.len -1].tok == EOF_) {
+			
+			auto* tok = entities::file(tokens.arr);
+			if (tok && tok->tok == EOF_) {
+				
+			} else {
+				// failed parse
+			}
+			
+		} else {
+			warning("tokenize() error or ^EOF_MARKER^ missing (which might mean the file was incomplete)");
+		}
+		
+		print(">>>>>>>>>> \n");
+		
+	}
+	
+	void init () {
+		inplace_sort(keywords, KEYWORDS_COUNT);
+		inplace_sort(dollar_commands, DOLLAR_COMMAND_COUNT);
+		inplace_sort(entities::ctors, entities::CTOR_COUNT);
+		init_vars();
+	}
 	
 }
 

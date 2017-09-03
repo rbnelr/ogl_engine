@@ -2217,6 +2217,8 @@ DECL void init () {
 	}
 	
 	input::print_button_bindings::print();
+	
+	var::test_parse_entitites();
 }
 
 DECL void frame () {

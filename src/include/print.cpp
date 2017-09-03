@@ -687,11 +687,11 @@ namespace print_n {
 				
 				case F32: {
 					f32 f = reint_int_as_flt(GET_VAL(u32));
-					PRINTF("%+.2g", f)
+					PRINTF("%+.3g", f)
 				} break;
 				case F64: {
 					f64 f = GET_VAL(f64);
-					PRINTF("%+.4g", f)
+					PRINTF("%+.6g", f)
 				} break;
 				
 				case F32_PREC: {

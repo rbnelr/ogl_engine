@@ -398,7 +398,7 @@ struct Entities {
 				
 			auto* msh1 = mesh("Window_Pillar",
 					v3(-3.21f, +0.00f, +0.16f), quat(v3(-0.00f, +0.00f, -1.00f), +0.08f),
-					"window_pillar_.nouv", MAT_ROUGH_MARBLE);
+					"window_pillar.nouv", MAT_ROUGH_MARBLE);
 				
 				auto* lgh4 = light_bulb("Torch light L",
 						v3(-0.91969f, +0.610f, +1.880f),

@@ -7,6 +7,9 @@ struct array {
 	T*		arr;
 	LEN_T	len;
 	
+	DECLM FORCEINLINE array () {}
+	DECLM FORCEINLINE constexpr array (T* a, LEN_T l): arr{a}, len{l} {}
+	
 	DECLM static array alloc (LEN_T len);
 	DECLM void free ();
 	

@@ -1,3 +1,4 @@
+*.BACKUP
 .vs/
 assets_src/
 Debug/

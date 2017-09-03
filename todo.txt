@@ -476,6 +476,18 @@ DONE:
  fixed bug which caused crashes
  -changed .var_file.hpp to use dynarrs and malloc'ed memory instead of working_stk, so now things on the working_stk will no longer randomly corrupt on .var file reload
  
+#2017.09.03 so. tag
+ 
+ implement all.entities
+ -> all.entities simple file parse
+ -> design:
+  -> no entity deleting for now, entities only get 'deleted' when restarting the engine (because only the entities present in all.entities will get serialized and deserialized)
+   -> this means entities can use a simple index to refer to each other in-memory and can be put into a simple array
+    -> i need to use unions of entities in this case (or have seperate arrays for each type)
+   -> index 0 is null value
+   -> in all.entities the entities refer to each other as strings like in a file hirachy ("scene/group/mesh")
+    -> these names are resolved after full file is parsed, so in the file entities can be referred to before they are 'declared'
+	
 TODO
 -FEATURES:
  

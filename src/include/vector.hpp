@@ -1961,7 +1961,7 @@ namespace vec_print {
 	}
 	
 	DECL_ void print_quat (Base_Printer* this_, quat vp q) {
-		_print_wrapper(_recursive_print, this_, "quat(%, %, %,	%)", q.x, q.y, q.z, q.w);
+		_print_wrapper(_recursive_print, this_, "quat(%,%,%, %)", q.x, q.y, q.z, q.w);
 	}
 	
 }
