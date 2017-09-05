@@ -702,6 +702,8 @@ namespace var {
 		BRACKET_CLOSE,
 		CURLY_OPEN,
 		CURLY_CLOSE,
+		ANGULAR_OPEN,
+		ANGULAR_CLOSE,
 		MINUS,
 		PLUS,
 		MULTIPLY,
@@ -734,6 +736,8 @@ namespace var {
 		"BRACKET_CLOSE",
 		"CURLY_OPEN",
 		"CURLY_CLOSE",
+		"ANGULAR_OPEN",
+		"ANGULAR_CLOSE",
 		"MINUS",
 		"PLUS",
 		"MULTIPLY",
@@ -1386,6 +1390,8 @@ namespace var {
 				case ']':						tok.tok = BRACKET_CLOSE;	break;
 				case '{':						tok.tok = CURLY_OPEN;		break;
 				case '}':						tok.tok = CURLY_CLOSE;		break;
+				case '<':						tok.tok = ANGULAR_OPEN;		break;
+				case '>':						tok.tok = ANGULAR_CLOSE;	break;
 				case '-':						tok.tok = MINUS;			break;
 				case '+':						tok.tok = PLUS;				break;
 				case '*':						tok.tok = MULTIPLY;			break;
@@ -3598,6 +3604,81 @@ namespace var {
 	
 	namespace entities {
 		
+		/////////
+		typedef u32 eid;
+		
+		struct Entity {
+			lstr			name;
+			
+			eid				next;
+			eid				parent;
+			eid				children;
+			// Relative to parent space / children are in the space defined by these placement variables
+			//  scale always first, orientation second and position last
+			v3				pos;
+			quat			ori;
+			v3				scale;
+			
+			AABB			aabb_mesh_paren; // only valid if (eflags & EF_HAS_MESHES)
+			AABB			aabb_mesh_world; // only valid if (eflags & EF_HAS_MESHES)
+			
+			entity_flag		eflags;
+			entity_tag		tag;
+		};
+		
+		struct eMesh_Base : public Entity {
+			Mesh*			mesh;
+			materials_e		material;
+		};
+		struct eMesh : public eMesh_Base {
+			Textures_Generic	tex;
+		};
+		struct eMesh_Nanosuit : public eMesh_Base {
+			Textures_Nanosuit	tex;
+		};
+		struct Material_Showcase_Grid : public Entity {
+			Mesh*			mesh;
+			v2				grid_offs;
+		};
+		struct Group : public Entity {
+			
+		};
+		struct Light : public Entity {
+			light_type_e	type;
+			light_flags_e	flags;
+			v3				luminance;
+			
+			Mesh*			mesh;
+		};
+		struct Scene : public Entity {
+			bool			draw;
+			dynarr<Light*>	lights;
+		};
+		
+		union Entity_union {
+			Entity					base;
+			eMesh_Base				eMesh_Base;
+			eMesh					eMesh;
+			eMesh_Nanosuit			eMesh_Nanosuit;
+			Material_Showcase_Grid	Material_Showcase_Grid;
+			Group					Group;
+			Light					Light;
+			Scene					Scene;
+			Root					Root;
+			
+			DECLM FORCEINLINE Entity_union () {}
+			DECLM static FORCEINLINE Entity_union null () {
+				Entity_union ret;
+				ret.base = Entity{	"<null>", 0,0,0,
+								v3(QNAN), quat(v3(QNAN), QNAN), v3(QNAN),
+								AABB::qnan(), AABB::qnan(),
+								(entity_flag)-1, (entity_tag)-1 };
+				cmemset(&ret.base +1, DBG_MEM_UNINITIALIZED_BYTE, sizeof(Entity_union) -sizeof(Entity));
+				return ret;
+			}
+		};
+		/////////
+		
 		enum ctor_e : u32 {
 			CTOR_SCENE=0,
 			CTOR_LIGHT_SUNLIGHT,
@@ -3623,66 +3704,61 @@ namespace var {
 		
 		DECLD dynarr<char> str_storage;
 		
-		_DECL Token* quoted_string_ (Token* tok, Expr_Val* val, parse_flags_e flags) {
+		_DECL Token* quoted_string_ (Token* tok, lstr* val) {
 			
 			syntax(tok->tok == STRING, tok,tok, "entities::quoted_string need string");
 			
-			if (flags & PF_ONLY_SYNTAX_CHECK) {
-				val->type = VT_LSTR;
-				val->lstr = lstr{ nullptr, 0 };
+			#if 0
+			if (flags & PF_ONLY_SYNTAX_CHECK)
+				*val = lstr{ nullptr, 0 };
 				
 				while ((++tok)->tok == STRING) {} 
 				
-			} else {
+			#endif
+			
+			bool append = false;
+			for (;;) {
 				
-				bool append = false;
-				for (;;) {
-					
-					char const* cur = tok->begin;
-					assert(tok->len >= 2);
-					assert(*cur++ == '"');
-					
-					auto str_copy = str_storage.len;
-					
-					if (append) {
-						assert(val->type == VT_LSTR);
-						
-						assert(str_storage.len >= 1 && str_storage[str_storage.len -1] == '\0');
-						str_storage.pop();
-					}
-					
-					val->type = VT_LSTR;
-					
-					char const* end = cur +(tok->len -2);
-					while (cur != end) {
-						assert(*cur != '\0' && *cur != '"');
-						
-						if (*cur == '`') {
-							if (cur[1] == '`' || cur[1] == '"') {
-								++cur; // escaped '"' or '`'
-							} else {
-								assert(false);
-							}
-						}
-						
-						str_storage.push(*cur++);
-					}
-					
-					assert(*cur++ == '"');
-					
-					str_storage.push('\0');
-					
-					u32 len = (str_storage.len -str_copy) -1;
-					if (append) {
-						val->lstr.len += len;
-					} else {
-						val->lstr = lstr{ (char*)(uptr)str_copy, len };
-					}
-					
-					if ((++tok)->tok != STRING) break;
-					
-					append = true;
+				char const* cur = tok->begin;
+				assert(tok->len >= 2);
+				assert(*cur++ == '"');
+				
+				auto str_copy = str_storage.len;
+				
+				if (append) {
+					assert(str_storage.len >= 1 && str_storage[str_storage.len -1] == '\0');
+					str_storage.pop();
 				}
+				
+				char const* end = cur +(tok->len -2);
+				while (cur != end) {
+					assert(*cur != '\0' && *cur != '"');
+					
+					if (*cur == '`') {
+						if (cur[1] == '`' || cur[1] == '"') {
+							++cur; // escaped '"' or '`'
+						} else {
+							assert(false);
+						}
+					}
+					
+					str_storage.push(*cur++);
+				}
+				
+				assert(*cur++ == '"');
+				
+				str_storage.push('\0');
+				
+				u32 len = (str_storage.len -str_copy) -1;
+				if (append) {
+					val->len += len;
+				} else {
+					*val = lstr{ (char*)(uptr)str_copy, len };
+				}
+				
+				if ((++tok)->tok != STRING) break;
+				
+				append = true;
 			}
 			
 			return tok;
@@ -3710,16 +3786,6 @@ namespace var {
 			return tok;
 		}
 		
-		_DECL Token* pos_ori (Token* tok, v3* pos, quat* ori) {
-			syntaxdev(tok = position(tok, pos), "pos_ori:: position()");
-			
-			syntax_token(&tok, COMMA, "pos_ori:: comma");
-			
-			syntaxdev(tok = orientation(tok, ori), "pos_ori:: orientation()");
-			
-			return tok;
-		}
-		
 		_DECL Token* luminance (Token* tok, v3* val) {
 			auto* tok_expr = tok;
 			
@@ -3730,18 +3796,6 @@ namespace var {
 			*val = cast_v3<v3>(pos.fm.arr[0].xyz());
 			return tok;
 		}
-		
-		struct Enum_Member {
-			lstr			identifier;
-			union {
-				struct {
-					u8		bit_offs;
-					u8		bit_len;
-					//u16		sub_members;
-				};
-				//u32			
-			};
-		};
 		
 		_DECL Token* enum_expression (Token* tok, u64* val, u64* mask, ::array<Enum_Member> cr en) {
 			
@@ -3807,163 +3861,153 @@ namespace var {
 			
 		}
 		
-		
-		enum light_flags_e_ : u32 {
-			DISABLED =	0b01,
-			SHADOW =	0b10,
-		};
-		DECLD constexpr Enum_Member _LIGHT_FLAGS_E[] = {
-			{ "DISABLED",	0,1 },
-			{ "SHADOW",		1,1 },
-		};
-		#define LIGHT_FLAGS_E ::array<Enum_Member>{(Enum_Member*)_LIGHT_FLAGS_E, arrlenof<u32>(_LIGHT_FLAGS_E)}
-		
-		_DECL Token* light_flags (Token* tok, light_flags_e_* val) {
+		_DECL Token* light_flags (Token* tok, light_flags_e* val) {
 			u64 flags, mask;
 			syntaxdev(tok = enum_expression(tok, &flags,&mask, LIGHT_FLAGS_E), "light_flags:: expression()");
 			assert(safe_cast(u32, mask));
 			
-			*val = (light_flags_e_)flags;
+			*val = (light_flags_e)flags;
 			return tok;
 		}
 		
-		_DECL Token* e_scene (Token* tok, lstr cr name) {
-			syntax_token(&tok, COMMA, "e_scene:: comma");
-			
-			v3 pos;
-			quat ori;
-			syntaxdev(tok = pos_ori(tok, &pos, &ori), "e_scene:: pos_ori()");
-			
-			print("scene % % %\n", name, pos, ori);
-			
+		_DECL Token* e_scene (Token* tok, Scene* e) {
+			e->tag = ET_SCENE;
+			print("scene % % %\n", e->name.to_abs(str_storage.arr), e->pos, e->ori);
 			return tok;
 		}
-		_DECL Token* e_light_sunlight (Token* tok, lstr cr name) {
+		_DECL Token* e_light_sunlight (Token* tok, Light* e) {
+			syntax_token(&tok, COMMA, "e_light_lightbulb:: comma");
+			
+			syntaxdev(tok = light_flags(tok, &e->flags), "e_light_lightbulb:: light_flags()");
 			syntax_token(&tok, COMMA, "e_light_sunlight:: comma");
 			
-			v3 pos;
-			quat ori;
-			syntaxdev(tok = pos_ori(tok, &pos, &ori), "e_light_sunlight:: pos_ori()");
+			syntaxdev(tok = luminance(tok, &e->luminance), "e_light_sunlight:: luminance()");
 			
-			syntax_token(&tok, COMMA, "e_light_sunlight:: comma");
-			
-			light_flags_e_ flags;
-			syntaxdev(tok = light_flags(tok, &flags), "e_light_sunlight:: light_flags()");
-			
-			syntax_token(&tok, COMMA, "e_light_sunlight:: comma");
-			
-			v3 lum;
-			syntaxdev(tok = luminance(tok, &lum), "e_light_sunlight:: luminance()");
-			
-			print("sunlight % % % % %\n", name, pos, ori, (u32)flags, lum);
-			
+			e->tag = ET_LIGHT;
+			print("sunlight % % % % %\n", e->name.to_abs(str_storage.arr), e->pos, e->ori, (u32)e->flags, e->luminance);
 			return tok;
 		}
-		_DECL Token* e_light_lightbulb (Token* tok, lstr cr name) {
+		_DECL Token* e_light_lightbulb (Token* tok, Light* e) {
 			syntax_token(&tok, COMMA, "e_light_lightbulb:: comma");
 			
-			v3 pos;
-			quat ori;
-			syntaxdev(tok = pos_ori(tok, &pos, &ori), "e_light_lightbulb:: pos_ori()");
-			
-			syntax_token(&tok, COMMA, "e_light_lightbulb:: comma");
-			
-			light_flags_e_ flags;
-			syntaxdev(tok = light_flags(tok, &flags), "e_light_lightbulb:: light_flags()");
-			
+			syntaxdev(tok = light_flags(tok, &e->flags), "e_light_lightbulb:: light_flags()");
 			syntax_token(&tok, COMMA, "e_light_lightbulb:: comma");
 			
 			v3 lum;
-			syntaxdev(tok = luminance(tok, &lum), "e_light_lightbulb:: luminance()");
+			syntaxdev(tok = luminance(tok, &e->luminance), "e_light_lightbulb:: luminance()");
 			
-			print("lightbulb % % % % %\n", name, pos, ori, (u32)flags, lum);
-			
+			e->tag = ET_LIGHT;
+			print("lightbulb % % % % %\n", e->name.to_abs(str_storage.arr), e->pos, e->ori, (u32)e->flags, e->luminance);
 			return tok;
 		}
-		_DECL Token* e_mesh (Token* tok, lstr cr name) {
+		_DECL Token* e_mesh (Token* tok, eMesh* e) {
 			syntax_token(&tok, COMMA, "e_mesh:: comma");
 			
-			v3 pos;
-			quat ori;
-			syntaxdev(tok = pos_ori(tok, &pos, &ori), "e_mesh:: pos_ori()");
+			lstr mesh;
+			syntaxdev(tok = quoted_string_(tok, &mesh), "e_mesh:: quoted_string_()");
 			
-			syntax_token(&tok, COMMA, "e_mesh:: comma");
-			
-			Expr_Val mesh;
-			syntaxdev(tok = quoted_string_(tok, &mesh, (parse_flags_e)0), "e_mesh:: quoted_string_()");
-			
-			print("mesh % % % %\n", name, pos, ori, mesh.lstr.to_abs(str_storage.arr));
-			
+			e->tag = ET_MESH;
+			print("mesh % % % %\n", e->name.to_abs(str_storage.arr), e->pos, e->ori, mesh.to_abs(str_storage.arr));
 			return tok;
 		}
-		_DECL Token* e_mesh_nanosuit (Token* tok, lstr cr name) {
+		_DECL Token* e_mesh_nanosuit (Token* tok, eMesh_Nanosuit* e) {
 			syntax_token(&tok, COMMA, "e_mesh_nanosuit:: comma");
 			
-			v3 pos;
-			quat ori;
-			syntaxdev(tok = pos_ori(tok, &pos, &ori), "e_mesh_nanosuit:: pos_ori()");
+			lstr mesh;
+			syntaxdev(tok = quoted_string_(tok, &mesh), "e_mesh_nanosuit:: quoted_string_()");
 			
-			syntax_token(&tok, COMMA, "e_mesh_nanosuit:: comma");
-			
-			Expr_Val mesh;
-			syntaxdev(tok = quoted_string_(tok, &mesh, (parse_flags_e)0), "e_mesh_nanosuit:: quoted_string_()");
-			
-			print("mesh_nanosuit % % % %\n", name, pos, ori, mesh.lstr.to_abs(str_storage.arr));
-			
+			e->tag = ET_MESH_NANOSUIT;
+			print("mesh_nanosuit % % % %\n", e->name.to_abs(str_storage.arr), e->pos, e->ori, mesh.to_abs(str_storage.arr));
 			return tok;
 		}
-		_DECL Token* e_group (Token* tok, lstr cr name) {
-			syntax_token(&tok, COMMA, "e_group:: comma");
-			
-			v3 pos;
-			quat ori;
-			syntaxdev(tok = pos_ori(tok, &pos, &ori), "e_group:: pos_ori()");
-			
-			print("group % % %\n", name, pos, ori);
-			
+		_DECL Token* e_group (Token* tok, Group* e) {
+			e->tag = ET_GROUP;
+			print("group % % %\n", e->name.to_abs(str_storage.arr), e->pos, e->ori);
 			return tok;
 		}
 		
-		_DECL Token* nodes (Token* tok, u32 depth) {
+		DECLD dynarr<Entity_union> entities;
+		
+		_DECL Token* nodes (Token* tok, eid paren, u32 depth) {
+			
+			eid* prev_next = paren ? &entities[paren].base.children : nullptr;
 			
 			for (;;) {
 				auto* node_iden = tok;
 				syntax_token(&tok, IDENTIFIER, "entities::node:: IDENTIFIER");
 				
 				syntax_token(&tok, PAREN_OPEN, "entities::node:: PAREN_OPEN");
-				{
-					print("%", repeat("  ", depth));
+				
+				print("%", repeat("  ", depth));
+				
+				auto ctor = match_ctor(node_iden->get_lstr());
+				
+				auto id = entities.len;
+				auto* e = &entities.push();
+				
+				syntaxdev(tok = quoted_string_(tok, &e->base.name), "e_scene:: quoted_string_()");
+				syntax_token(&tok, COMMA, "e_scene:: comma");
+				
+				if (prev_next) *prev_next = id;
+				
+				e->base.next =		0;
+				e->base.parent =	paren;
+				e->base.children =	0;
+				
+				syntaxdev(tok = position(tok, &e->base.pos), "pos_ori:: position()");
+				syntax_token(&tok, COMMA, "pos_ori:: comma");
+				
+				syntaxdev(tok = orientation(tok, &e->base.ori), "pos_ori:: orientation()");
+				
+				e->base.scale = v3(1);
+				e->base.aabb_mesh_paren = AABB::qnan();
+				e->base.aabb_mesh_world = AABB::qnan();
+				e->base.eflags = (entity_flag)0;
+				
+				switch (ctor) {
+					case CTOR_SCENE:			tok = e_scene(tok, &e->Scene);					break;
+					case CTOR_LIGHT_SUNLIGHT:	tok = e_light_sunlight(tok, &e->Light);			break;
+					case CTOR_LIGHT_LIGHTBULB:	tok = e_light_lightbulb(tok, &e->Light);		break;
+					case CTOR_MESH:				tok = e_mesh(tok, &e->eMesh);					break;
+					case CTOR_MESH_NANOSUIT:	tok = e_mesh_nanosuit(tok, &e->eMesh_Nanosuit);	break;
+					case CTOR_GROUP:			tok = e_group(tok, &e->Group);					break;
+					default:
+						syntax(false, tok,tok, "entities::node:: unknown ctor '%'", node_iden->get_lstr());
+				}
+				syntaxdev(tok, "entities::node:: ctor func '%'", node_iden->get_lstr())
+				
+				
+				syntax_token(&tok, PAREN_CLOSE, "entities::node:: PAREN_CLOSE");
+				
+				if (tok->tok == ANGULAR_OPEN) { ++tok;
 					
-					auto ctor = match_ctor(node_iden->get_lstr());
+					Expr_Val val;
+					syntaxdev(tok = number_literal(tok, &val, (parse_flags_e)0), "entities::node:: entity_id number_literal()");
 					
-					Expr_Val name;
-					syntaxdev(tok = quoted_string_(tok, &name, (parse_flags_e)0), "e_scene:: quoted_string_()");
+					syntax_token(&tok, CURLY_CLOSE, "entities::node:: PAREN_CLOSE");
 					
-					lstr namestr = name.lstr.to_abs(str_storage.arr);
+					assert(false, "not implemented");
+					entities.pop();
+					e = &entities.push(*e);
 					
-					switch (ctor) {
-						case CTOR_SCENE:			tok = e_scene(tok, namestr);			break;
-						case CTOR_LIGHT_SUNLIGHT:	tok = e_light_sunlight(tok, namestr);	break;
-						case CTOR_LIGHT_LIGHTBULB:	tok = e_light_lightbulb(tok, namestr);	break;
-						case CTOR_MESH:				tok = e_mesh(tok, namestr);				break;
-						case CTOR_MESH_NANOSUIT:	tok = e_mesh_nanosuit(tok, namestr);	break;
-						case CTOR_GROUP:			tok = e_group(tok, namestr);			break;
-						default:
-							syntax(false, tok,tok, "entities::node:: unknown ctor '%'", node_iden->get_lstr());
-					}
-					syntaxdev(tok, "entities::node:: ctor func '%'", node_iden->get_lstr())
+				} else {
 					
 				}
-				syntax_token(&tok, PAREN_CLOSE, "entities::node:: PAREN_CLOSE");
 				
 				if (tok->tok == CURLY_OPEN) { ++tok;
 					
-					syntaxdev(tok = nodes(tok, depth +1), "entities::node:: recurse nodes()");
+					if (tok->tok != CURLY_CLOSE) {
+						syntaxdev(tok = nodes(tok, id, depth +1), "entities::node:: recurse nodes()");
+					}
 					
 					syntax_token(&tok, CURLY_CLOSE, "entities::node:: PAREN_CLOSE");
 				}
 				
-				if (tok->tok == CURLY_CLOSE || tok->tok == EOF_) break;
+				if (tok->tok == CURLY_CLOSE || tok->tok == EOF_) {
+					break;
+				}
+				
+				prev_next = &e->base.next;
 			}
 			
 			return tok;
@@ -3971,7 +4015,9 @@ namespace var {
 		
 		_DECL Token* file (Token* tok) {
 			
-			syntaxdev(tok = nodes(tok, 0), "entities::file:: node()");
+			auto* e = &entities.push();
+			*e = Entity_union::null();
+			syntaxdev(tok = nodes(tok, 0, 0), "entities::file:: node()");
 			
 			return tok;
 		}
@@ -3986,9 +4032,12 @@ namespace var {
 				GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE));
 		
 		//
-		auto data = ::array<char>::alloc(win32::get_file_size(fh) +1);
 		entities::str_storage.free();
+		entities::entities.free();
+		
+		auto data = ::array<char>::alloc(win32::get_file_size(fh) +1);
 		entities::str_storage = entities::str_storage.alloc(kibi(4));
+		entities::entities = entities::entities.alloc(256);
 		
 		win32::set_filepointer(fh, 0);
 		

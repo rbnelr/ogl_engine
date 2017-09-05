@@ -698,6 +698,12 @@ union AABB {
 					+fp::inf<f32>(), -fp::inf<f32>(),
 					+fp::inf<f32>(), -fp::inf<f32>() } };
 	}
+	static constexpr AABB qnan () {
+		return { {	fp::qnan<f32>(), fp::qnan<f32>(),
+					fp::qnan<f32>(), fp::qnan<f32>(),
+					fp::qnan<f32>(), fp::qnan<f32>() } };
+	}
+	
 	bool is_inf () const {
 		bool ret = !std::isfinite(xl);
 		#if DEBUG

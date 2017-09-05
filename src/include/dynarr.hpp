@@ -102,7 +102,7 @@ struct dynarr : public array<T, LEN_T> { // 'this->' everywhere to fix 'lookup i
 	
 	DECLM T* grow_to (LEN_T new_len) {
 		LEN_T old_len = this->len;
-		assert(new_len >= old_len);
+		assert(new_len >= old_len, "% %", new_len, old_len);
 		if (new_len > cap) {
 			fit_cap(new_len);
 		}
@@ -120,6 +120,10 @@ struct dynarr : public array<T, LEN_T> { // 'this->' everywhere to fix 'lookup i
 		LEN_T old_len = this->len;
 		assert(new_len <= old_len);
 		// Do nothing (no resizing happens on shrinking, if desired capacity fitting should be done manually by calling fit_cap())
+		
+		#if DBG_MEMORY
+		cmemset(&this->arr[new_len], DBG_MEM_FREED_BYTE, (old_len -new_len)*sizeof(T));
+		#endif
 		this->len = new_len;
 	}
 	DECLM void len_to (LEN_T new_len) {
@@ -221,13 +225,13 @@ struct dynarr : public array<T, LEN_T> { // 'this->' everywhere to fix 'lookup i
 		#if DYNARR_RANGE_CHECK
 		assert(len >= 1, "dynarr::pop underflow (len is %, want to pop % elements)", len, 1);
 		#endif
-		grow_to(len -1);
+		shrink_to(len -1);
 	}
 	DECLM void popn (LEN_T count) {
 		#if DYNARR_RANGE_CHECK
 		assert(len >= count, "dynarr::pop underflow (len is %, want to pop % elements)", len, count);
 		#endif
-		grow_to(len -count);
+		shrink_to(len -count);
 	}
 	
 };

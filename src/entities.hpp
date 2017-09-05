@@ -21,9 +21,15 @@ namespace entities_n {
 		LIGHT_TYPES
 	};
 	enum light_flags_e : u32 {
-		LF_DISABLED=	0b00000001,
-		LF_NO_SHADOW=	0b00000010,
+		LF_DISABLED =	0b01,
+		LF_SHADOW =		0b10,
 	}; DEFINE_ENUM_FLAG_OPS(light_flags_e, u32)
+	DECLD constexpr Enum_Member _LIGHT_FLAGS_E[] = {
+		{ "DISABLED",	0,1 },
+		{ "SHADOW",		1,1 },
+	};
+	#define LIGHT_FLAGS_E ::array<Enum_Member>{(Enum_Member*)_LIGHT_FLAGS_E, arrlenof<u32>(_LIGHT_FLAGS_E)}
+	
 	
 	struct Textures_Generic {
 		textures_e	albedo;
@@ -42,11 +48,11 @@ namespace entities_n {
 															 0,-1 );
 	
 	struct Entity {
+		lstr			name;
+		
 		Entity*			next;
 		Entity*			parent;
 		Entity*			children;
-		lstr			name;
-		
 		// Relative to parent space / children are in the space defined by these placement variables
 		//  scale always first, orientation second and position last
 		v3				pos;
@@ -80,7 +86,7 @@ namespace entities_n {
 	struct Light : public Entity {
 		light_type_e	type;
 		light_flags_e	flags;
-		v3				power;
+		v3				luminance;
 		
 		Mesh*			mesh;
 	};
@@ -90,11 +96,25 @@ namespace entities_n {
 	};
 	struct Root : public Entity {
 		constexpr Root (): Entity{
-				nullptr, nullptr, nullptr, "<root>",
+				"<root>", nullptr, nullptr, nullptr,
 			v3(QNAN), quat(v3(QNAN), QNAN), v3(QNAN),
 			{{QNAN,QNAN, QNAN,QNAN, QNAN,QNAN}},	{{QNAN,QNAN, QNAN,QNAN, QNAN,QNAN}},
 			(entity_flag)0, ET_ROOT,
 		} {}
+	};
+	
+	union Entity_union {
+		Entity					base;
+		eMesh_Base				eMesh_Base;
+		eMesh					eMesh;
+		eMesh_Nanosuit			eMesh_Nanosuit;
+		Material_Showcase_Grid	Material_Showcase_Grid;
+		Group					Group;
+		Light					Light;
+		Scene					Scene;
+		Root					Root;
+		
+		DECLM FORCEINLINE Entity_union () {}
 	};
 	
 	hm me_to_parent (Entity const* e) {
@@ -218,10 +238,10 @@ struct Entities {
 	template <typename T, entity_tag TAG>
 	T* make_entity (lstr cr name, v3 vp pos, quat vp ori, v3 vp scale=v3(1)) const {
 		T* ret = working_stk.push<T>();
+		ret->name =		name;
 		ret->next =		nullptr;
 		ret->parent =	nullptr;
 		ret->children =	nullptr;
-		ret->name =		name;
 		
 		ret->pos =		pos;
 		ret->ori =		ori;
@@ -283,19 +303,19 @@ struct Entities {
 		return ret;
 	}
 	
-	Light* sun_lamp (lstr cr name, v3 vp pos, quat vp ori, light_flags_e flags, v3 vp power) {
+	Light* sun_lamp (lstr cr name, v3 vp pos, quat vp ori, light_flags_e flags, v3 vp luminance) {
 		auto* ret = make_entity<Light, ET_LIGHT>(name, pos, ori);
 		ret->type = LT_DIRECTIONAL;
 		ret->flags = flags;
-		ret->power = power;
+		ret->luminance = luminance;
 		ret->mesh = meshes.get_mesh("sun_lamp.nouv_vcol");
 		return ret;
 	}
-	Light* light_bulb (lstr cr name, v3 vp pos, light_flags_e flags, v3 vp power) {
+	Light* light_bulb (lstr cr name, v3 vp pos, light_flags_e flags, v3 vp luminance) {
 		auto* ret = make_entity<Light, ET_LIGHT>(name, pos, quat::ident());
 		ret->type = LT_POINT;
 		ret->flags = flags;
-		ret->power = power;
+		ret->luminance = luminance;
 		ret->mesh = meshes.get_mesh("light_bulb.nouv_vcol");
 		return ret;
 	}
@@ -366,7 +386,7 @@ struct Entities {
 		
 		auto ON = (light_flags_e)0;
 		auto OFF = LF_DISABLED;
-		auto NOSHAD = LF_NO_SHADOW;
+		auto SHAD = ON|LF_SHADOW;
 		
 		#define ROUGH(r) TEX_IDENT, TEX_IDENT, r, TEX_IDENT
 		
@@ -379,7 +399,7 @@ struct Entities {
 			
 			auto* lgh0 = sun_lamp("Test dir light",
 					v3(+1.21f, -2.92f, +3.51f), quat(v3(+0.61f, +0.01f, +0.01f), +0.79f),
-					ON,
+					SHAD,
 					srgb(244,217,171) * col(2000));
 			
 			auto* msh0 = mesh("shadow_test_0",
@@ -388,13 +408,13 @@ struct Entities {
 				
 				auto* lgh1 = light_bulb("Test point light 1",
 						v3(+0.9410f, +1.2415f, +1.1063f),
-						NOSHAD, srgb(200,48,79) * col(100));
+						ON, srgb(200,48,79) * col(100));
 				auto* lgh2 = light_bulb("Test point light 2",
 						v3(+1.0914f, +0.5582f, +1.3377f),
-						NOSHAD, srgb(48,200,79) * col(100));
+						ON, srgb(48,200,79) * col(100));
 				auto* lgh3 = light_bulb("Test point light 3",
 						v3(+0.3245f, +0.7575f, +1.0226f),
-						NOSHAD, srgb(48,7,200) * col(100));
+						ON, srgb(48,7,200) * col(100));
 				
 			auto* msh1 = mesh("Window_Pillar",
 					v3(-3.21f, +0.00f, +0.16f), quat(v3(-0.00f, +0.00f, -1.00f), +0.08f),
@@ -402,10 +422,10 @@ struct Entities {
 				
 				auto* lgh4 = light_bulb("Torch light L",
 						v3(-0.91969f, +0.610f, +1.880f),
-						NOSHAD, srgb(240,142,77) * col(60));
+						ON, srgb(240,142,77) * col(60));
 				auto* lgh5 = light_bulb("Torch light R",
 						v3(+0.91969f, +0.610f, +1.880f),
-						NOSHAD, srgb(240,142,77) * col(60));
+						ON, srgb(240,142,77) * col(60));
 			
 			auto* nano = group("Nanosuit",
 					v3(+1.64f, +3.23f, +0.54f), quat(v3(+0.00f, +0.02f, +1.00f), +0.01f));
@@ -426,7 +446,7 @@ struct Entities {
 			
 			auto* lgh10 = sun_lamp("Sun",
 					v3(+0.06f, -2.76f, +4.53f), quat(v3(+0.31f, +0.01f, +0.04f), +0.95f),
-					ON,
+					SHAD,
 					srgb(244,217,171) * col(2000));
 			auto* msh10 = mesh("terrain",
 					v3(0), quat::ident(),
@@ -466,7 +486,7 @@ struct Entities {
 			
 			auto* lgh20 = sun_lamp("Sun",
 					v3(-1.83f, +1.37f, +2.05f), quat(v3(+0.21f, -0.45f, -0.78f), +0.37f),
-					ON, srgb(244,217,171) * col(2000));
+					SHAD, srgb(244,217,171) * col(2000));
 			auto* msh20 = mesh("ugly",
 					v3(0), quat(v3(-0.00f, +0.00f, -1.00f), +0.00f),
 					"ugly", MAT_SHINY_PLATINUM,
@@ -476,7 +496,7 @@ struct Entities {
 				v3(0), quat::ident());
 			
 			auto* lgh30 = sun_lamp("Sun",		v3(-2.84f, +4.70f, +4.90f), quat(v3(+0.15f, -0.12f, -0.62f), +0.76f),
-					ON, srgb(244,217,171) * col(2000));
+					SHAD, srgb(244,217,171) * col(2000));
 			
 			auto* msh3z = mesh("ground",		v3(0), quat::ident(),
 					"scene_ground0",		MAT_GRASS,						TEX_GRASS);
@@ -507,7 +527,7 @@ struct Entities {
 			auto* gnd4 = GROUND(3,3);
 			
 			auto* lgh40 = sun_lamp("Sun",		v3(+1.88f, +2.46f, +3.35f), quat(v3(+0.28f, +0.48f, +0.72f), +0.42f),
-					ON, srgb(244,217,171) * col(2000));
+					SHAD, srgb(244,217,171) * col(2000));
 			auto* msh40 = mesh("brick_wall 1",	v3(+0.00f, +1.15f, +1.01f), quat(v3(+0.61f, +0.36f, +0.36f), +0.61f),
 					"_unit_plane",			MAT_GRASS,		TEX_TEX_DIF_BRICK_00,	TEX_TEX_NRM_BRICK_00); // met Supposed to be rough stone
 			auto* msh41 = mesh("brick_wall 2",	v3(+1.09f, +2.94f, +0.9f), quat(v3(+0.62f, +0.33f, +0.33f), +0.62f),
@@ -527,7 +547,7 @@ struct Entities {
 			auto* gnd5 = GROUND(17,7);
 			
 			auto* lgh50 = sun_lamp("Sun",		v3(-4.91f, +2.46f, +3.35f), quat(v3(+0.05f, -0.22f, -0.95f), +0.21f),
-					ON, srgb(244,217,171) * col(2000));
+					SHAD, srgb(244,217,171) * col(2000));
 			auto* msh50 = material_showcase_grid("ico_sphere",	v3(-4.84f, -1.52f, +0.00f), quat::ident(), v3(0.3f),
 					"_ico_sphere.nouv", v2(2.5f));
 			auto* msh51 = material_showcase_grid("bunny",		v3(+0.38f, -1.69f, +0.00f), quat::ident(), v3(2.0f),
@@ -558,10 +578,10 @@ struct Entities {
 					"cerberus/cerberus",			MAT_IDENTITY,
 					TEX_CERBERUS_ALBEDO, TEX_CERBERUS_NORMAL, TEX_CERBERUS_ROUGHNESS, TEX_CERBERUS_METALLIC);
 			
-			auto* lgh57 = light_bulb("Grey dim",	v3(-6.28f, +0.24f, +0.83f), NOSHAD, srgb(225.0f,228,230) * col(75));
-			auto* lgh58 = light_bulb("Blue",		v3(-7.10f, -3.60f, +1.46f), NOSHAD, srgb(29,54,252) * col(450));
-			auto* lgh59 = light_bulb("Red bright",	v3(-12.38f, -4.31f, +2.65f), NOSHAD, srgb(237,7,51) * col(750));
-			auto* lgh5a = light_bulb("Sunlike",	v3(-0.30f, -2.18f, +3.60f), NOSHAD, srgb(244,217,171) * col(1200));
+			auto* lgh57 = light_bulb("Grey dim",	v3(-6.28f, +0.24f, +0.83f), ON, srgb(225.0f,228,230) * col(75));
+			auto* lgh58 = light_bulb("Blue",		v3(-7.10f, -3.60f, +1.46f), ON, srgb(29,54,252) * col(450));
+			auto* lgh59 = light_bulb("Red bright",	v3(-12.38f, -4.31f, +2.65f), ON, srgb(237,7,51) * col(750));
+			auto* lgh5a = light_bulb("Sunlike",	v3(-0.30f, -2.18f, +3.60f), ON, srgb(244,217,171) * col(1200));
 			
 			auto* grp5b = group("nanosuit",		v3(-8.88f, -0.65f, +0.00f), quat(v3(-0.00f, +0.00f, -0.24f), +0.97f));
 				

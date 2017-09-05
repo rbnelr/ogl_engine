@@ -66,7 +66,7 @@
 													// if w == 0.0:	xyz: direction to directional light source
 													// else:		xyz: pos of point light
 								v4					light_vec_cam;
-								v3					power;
+								v3					luminance;
 								ui					shad_i;
 								m4					cam_to_light;
 };

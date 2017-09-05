@@ -7,7 +7,7 @@ scene("shadow_test_0", v3(-46.6174, +3.8187, +0.9977), quat(v3(-0.0013, +0.0014,
 	mesh("shadow_test_0_mesh", v3(0), quat(ident), "shadow_test_0.nouv")
 	{
 		lightbulb("Test point light 1", v3(+0.9410, +1.2415, +1.1063), quat(ident),
-			0, srgb(200,48,79) * col(100))
+			0, srgb(200,48,79) * col(100)) {}
 			
 		lightbulb("Test point light 2", v3(+1.0914, +0.5582, +1.3377), quat(ident),
 			DISABLED|SHADOW(0), srgb(48,200,79) * col(100))

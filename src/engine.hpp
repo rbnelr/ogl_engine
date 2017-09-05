@@ -879,6 +879,18 @@ struct Env_Viewer {
 	
 };
 
+struct Enum_Member {
+	lstr			identifier;
+	union {
+		struct {
+			u8		bit_offs;
+			u8		bit_len;
+			//u16		sub_members;
+		};
+		//u32			
+	};
+};
+
 #include "entities.hpp"
 
 struct Editor {
@@ -2687,14 +2699,14 @@ DECL void frame () {
 							if (l->flags & LF_DISABLED) {
 								continue;
 							}
-							bool casts_shadow = !(l->flags & LF_NO_SHADOW);
+							bool casts_shadow = (l->flags & LF_SHADOW);
 							
 							v3 light_dir_cam = world_to_cam.m3() * light_to_world.m3() * v3(0,0,-1);
 							
 							auto& out_l = temp.lights[enabled_light_indx];
 							
 							out_l.light_vec_cam.set(	v4( -light_dir_cam, 0) );
-							out_l.power.set(			l->power );
+							out_l.luminance.set(			l->luminance );
 							out_l.shad_i.set(			casts_shadow ? shadow_2d_indx : -1);
 							
 							if (casts_shadow) {
@@ -2742,14 +2754,14 @@ DECL void frame () {
 							if (l->flags & LF_DISABLED) {
 								continue;
 							}
-							bool casts_shadow = !(l->flags & LF_NO_SHADOW);
+							bool casts_shadow = (l->flags & LF_SHADOW);
 							
 							v3 light_pos_cam = (world_to_cam * light_to_world * hv(0) ).xyz();
 							
 							auto& out_l = temp.lights[enabled_light_indx];
 							
 							out_l.light_vec_cam.set(	v4( light_pos_cam, 1) );
-							out_l.power.set(			l->power );
+							out_l.luminance.set(			l->luminance );
 							out_l.shad_i.set(			casts_shadow ? shadow_cube_indx : -1 );
 							
 							if (casts_shadow) {

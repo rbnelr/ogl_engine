@@ -492,6 +492,10 @@ TODO
 -FEATURES:
  
  implement all.entities
+ -use new parsed entities in engine (keep old entity creation code for now)
+ -implement saving of all.entities
+ :I can edit and actually save the scenes now
+ etc.
  
  maybe ditch current scenes concept in favor of having seperate scenes that are 'portal' boxes into their scene
  

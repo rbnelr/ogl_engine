@@ -155,7 +155,7 @@ v3 get_light (ui i, v3 pos_cam, v3 norm_cam, out v3 luminance) {
 	Light l = g_lights[i];
 	
 	if (l.light_vec_cam.w == 0.0) {
-		luminance = l.power / v3(550);
+		luminance = l.luminance / v3(550);
 		v3 light_cam = l.light_vec_cam.xyz;
 		if (l.shad_i != ui(-1)) {
 			v3	pos_light_tex = (l.cam_to_light * v4(pos_cam, 1)).xyz * v3(0.5) +v3(0.5);
@@ -183,7 +183,7 @@ v3 get_light (ui i, v3 pos_cam, v3 norm_cam, out v3 luminance) {
 	
 	flt	light_radius = 32.0;
 	
-	v3	light_lumen = l.power;
+	v3	light_lumen = l.luminance;
 	v3	light_candela = light_lumen / (4.0 * PI);
 	
 	//light_radius *= get_mouse_pos().x * get_mouse_pos().x;

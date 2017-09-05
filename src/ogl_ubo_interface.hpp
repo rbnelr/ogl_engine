@@ -185,13 +185,13 @@ struct std140_Light {
 											// if w == 0.0:	xyz: direction to directional light source
 											// else:		xyz: pos of point light
 	std140::vec4							light_vec_cam;
-	std140::vec3							power;
+	std140::vec3							luminance;
 	std140::uint_							shad_i;
 	std140::mat4							cam_to_light;
 };
 ASSERT_STD140_STRUCT_SIZE(std140_Light);
 ASSERT_STD140_ALIGNMENT(std140_Light, light_vec_cam);
-ASSERT_STD140_ALIGNMENT(std140_Light, power);
+ASSERT_STD140_ALIGNMENT(std140_Light, luminance);
 ASSERT_STD140_ALIGNMENT(std140_Light, shad_i);
 ASSERT_STD140_ALIGNMENT(std140_Light, cam_to_light);
 

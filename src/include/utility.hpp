@@ -378,6 +378,24 @@ namespace str {
 		return true;
 	}
 	
+	// Supports strings with length 0, even though no actual characters are compared, two strings of length 0 are considered equal
+	DECL bool comp (char const* str_base, lstr cr a, lstr cr b) {
+		char const*	a_ = ptr_add(a.str, str_base);
+		char const*	b_ = ptr_add(b.str, str_base);
+		
+		if (a.len != b.len) {
+			return false;
+		}
+		
+		char const* end = a_ +a.len;
+		while (a_ != end) {
+			if (*a_++ != *b_++) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
 	#if 0
 	DECL bool comp (char const* a, char const* b, uptr* out_len) {
 		char const* cur = a;
