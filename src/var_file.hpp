@@ -1034,7 +1034,7 @@ namespace var {
 		
 		return cur;
 	}
-	_DECL NOINLINE char* comment (char* cur, u32* line_num, char** line_begin) {
+	_DECL char* comment (char* cur, u32* line_num, char** line_begin) {
 		
 		assert(*cur == '{' && cur[1] == '#');
 		Token fake_ftok = { ERROR_REP_IN_COMMENT, {(keyword_e)0}, cur, 2, *line_num, *line_begin };
@@ -3602,82 +3602,7 @@ namespace var {
 	
 	//////
 	
-	namespace entities {
-		
-		/////////
-		typedef u32 eid;
-		
-		struct Entity {
-			lstr			name;
-			
-			eid				next;
-			eid				parent;
-			eid				children;
-			// Relative to parent space / children are in the space defined by these placement variables
-			//  scale always first, orientation second and position last
-			v3				pos;
-			quat			ori;
-			v3				scale;
-			
-			AABB			aabb_mesh_paren; // only valid if (eflags & EF_HAS_MESHES)
-			AABB			aabb_mesh_world; // only valid if (eflags & EF_HAS_MESHES)
-			
-			entity_flag		eflags;
-			entity_tag		tag;
-		};
-		
-		struct eMesh_Base : public Entity {
-			Mesh*			mesh;
-			materials_e		material;
-		};
-		struct eMesh : public eMesh_Base {
-			Textures_Generic	tex;
-		};
-		struct eMesh_Nanosuit : public eMesh_Base {
-			Textures_Nanosuit	tex;
-		};
-		struct Material_Showcase_Grid : public Entity {
-			Mesh*			mesh;
-			v2				grid_offs;
-		};
-		struct Group : public Entity {
-			
-		};
-		struct Light : public Entity {
-			light_type_e	type;
-			light_flags_e	flags;
-			v3				luminance;
-			
-			Mesh*			mesh;
-		};
-		struct Scene : public Entity {
-			bool			draw;
-			dynarr<Light*>	lights;
-		};
-		
-		union Entity_union {
-			Entity					base;
-			eMesh_Base				eMesh_Base;
-			eMesh					eMesh;
-			eMesh_Nanosuit			eMesh_Nanosuit;
-			Material_Showcase_Grid	Material_Showcase_Grid;
-			Group					Group;
-			Light					Light;
-			Scene					Scene;
-			Root					Root;
-			
-			DECLM FORCEINLINE Entity_union () {}
-			DECLM static FORCEINLINE Entity_union null () {
-				Entity_union ret;
-				ret.base = Entity{	"<null>", 0,0,0,
-								v3(QNAN), quat(v3(QNAN), QNAN), v3(QNAN),
-								AABB::qnan(), AABB::qnan(),
-								(entity_flag)-1, (entity_tag)-1 };
-				cmemset(&ret.base +1, DBG_MEM_UNINITIALIZED_BYTE, sizeof(Entity_union) -sizeof(Entity));
-				return ret;
-			}
-		};
-		/////////
+	namespace entities_n {
 		
 		enum ctor_e : u32 {
 			CTOR_SCENE=0,
@@ -3797,6 +3722,16 @@ namespace var {
 			return tok;
 		}
 		
+		_DECL Token* integer (Token* tok, u64* val) {
+			
+			Expr_Val tmp;
+			syntaxdev(tok = expression(tok, &tmp, (parse_flags_e)0, 0), "integer:: MEMBER(VALUE) syntax:: VALUE expression()");
+			syntax(tmp.type == VT_SINT, tok,tok, "integer:: MEMBER(VALUE) syntax:: need integer for VALUE");
+			
+			*val = tmp.im.arr[0].x;
+			
+			return tok;
+		}
 		_DECL Token* enum_expression (Token* tok, u64* val, u64* mask, ::array<Enum_Member> cr en) {
 			
 			*val = 0;
@@ -3821,11 +3756,8 @@ namespace var {
 						if (tok->tok == PAREN_OPEN) { ++tok;
 							auto* expr_tok = tok;
 							
-							Expr_Val tmp_;
-							syntaxdev(tok = expression(tok, &tmp_, (parse_flags_e)0, 0), "enum_expression:: MEMBER(VALUE) syntax:: VALUE expression()");
-							syntax(tmp_.type == VT_SINT && tmp_.im.arr[0].x >= 0, expr_tok,tok, "enum_expression:: MEMBER(VALUE) syntax:: need uint for VALUE");
-							
-							tmp = tmp_.im.arr[0].x;
+							syntaxdev(tok = integer(tok, &tmp), "enum_expression:: integer()");
+							syntax(tmp >= 0, expr_tok,tok, "enum_expression:: MEMBER(VALUE) syntax:: need uint for VALUE");
 							
 							u64 valid_range = ((u64)0b1 << m->bit_len) -1;
 							syntax((tmp & ~valid_range) == 0, expr_tok,tok, "enum_expression:: MEMBER(VALUE) syntax:: VALUE out of range");
@@ -3872,10 +3804,11 @@ namespace var {
 		
 		_DECL Token* e_scene (Token* tok, Scene* e) {
 			e->tag = ET_SCENE;
-			print("scene % % %\n", e->name.to_abs(str_storage.arr), e->pos, e->ori);
+			print("scene % % %\n", e->name.to_abs(str_storage.arr), e->to_paren.pos, e->to_paren.ori);
 			return tok;
 		}
 		_DECL Token* e_light_sunlight (Token* tok, Light* e) {
+			e->tag = ET_LIGHT;
 			syntax_token(&tok, COMMA, "e_light_lightbulb:: comma");
 			
 			syntaxdev(tok = light_flags(tok, &e->flags), "e_light_lightbulb:: light_flags()");
@@ -3883,11 +3816,14 @@ namespace var {
 			
 			syntaxdev(tok = luminance(tok, &e->luminance), "e_light_sunlight:: luminance()");
 			
-			e->tag = ET_LIGHT;
-			print("sunlight % % % % %\n", e->name.to_abs(str_storage.arr), e->pos, e->ori, (u32)e->flags, e->luminance);
+			e->type = LT_DIRECTIONAL;
+			e->mesh = meshes.get_mesh("sun_lamp.nouv_vcol");
+			
+			print("sunlight % % % % %\n", e->name.to_abs(str_storage.arr), e->to_paren.pos, e->to_paren.ori, (u32)e->flags, e->luminance);
 			return tok;
 		}
 		_DECL Token* e_light_lightbulb (Token* tok, Light* e) {
+			e->tag = ET_LIGHT;
 			syntax_token(&tok, COMMA, "e_light_lightbulb:: comma");
 			
 			syntaxdev(tok = light_flags(tok, &e->flags), "e_light_lightbulb:: light_flags()");
@@ -3896,41 +3832,68 @@ namespace var {
 			v3 lum;
 			syntaxdev(tok = luminance(tok, &e->luminance), "e_light_lightbulb:: luminance()");
 			
-			e->tag = ET_LIGHT;
-			print("lightbulb % % % % %\n", e->name.to_abs(str_storage.arr), e->pos, e->ori, (u32)e->flags, e->luminance);
+			e->type = LT_POINT;
+			e->mesh = meshes.get_mesh("light_bulb.nouv_vcol");
+			
+			print("lightbulb % % % % %\n", e->name.to_abs(str_storage.arr), e->to_paren.pos, e->to_paren.ori, (u32)e->flags, e->luminance);
 			return tok;
 		}
 		_DECL Token* e_mesh (Token* tok, eMesh* e) {
+			e->tag = ET_MESH;
 			syntax_token(&tok, COMMA, "e_mesh:: comma");
 			
 			lstr mesh;
 			syntaxdev(tok = quoted_string_(tok, &mesh), "e_mesh:: quoted_string_()");
+			e->mesh = meshes.get_mesh(mesh.to_abs(str_storage.arr));
 			
-			e->tag = ET_MESH;
-			print("mesh % % % %\n", e->name.to_abs(str_storage.arr), e->pos, e->ori, mesh.to_abs(str_storage.arr));
+			syntax_token(&tok, COMMA, "e_mesh:: comma");
+			
+			u64 i;
+			syntaxdev(tok = integer(tok, &i), "e_mesh:: integer()");
+			assert(safe_cast(u32, i));
+			
+			e->material = (materials_e)i;
+			
+			e->tex.albedo =			(textures_e)-1;
+			e->tex.normal =			(textures_e)-1;
+			e->tex.roughness =		(textures_e)-1;
+			e->tex.metallic =		(textures_e)-1;
+			
+			print("mesh % % % %\n", e->name.to_abs(str_storage.arr), e->to_paren.pos, e->to_paren.ori, mesh.to_abs(str_storage.arr));
 			return tok;
 		}
 		_DECL Token* e_mesh_nanosuit (Token* tok, eMesh_Nanosuit* e) {
+			e->tag = ET_MESH_NANOSUIT;
 			syntax_token(&tok, COMMA, "e_mesh_nanosuit:: comma");
 			
 			lstr mesh;
 			syntaxdev(tok = quoted_string_(tok, &mesh), "e_mesh_nanosuit:: quoted_string_()");
+			e->mesh = meshes.get_mesh(mesh.to_abs(str_storage.arr));
 			
-			e->tag = ET_MESH_NANOSUIT;
-			print("mesh_nanosuit % % % %\n", e->name.to_abs(str_storage.arr), e->pos, e->ori, mesh.to_abs(str_storage.arr));
+			syntax_token(&tok, COMMA, "e_mesh:: comma");
+			
+			u64 i;
+			syntaxdev(tok = integer(tok, &i), "e_mesh:: integer()");
+			assert(safe_cast(u32, i));
+			
+			e->material = (materials_e)i;
+			
+			e->tex.diffuse_emissive =		(textures_e)-1;
+			e->tex.normal =					(textures_e)-1;
+			e->tex.specular_roughness =		(textures_e)-1;
+			
+			print("mesh_nanosuit % % % %\n", e->name.to_abs(str_storage.arr), e->to_paren.pos, e->to_paren.ori, mesh.to_abs(str_storage.arr));
 			return tok;
 		}
 		_DECL Token* e_group (Token* tok, Group* e) {
 			e->tag = ET_GROUP;
-			print("group % % %\n", e->name.to_abs(str_storage.arr), e->pos, e->ori);
+			print("group % % %\n", e->name.to_abs(str_storage.arr), e->to_paren.pos, e->to_paren.ori);
 			return tok;
 		}
 		
-		DECLD dynarr<Entity_union> entities;
-		
 		_DECL Token* nodes (Token* tok, eid paren, u32 depth) {
 			
-			eid* prev_next = paren ? &entities[paren].base.children : nullptr;
+			eid* prev_next = paren ? &entities.get(paren)->children : nullptr;
 			
 			for (;;) {
 				auto* node_iden = tok;
@@ -3942,35 +3905,46 @@ namespace var {
 				
 				auto ctor = match_ctor(node_iden->get_lstr());
 				
-				auto id = entities.len;
-				auto* e = &entities.push();
+				auto id = entities.push();
+				auto* e = entities.get(id);
 				
-				syntaxdev(tok = quoted_string_(tok, &e->base.name), "e_scene:: quoted_string_()");
+				syntaxdev(tok = quoted_string_(tok, &e->name), "e_scene:: quoted_string_()");
 				syntax_token(&tok, COMMA, "e_scene:: comma");
+				
+				e->depth = (u32)-1;
+				e->eflags = (entity_flag)0;
 				
 				if (prev_next) *prev_next = id;
 				
-				e->base.next =		0;
-				e->base.parent =	paren;
-				e->base.children =	0;
+				e->next =		0;
+				e->parent =	paren;
+				e->children =	0;
 				
-				syntaxdev(tok = position(tok, &e->base.pos), "pos_ori:: position()");
+				syntaxdev(tok = position(tok, &e->to_paren.pos), "pos_ori:: position()");
 				syntax_token(&tok, COMMA, "pos_ori:: comma");
 				
-				syntaxdev(tok = orientation(tok, &e->base.ori), "pos_ori:: orientation()");
+				syntaxdev(tok = orientation(tok, &e->to_paren.ori), "pos_ori:: orientation()");
 				
-				e->base.scale = v3(1);
-				e->base.aabb_mesh_paren = AABB::qnan();
-				e->base.aabb_mesh_world = AABB::qnan();
-				e->base.eflags = (entity_flag)0;
+				e->to_paren.scale = v3(1);
+				e->to_paren.forw =	hm::all(QNAN);
+				e->to_paren.inv =	hm::all(QNAN);
+				
+				e->mesh_aabb_paren = AABB::qnan();
+				
+				e->to_world.pos =	v3(QNAN);
+				e->to_world.ori =	quat(v3(QNAN), QNAN);
+				e->to_world.scale =	v3(QNAN);
+				e->to_world.forw =	hm::all(QNAN);
+				e->to_world.inv =	hm::all(QNAN);
+				e->mesh_aabb_world = AABB::qnan();
 				
 				switch (ctor) {
-					case CTOR_SCENE:			tok = e_scene(tok, &e->Scene);					break;
-					case CTOR_LIGHT_SUNLIGHT:	tok = e_light_sunlight(tok, &e->Light);			break;
-					case CTOR_LIGHT_LIGHTBULB:	tok = e_light_lightbulb(tok, &e->Light);		break;
-					case CTOR_MESH:				tok = e_mesh(tok, &e->eMesh);					break;
-					case CTOR_MESH_NANOSUIT:	tok = e_mesh_nanosuit(tok, &e->eMesh_Nanosuit);	break;
-					case CTOR_GROUP:			tok = e_group(tok, &e->Group);					break;
+					case CTOR_SCENE:			tok = e_scene(tok,				(Scene*)e);				break;
+					case CTOR_LIGHT_SUNLIGHT:	tok = e_light_sunlight(tok,		(Light*)e);				break;
+					case CTOR_LIGHT_LIGHTBULB:	tok = e_light_lightbulb(tok,	(Light*)e);				break;
+					case CTOR_MESH:				tok = e_mesh(tok, 				(eMesh*)e);				break;
+					case CTOR_MESH_NANOSUIT:	tok = e_mesh_nanosuit(tok,		(eMesh_Nanosuit*)e);	break;
+					case CTOR_GROUP:			tok = e_group(tok,				(Group*)e);				break;
 					default:
 						syntax(false, tok,tok, "entities::node:: unknown ctor '%'", node_iden->get_lstr());
 				}
@@ -3987,8 +3961,8 @@ namespace var {
 					syntax_token(&tok, CURLY_CLOSE, "entities::node:: PAREN_CLOSE");
 					
 					assert(false, "not implemented");
+					// ??
 					entities.pop();
-					e = &entities.push(*e);
 					
 				} else {
 					
@@ -4007,7 +3981,7 @@ namespace var {
 					break;
 				}
 				
-				prev_next = &e->base.next;
+				prev_next = &e->next;
 			}
 			
 			return tok;
@@ -4015,8 +3989,6 @@ namespace var {
 		
 		_DECL Token* file (Token* tok) {
 			
-			auto* e = &entities.push();
-			*e = Entity_union::null();
 			syntaxdev(tok = nodes(tok, 0, 0), "entities::file:: node()");
 			
 			return tok;
@@ -4032,12 +4004,10 @@ namespace var {
 				GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE));
 		
 		//
-		entities::str_storage.free();
-		entities::entities.free();
+		entities_n::str_storage.free();
 		
 		auto data = ::array<char>::alloc(win32::get_file_size(fh) +1);
-		entities::str_storage = entities::str_storage.alloc(kibi(4));
-		entities::entities = entities::entities.alloc(256);
+		entities_n::str_storage = entities_n::str_storage.alloc(kibi(4));
 		
 		win32::set_filepointer(fh, 0);
 		
@@ -4049,7 +4019,7 @@ namespace var {
 		
 		if (tokens.len >= 1 && tokens[tokens.len -1].tok == EOF_) {
 			
-			auto* tok = entities::file(tokens.arr);
+			auto* tok = entities_n::file(tokens.arr);
 			if (tok && tok->tok == EOF_) {
 				
 			} else {
@@ -4060,6 +4030,11 @@ namespace var {
 			warning("tokenize() error or ^EOF_MARKER^ missing (which might mean the file was incomplete)");
 		}
 		
+		for (eid i=1; i<entities.storage.len; ++i) {
+			auto* e = entities.get(i);
+			e->name = e->name.to_abs(entities_n::str_storage.arr);
+		}
+		
 		print(">>>>>>>>>> \n");
 		
 	}
@@ -4067,7 +4042,7 @@ namespace var {
 	void init () {
 		inplace_sort(keywords, KEYWORDS_COUNT);
 		inplace_sort(dollar_commands, DOLLAR_COMMAND_COUNT);
-		inplace_sort(entities::ctors, entities::CTOR_COUNT);
+		inplace_sort(entities_n::ctors, entities_n::CTOR_COUNT);
 		init_vars();
 	}
 	

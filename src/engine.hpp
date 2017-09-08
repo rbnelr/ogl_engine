@@ -895,14 +895,14 @@ struct Enum_Member {
 
 struct Editor {
 	
-	bool				highl_manipulator;
+	bool	highl_manipulator;
 	
-	Entity*				selected =					nullptr;
-	Entity*				highl =						nullptr;
+	eid		selected =					0;
+	eid		highl =						0;
 	
-	bool				dragging =					false;
-	v3					select_offs_paren =			v3(0);
-	v3					selected_pos_paren =		v3(0);
+	bool	dragging =					false;
+	v3		select_offs_paren =			v3(0);
+	v3		selected_pos_paren =		v3(0);
 	
 	DECLM void do_entities (hm mp world_to_cam, hm mp cam_to_world, Inp cr inp, SInp cr sinp,
 			v2 vp cam_frust_scale, m4 mp cam_to_clip, Camera cr cam, Entities* entities) {
@@ -912,13 +912,13 @@ struct Editor {
 		if (inp.mouselook & FPS_MOUSELOOK) {
 			dragging = false; // This is kinda ungraceful
 			highl_manipulator = false;
-			highl = nullptr;
+			highl = 0;
 		} else {
 			
 			v2 f_mouse_cursor_pos = cast_v2<v2>(sinp.mouse_cursor_pos);
 			v2 f_window_res = cast_v2<v2>(sinp.window_res);
 			
-			Entity* highl_ = nullptr;
+			eid highl_ = 0;
 			
 			{ // Test entities for cursor highlight
 				auto ray_world = target_ray_from_screen_pos(f_mouse_cursor_pos, f_window_res,
@@ -928,14 +928,15 @@ struct Editor {
 				
 				v3 ray_dir_inv = v3(1.0f) / ray_world.dir; 
 				
-				auto for_entities = [&] (Entity* e) {
+				for (eid id=1; id<entities->storage.len; ++id) {
+					Entity* e = entities->get(id);
 					
 					//print("%'%' %\n", repeat("  ", calc_depth(e)), e->name, (u32)e->eflags);
 					
-					if (!(e->eflags & EF_HAS_MESHES)) return;
-					if (e == selected) return; // can't highlight selected entity to make selection smoother
+					if (!(e->eflags & EF_HAS_AABB)) continue;
+					if (id == selected) continue; // can't highlight selected entity to make selection smoother
 					
-					AABB aabb = e->aabb_mesh_world;
+					AABB aabb = e->mesh_aabb_world;
 					
 					{ // AABB ray intersection test
 						f32 tmin;
@@ -972,13 +973,12 @@ struct Editor {
 								} else {
 									least_t = tmin;
 								}
-								highl_ = e;
+								highl_ = id;
 							}
 						}
 					}
 					
-				};
-				for_entity_subtree(&entities->root, for_entities);
+				}
 				
 				#if 0
 				if (highl_) {
@@ -1000,17 +1000,17 @@ struct Editor {
 				
 				// Place manipulator at location of selected draggable
 				
-				hm cam_to_paren;
-				hm paren_to_cam;
-				{
-					hm world_to_paren;
-					hm paren_to_world = calc_mat_parent_world(selected, &world_to_paren);
-					
-					paren_to_cam = world_to_cam * paren_to_world;
-					cam_to_paren = world_to_paren * cam_to_world;
+				Entity* sel_e = entities->get(selected);
+				
+				hm paren_to_cam = world_to_cam;
+				hm cam_to_paren = cam_to_world;
+				if (sel_e->parent) {
+					Entity* paren = entities->get(sel_e->parent);
+					paren_to_cam *= paren->to_world.forw;
+					cam_to_paren = paren->to_world.inv * cam_to_paren;
 				}
 				
-				v3 pos_cam = (paren_to_cam * hv(selected->pos)).xyz();
+				v3 pos_cam = (paren_to_cam * hv(sel_e->to_paren.pos)).xyz();
 				f32 zDist_cam = -pos_cam.z;
 				
 				bool onscreen = zDist_cam > 0.0f;
@@ -1043,11 +1043,11 @@ struct Editor {
 							{ // axis cross arrow tips (postive and negative for xyz)
 								v3 v = v3(0);
 								v[axis] = +1.0625f * scaleCorrect;
-								v3 temp = (paren_to_cam * hv(selected->pos +v)).xyz();
+								v3 temp = (paren_to_cam * hv(sel_e->to_paren.pos +v)).xyz();
 								axisP = project_point_onto_screen(temp, cam_to_clip, f_window_res) -axisBase;
 								v = v3(0);
 								v[axis] = -0.75f * scaleCorrect;
-								temp = (paren_to_cam * hv(selected->pos +v)).xyz();
+								temp = (paren_to_cam * hv(sel_e->to_paren.pos +v)).xyz();
 								axisN = project_point_onto_screen(temp, cam_to_clip, f_window_res) -axisBase;
 							}
 							axisNLen = length(axisN);
@@ -1098,17 +1098,17 @@ struct Editor {
 						v3 intersect;
 						bool intersectValid = ray_line_closest_intersect(
 								targetRay_paren.pos, targetRay_paren.dir,
-								selected->pos, axisDir_paren, &intersect);
+								sel_e->to_paren.pos, axisDir_paren, &intersect);
 						assert(intersectValid);
 						if (!intersectValid) {
 							highlAxis = NO_AXIS; // Ignore selection by pretending no axis was highlighted
 						}
 						selectOffset_paren_ = intersect;
-						selected_pos_paren_ = selected->pos;
+						selected_pos_paren_ = sel_e->to_paren.pos;
 					}
 					
 					if (highlAxis != NO_AXIS) { // Override highlighting of other entities
-						highl_ = (Entity*)(uptr)(highlAxis +1);
+						highl_ = highlAxis +1;
 						highl_manipulator_ = true;
 					}
 				}
@@ -1123,7 +1123,7 @@ struct Editor {
 					{
 						v3 v = v3(0);
 						v[axis] = +1.0f;
-						v3 temp = (paren_to_cam * hv(selected->pos +v)).xyz();
+						v3 temp = (paren_to_cam * hv(sel_e->to_paren.pos +v)).xyz();
 						axisDir_screen = project_point_onto_screen(temp, cam_to_clip,
 								f_window_res) -axisBase;
 						axisDir_paren = v;
@@ -1144,7 +1144,7 @@ struct Editor {
 								&intersect);
 						
 						if (intersectValid) {
-							selected->pos = selected_pos_paren +(intersect -select_offs_paren);
+							sel_e->to_paren.pos = selected_pos_paren +(intersect -select_offs_paren);
 						} else {
 							// Dont move axis cross
 						}
@@ -1157,7 +1157,7 @@ struct Editor {
 			
 			if (!dragging) {
 				if (!sinp.mouse_cursor_in_window) {
-					highl = nullptr;
+					highl = 0;
 					highl_manipulator = false;
 				} else {
 					bool is_down =		inp.editor_click_select_state == true;
@@ -1170,8 +1170,8 @@ struct Editor {
 							if (!highl_manipulator_) {
 								selected = highl_;
 								
-								print("Moveable '%' selected at local pos %.\n",
-										selected->name, selected->pos);
+								Entity* sel_e = entities->get(selected);
+								print("Moveable '%' selected at paren pos %.\n", sel_e->name, sel_e->to_paren.pos);
 							} else {
 								
 								dragging = true;
@@ -1182,7 +1182,7 @@ struct Editor {
 							
 						} else {
 							// Unselect selection
-							selected = nullptr;
+							selected = 0;
 						}
 					}
 					
@@ -1201,7 +1201,8 @@ struct Editor {
 				if (up) {
 					dragging = false;
 					
-					print("Entity '%' moved to local pos %.\n", selected->name, selected->pos);
+					Entity* sel_e = entities->get(selected);
+					print("Entity '%' moved to local pos %.\n", sel_e->name, sel_e->to_paren.pos);
 				}
 			}
 		}
@@ -2206,10 +2207,12 @@ DECL void init () {
 		meshes.init();
 	}
 	
+	#if 0
 	{
 		PROFILE_SCOPED(THR_ENGINE, "test_entities");
 		entities.test_entities();
 	}
+	#endif
 	
 	{
 		PROFILE_SCOPED(THR_ENGINE, "texture_loader_init");
@@ -2225,12 +2228,15 @@ DECL void init () {
 		dbg_lines.init();
 		env_viewer.init();
 		
-		entities.calc_mesh_aabb(); // calculate inital AABB
+		
+		entities.init();
+		
+		var::test_parse_entitites();
+		
+		entities.calc_entities_transforms_and_aabb(); // calculate inital entity data
 	}
 	
 	input::print_button_bindings::print();
-	
-	var::test_parse_entitites();
 }
 
 DECL void frame () {
@@ -2288,7 +2294,7 @@ DECL void frame () {
 		
 		parse_prev_file_data( (var::parse_flags_e)(var::PF_ONLY_SYNTAX_CHECK|var::PF_WRITE_SAVE) );
 		
-		entities.test_enumerate_all();
+		//entities.test_enumerate_all();
 	}
 	
 	if (inp.misc_reload_shaders) {
@@ -2372,7 +2378,9 @@ DECL void frame () {
 				
 				if ( !identical(temp, v2(0)) && editor.selected) {
 					
-					v3 aer = aer_horizontal_q_to_euler(editor.selected->ori);
+					auto* sel_e = entities.get(editor.selected);
+					
+					v3 aer = aer_horizontal_q_to_euler(sel_e->to_paren.ori);
 					
 					aer.x -= temp.x;
 					aer.y -= temp.y;
@@ -2381,7 +2389,7 @@ DECL void frame () {
 					aer.y = clamp(aer.y, deg(-89.95f), deg(+89.95f)); // elev close to +/-90 causes azim to lose precision, with azim being corrupted completely at the singularity (azim=atan2(0,0))
 					aer.z = 0.0f;
 					
-					editor.selected->ori = aer_horizontal_q_from_euler(aer);
+					sel_e->to_paren.ori = aer_horizontal_q_from_euler(aer);
 					
 					print("Entity rotate: azim %  elev %\n", to_deg(aer.x), to_deg(aer.y));
 					
@@ -2419,7 +2427,7 @@ DECL void frame () {
 	editor.do_entities(world_to_cam, cam_to_world, inp, sinp,
 			cam_frust_scale, cam_to_clip, camera, &entities);
 	
-	entities.calc_mesh_aabb(); // update AABB since entities could have moved in do_entities
+	entities.calc_entities_transforms_and_aabb(); // update entity data since entities could have moved in do_entities
 	
 	{
 		PROFILE_SCOPED(THR_ENGINE, "bind_samplers");
@@ -2460,13 +2468,14 @@ DECL void frame () {
 		PROFILE_SCOPED(THR_ENGINE, "scenes_main_passes");
 		
 		u32 scn_i = 0;
-		auto* e = entities.root.children;
-		while (e) {
+		auto id = entities.storage.len > 1 ? 1 : 0;
+		while (id) {
+			auto* scn_e = entities.get(id);
 			
 			Scene* scn;
 			{
-				assert(e->tag == ET_SCENE);
-				scn = (Scene*)e;
+				assert(scn_e->tag == ET_SCENE);
+				scn = (Scene*)scn_e;
 			}
 			
 			if (scn->draw) {
@@ -2474,7 +2483,7 @@ DECL void frame () {
 				//print("Drawing scene #%\n", scn_i);
 				//entities.test_enumerate(p_scn);
 				
-				auto draw_mesh = [] (eMesh const* msh, hm mp to_cam, hm mp from_cam) {
+				auto draw_mesh = [] (eMesh const* msh, hm mp world_to_cam, hm mp cam_to_world) {
 					PROFILE_SCOPED(THR_ENGINE, "mesh");
 					
 					glUseProgram(shaders[SHAD_PBR_DEV_COMMON]);
@@ -2488,8 +2497,8 @@ DECL void frame () {
 					{
 						std140_Transforms_Material temp;
 						
-						temp.transforms.model_to_cam.set(to_cam);
-						temp.transforms.normal_model_to_cam.set(transpose(from_cam.m3())); // cancel out scaling and translation -> only keep rotaton
+						temp.transforms.model_to_cam.set(world_to_cam * msh->to_world.forw);
+						temp.transforms.normal_model_to_cam.set((msh->to_world.inv * cam_to_world).m3());
 						
 						temp.mat = materials[msh->material];
 						
@@ -2512,15 +2521,15 @@ DECL void frame () {
 							msh->mesh->vbo_data.indx_offset, msh->mesh->vbo_data.base_vertex);
 					
 				};
-				auto draw_mesh_shadow = [] (eMesh_Base const* msh, hm mp to_light, hm mp from_light) {
+				auto draw_mesh_shadow = [] (eMesh_Base const* msh, hm mp world_to_light, hm mp light_to_world) {
 					PROFILE_SCOPED(THR_ENGINE, "mesh");
 					
 					meshes.bind_vao(msh->mesh);
 					
 					{
 						std140_Transforms temp;
-						temp.model_to_cam.set(to_light);
-						temp.normal_model_to_cam.set(transpose(from_light.m3())); // cancel out scaling and translation -> only keep rotaton
+						temp.model_to_cam.set(world_to_light * msh->to_world.forw);
+						temp.normal_model_to_cam.set((msh->to_world.inv * light_to_world).m3());
 						GLOBAL_UBO_WRITE(transforms, &temp);
 					}
 					
@@ -2528,7 +2537,7 @@ DECL void frame () {
 							msh->mesh->vbo_data.indx_offset, msh->mesh->vbo_data.base_vertex);
 				};
 				
-				auto draw_mesh_nanosuit = [] (eMesh_Nanosuit const* msh, hm mp to_cam, hm mp from_cam) {
+				auto draw_mesh_nanosuit = [] (eMesh_Nanosuit const* msh, hm mp world_to_cam, hm mp cam_to_world) {
 					PROFILE_SCOPED(THR_ENGINE, "mesh");
 					
 					glUseProgram(shaders[SHAD_PBR_DEV_NANOSUIT]);
@@ -2540,21 +2549,22 @@ DECL void frame () {
 					{
 						std140_Transforms_Material temp;
 						
-						temp.transforms.model_to_cam.set(to_cam);
-						temp.transforms.normal_model_to_cam.set(transpose(from_cam.m3())); // cancel out scaling and translation -> only keep rotaton
+						temp.transforms.model_to_cam.set(world_to_cam * msh->to_world.forw);
+						temp.transforms.normal_model_to_cam.set((msh->to_world.inv * cam_to_world).m3());
+						
 						temp.mat = materials[msh->material];
 						
 						GLOBAL_UBO_WRITE(transforms, &temp);
 					}
 					
 					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_NANO_DIFFUSE_EMISSIVE);
-					glBindTexture(GL_TEXTURE_2D, tex.gl_refs[msh->tex.diffuse_emissive]);
+					glBindTexture(GL_TEXTURE_2D, msh->tex.diffuse_emissive == TEX_IDENT ? tex_ident : tex.gl_refs[msh->tex.diffuse_emissive]);
 					
 					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_NANO_NORMAL);
-					glBindTexture(GL_TEXTURE_2D, tex.gl_refs[msh->tex.normal]);
+					glBindTexture(GL_TEXTURE_2D, msh->tex.normal == TEX_IDENT ? tex_ident_normal : tex.gl_refs[msh->tex.normal]);
 					
 					glActiveTexture(GL_TEXTURE0 +TEX_UNIT_NANO_SPECULAR_ROUGHNESS);
-					glBindTexture(GL_TEXTURE_2D, tex.gl_refs[msh->tex.specular_roughness]);
+					glBindTexture(GL_TEXTURE_2D, msh->tex.specular_roughness == TEX_IDENT ? tex_ident : tex.gl_refs[msh->tex.specular_roughness]);
 					
 					
 					glDrawElementsBaseVertex(GL_TRIANGLES, msh->mesh->vbo_data.indx_count, GL_UNSIGNED_SHORT,
@@ -2566,7 +2576,7 @@ DECL void frame () {
 				auto unif_offs = glGetUniformLocation(shaders[SHAD_PBR_DEV_NOTEX_INST], "unif_grid_offs");
 				auto unif_offs_mat = glGetUniformLocation(shaders[SHAD_PBR_DEV_NOTEX_INST], "unif_grid_offs_mat");
 				
-				auto draw_material_showcase_grid = [&] (Material_Showcase_Grid const* e, hm mp to_cam, hm mp from_cam) {
+				auto draw_material_showcase_grid = [&] (Material_Showcase_Grid const* e, hm mp world_to_cam, hm mp cam_to_world) {
 					PROFILE_SCOPED(THR_ENGINE, "material_showcase_grid");
 					
 					auto steps = material_showcase_grid_steps;
@@ -2590,8 +2600,8 @@ DECL void frame () {
 					{
 						std140_Transforms_Material temp;
 						
-						temp.transforms.model_to_cam.set(to_cam);
-						temp.transforms.normal_model_to_cam.set(transpose(from_cam.m3())); // cancel out scaling and translation -> only keep rotaton
+						temp.transforms.model_to_cam.set(world_to_cam * e->to_world.forw);
+						temp.transforms.normal_model_to_cam.set((e->to_world.inv * cam_to_world).m3());
 						
 						temp.mat = mat;
 						
@@ -2604,7 +2614,7 @@ DECL void frame () {
 							e->mesh->vbo_data.indx_offset, inst_count, e->mesh->vbo_data.base_vertex);
 					
 				};
-				auto draw_material_showcase_grid_shadow = [&] (Material_Showcase_Grid const* e, hm mp to_light, hm mp from_light) {
+				auto draw_material_showcase_grid_shadow = [&] (Material_Showcase_Grid const* e, hm mp world_to_light, hm mp light_to_world) {
 					PROFILE_SCOPED(THR_ENGINE, "material_showcase_grid");
 					
 					auto steps = material_showcase_grid_steps;
@@ -2622,8 +2632,8 @@ DECL void frame () {
 							
 							{
 								std140_Transforms temp;
-								temp.model_to_cam.set(to_light * translate_h(v3(offs, 0)));
-								temp.normal_model_to_cam.set(transpose((translate_h(v3(-offs, 0)) * from_light).m3())); // cancel out scaling and translation -> only keep rotaton
+								temp.model_to_cam.set(world_to_light * e->to_world.forw * translate_h(v3(offs, 0)));
+								temp.normal_model_to_cam.set((translate_h(v3(-offs, 0)) * e->to_world.inv * light_to_world).m3()); // cancel out scaling and translation -> only keep rotaton
 								GLOBAL_UBO_WRITE(transforms, &temp);
 							}
 							
@@ -2642,34 +2652,33 @@ DECL void frame () {
 					
 					glCullFace(GL_FRONT);
 					
-					auto draw_entity = [&] (Entity const* e, hm mp to_light, hm mp from_light, hm mp paren_to_cam) -> void {
-						switch (e->tag) {
-							
-							case ET_MESH:
-							case ET_MESH_NANOSUIT:
-								draw_mesh_shadow((eMesh_Base*)e, to_light, from_light);
-								break;
-								
-							case ET_LIGHT:
-								break;
-								
-							case ET_MATERIAL_SHOWCASE_GRID:
-								draw_material_showcase_grid_shadow((Material_Showcase_Grid*)e, to_light, from_light);
-								break;
-								
-							case ET_GROUP:
-							case ET_SCENE:
-								break;
-							
-							case ET_ROOT:
-							default: assert(false);
-						}
-					};
-					
 					auto draw_scene = [&] (hm mp world_to_light, hm mp light_to_world) -> void {
 						PROFILE_SCOPED(THR_ENGINE, "draw_scene_shadow");
 						
-						for_entity_subtree_mat(scn, world_to_light, light_to_world, draw_entity);
+						for (eid id=1; id<entities.storage.len; ++id) {
+							Entity* e=&entities.storage.arr[id].base;
+							switch (e->tag) {
+								
+								case ET_MESH:
+								case ET_MESH_NANOSUIT:
+									draw_mesh_shadow((eMesh_Base*)e, world_to_light, light_to_world);
+									break;
+									
+								case ET_LIGHT:
+									break;
+									
+								case ET_MATERIAL_SHOWCASE_GRID:
+									draw_material_showcase_grid_shadow((Material_Showcase_Grid*)e, world_to_light, light_to_world);
+									break;
+									
+								case ET_GROUP:
+								case ET_SCENE:
+									break;
+								
+								case ET_ROOT:
+								default: assert(false);
+							}
+						}
 					};
 					
 					std140_Shading temp = {};
@@ -2678,133 +2687,134 @@ DECL void frame () {
 					u32	shadow_cube_indx =		0;
 					u32 enabled_light_indx =	0;
 					
-					if (scn->lights.len > MAX_LIGHTS_COUNT) {
-						warning("scene '%' has more lights (%) than MAX_LIGHTS_COUNT(%), additional lights won't have effect.",
-							scn->name, scn->lights.len, MAX_LIGHTS_COUNT);
-					}
-					u32 lights_count = MIN(scn->lights.len, MAX_LIGHTS_COUNT);
-					
-					for (u32 light_i=0; light_i<lights_count; ++light_i) {
+					auto l_id = scn->children;
+					for (u32 light_i=0; l_id;) {
 						
-						auto const* l = scn->lights[light_i];
-						
-						auto shadow_tex = passes.shadow_lights_tex[light_i];
-						
-						hm world_to_light;
-						hm light_to_world = calc_mat_me_world(l, &world_to_light);
-						
-						switch (l->type) {
-						case LT_DIRECTIONAL: {
+						auto* e = entities.get(l_id);
+						if (e->tag == ET_LIGHT) {
+							auto* l = (Light*)e;
 							
-							if (l->flags & LF_DISABLED) {
-								continue;
-							}
-							bool casts_shadow = (l->flags & LF_SHADOW);
-							
-							v3 light_dir_cam = world_to_cam.m3() * light_to_world.m3() * v3(0,0,-1);
-							
-							auto& out_l = temp.lights[enabled_light_indx];
-							
-							out_l.light_vec_cam.set(	v4( -light_dir_cam, 0) );
-							out_l.luminance.set(			l->luminance );
-							out_l.shad_i.set(			casts_shadow ? shadow_2d_indx : -1);
-							
-							if (casts_shadow) {
-								PROFILE_SCOPED(THR_ENGINE, "scene_shadow_dir_light", light_i);
+							if (!(l->flags & LF_DISABLED)) {
 								
-								auto aabb = calc_shadow_cast_aabb(scn, world_to_light);
-								//dbg_lines.push_box_world(light_to_world, aabb.box_edges(), v3(1,1,0));
-								
-								v3	dim =	v3(aabb.xh -aabb.xl, aabb.yh -aabb.yl, aabb.zh -aabb.zl);
-								v3	offs =	v3(aabb.xh +aabb.xl, aabb.yh +aabb.yl, aabb.zh +aabb.zl);
-								
-								v3	d =		v3(2) / dim;
-									offs /=	dim;
-								
-								m4 light_projection = m4::row(	d.x,	0,		0,		-offs.x,
-																0,		d.y,	0,		-offs.y,
-																0,		0,		-d.z,	+offs.z,
-																0,		0,		0,		1 );
-								
-								m4 cam_to_light =	light_projection;
-								cam_to_light *=		world_to_light.m4();
-								cam_to_light *=		cam_to_world.m4();
-								
-								out_l.cam_to_light.set(		cam_to_light );
-								
-								{
-									u32 tex_unit_indx = TEX_UNITS_SHADOW_FIRST +shadow_2d_indx;
-									glBindSampler(tex_unit_indx,	tex.samplers[SAMPLER_SHADOW_2D]);
-									glActiveTexture(GL_TEXTURE0 +tex_unit_indx);
-									glBindTexture(GL_TEXTURE_2D, shadow_tex);
-									
-									++shadow_2d_indx;
+								if (enabled_light_indx == MAX_LIGHTS_COUNT) {
+									warning("scene '%' has more lights (at least %) than MAX_LIGHTS_COUNT(%), additional lights won't have effect.",
+										scn->name, enabled_light_indx, MAX_LIGHTS_COUNT);
 								}
 								
-								passes.shadow_pass_directional(shadow_tex, light_projection, world_to_light, light_to_world, draw_scene);
+								bool casts_shadow = (l->flags & LF_SHADOW);
 								
-								//dbg_tex_0 = shadow_tex;
-							} else {
-								dbg_tex_0 = 0;
-							}
-							
-						} break;
-						
-						case LT_POINT: {
-							if (l->flags & LF_DISABLED) {
-								continue;
-							}
-							bool casts_shadow = (l->flags & LF_SHADOW);
-							
-							v3 light_pos_cam = (world_to_cam * light_to_world * hv(0) ).xyz();
-							
-							auto& out_l = temp.lights[enabled_light_indx];
-							
-							out_l.light_vec_cam.set(	v4( light_pos_cam, 1) );
-							out_l.luminance.set(			l->luminance );
-							out_l.shad_i.set(			casts_shadow ? shadow_cube_indx : -1 );
-							
-							if (casts_shadow) {
-								PROFILE_SCOPED(THR_ENGINE, "scene_shadow_omnidir_light", light_i);
+								auto shadow_tex = passes.shadow_lights_tex[light_i];
 								
-								f32	radius =		25.0f;
-								
-								m4 light_projection = m4::row(	-1,	0,	0,	0,
-																0,	-1,	0,	0,
-																0,	0,	0,	0,	// z does not matter since i override it with the actual eucilidan distance in the fragment shader by writing to gl_FragDepth (it can't be inf or nan, though)
-																0,	0,	-1,	0 );
-								
-								m4 cam_to_light =	world_to_light.m4();
-								cam_to_light *=		cam_to_world.m4();
-								
-								out_l.cam_to_light.set(		cam_to_light );
-								
-								{
-									u32 tex_unit_indx = TEX_UNITS_SHADOW_FIRST +MAX_LIGHTS_COUNT +shadow_cube_indx;
-									glBindSampler(tex_unit_indx,	tex.samplers[SAMPLER_SHADOW_CUBE]);
-									glActiveTexture(GL_TEXTURE0 +tex_unit_indx);
-									glBindTexture(GL_TEXTURE_CUBE_MAP, shadow_tex);
+								switch (l->type) {
+								case LT_DIRECTIONAL: {
 									
-									++shadow_cube_indx;
+									v3 light_dir_cam = world_to_cam.m3() * l->to_world.forw.m3() * v3(0,0,-1);
+									
+									auto& out_l = temp.lights[enabled_light_indx];
+									
+									out_l.light_vec_cam.set(	v4( -light_dir_cam, 0) );
+									out_l.luminance.set(			l->luminance );
+									out_l.shad_i.set(			casts_shadow ? shadow_2d_indx : -1);
+									
+									if (casts_shadow) {
+										PROFILE_SCOPED(THR_ENGINE, "scene_shadow_dir_light", light_i);
+										
+										//auto aabb = calc_shadow_cast_aabb(scn, l->to_world.inv);
+										auto aabb = AABB{-1,+1, -1,+2, -10,0};
+										
+										//dbg_lines.push_box_world(l->to_world.forw, aabb.box_edges(), v3(1,1,0));
+										
+										v3	dim =	v3(aabb.xh -aabb.xl, aabb.yh -aabb.yl, aabb.zh -aabb.zl);
+										v3	offs =	v3(aabb.xh +aabb.xl, aabb.yh +aabb.yl, aabb.zh +aabb.zl);
+										
+										v3	d =		v3(2) / dim;
+											offs /=	dim;
+										
+										m4 light_projection = m4::row(	d.x,	0,		0,		-offs.x,
+																		0,		d.y,	0,		-offs.y,
+																		0,		0,		-d.z,	+offs.z,
+																		0,		0,		0,		1 );
+										
+										m4 cam_to_light =	light_projection;
+										cam_to_light *=		l->to_world.inv.m4();
+										cam_to_light *=		cam_to_world.m4();
+										
+										out_l.cam_to_light.set(		cam_to_light );
+										
+										{
+											u32 tex_unit_indx = TEX_UNITS_SHADOW_FIRST +shadow_2d_indx;
+											glBindSampler(tex_unit_indx,	tex.samplers[SAMPLER_SHADOW_2D]);
+											glActiveTexture(GL_TEXTURE0 +tex_unit_indx);
+											glBindTexture(GL_TEXTURE_2D, shadow_tex);
+											
+											++shadow_2d_indx;
+										}
+										
+										passes.shadow_pass_directional(shadow_tex, light_projection, l->to_world.inv, l->to_world.forw, draw_scene);
+										
+										//dbg_tex_0 = shadow_tex;
+									} else {
+										dbg_tex_0 = 0;
+									}
+									
+								} break;
+								
+								case LT_POINT: {
+									
+									v3 light_pos_cam = (world_to_cam * l->to_world.forw * hv(0) ).xyz();
+									
+									auto& out_l = temp.lights[enabled_light_indx];
+									
+									out_l.light_vec_cam.set(	v4( light_pos_cam, 1) );
+									out_l.luminance.set(			l->luminance );
+									out_l.shad_i.set(			casts_shadow ? shadow_cube_indx : -1 );
+									
+									if (casts_shadow) {
+										PROFILE_SCOPED(THR_ENGINE, "scene_shadow_omnidir_light", light_i);
+										
+										f32	radius =		25.0f;
+										
+										m4 light_projection = m4::row(	-1,	0,	0,	0,
+																		0,	-1,	0,	0,
+																		0,	0,	0,	0,	// z does not matter since i override it with the actual eucilidan distance in the fragment shader by writing to gl_FragDepth (it can't be inf or nan, though)
+																		0,	0,	-1,	0 );
+										
+										m4 cam_to_light =	l->to_world.forw.m4();
+										cam_to_light *=		cam_to_world.m4();
+										
+										out_l.cam_to_light.set(		cam_to_light );
+										
+										{
+											u32 tex_unit_indx = TEX_UNITS_SHADOW_FIRST +MAX_LIGHTS_COUNT +shadow_cube_indx;
+											glBindSampler(tex_unit_indx,	tex.samplers[SAMPLER_SHADOW_CUBE]);
+											glActiveTexture(GL_TEXTURE0 +tex_unit_indx);
+											glBindTexture(GL_TEXTURE_CUBE_MAP, shadow_tex);
+											
+											++shadow_cube_indx;
+										}
+										
+										glEnable(GL_DEPTH_CLAMP);
+										
+										passes.shadow_pass_point(shadow_tex, light_projection, radius, l->to_world.inv, l->to_world.forw, draw_scene);
+										
+										glDisable(GL_DEPTH_CLAMP);
+										
+										dbg_tex_1 = shadow_tex;
+									} else {
+										dbg_tex_1 = 0;
+									}
+									
+								} break;
+								
+								default: assert(false);
 								}
 								
-								glEnable(GL_DEPTH_CLAMP);
-								
-								passes.shadow_pass_point(shadow_tex, light_projection, radius, world_to_light, light_to_world, draw_scene);
-								
-								glDisable(GL_DEPTH_CLAMP);
-								
-								dbg_tex_1 = shadow_tex;
-							} else {
-								dbg_tex_1 = 0;
+								++enabled_light_indx;
 							}
-							
-						} break;
-						
-						default: assert(false);
+							++light_i;
 						}
 						
-						++enabled_light_indx;
+						l_id = e->next;
 					}
 					
 					{
@@ -2841,7 +2851,7 @@ DECL void frame () {
 						
 						u32 enabled_light_indx =	0;
 						
-						auto draw_light_bulb = [&] (Light const* l, hm mp to_cam, hm mp from_cam) {
+						auto draw_light_bulb = [&] (Light const* l, hm mp world_to_cam, hm mp cam_to_world) {
 							PROFILE_SCOPED(THR_ENGINE, "light_bulb");
 							
 							glUseProgram(shaders[SHAD_PBR_DEV_LIGHTBULB]);
@@ -2856,8 +2866,8 @@ DECL void frame () {
 								{
 									std140_Transforms_Material temp;
 									
-									temp.transforms.model_to_cam.set(to_cam);
-									temp.transforms.normal_model_to_cam.set(transpose(from_cam.m3())); // cancel out scaling and translation -> only keep rotaton
+									temp.transforms.model_to_cam.set(world_to_cam * l->to_world.forw);
+									temp.transforms.normal_model_to_cam.set((l->to_world.inv * cam_to_world).m3());
 									
 									temp.mat = materials[MAT_LIGHTBULB];
 									
@@ -2874,50 +2884,50 @@ DECL void frame () {
 							}
 						};
 						
-						auto draw_entity = [&] (Entity const* e, hm mp to_cam, hm mp from_cam, hm mp paren_to_cam) -> void {
+						for (eid id=1; id<entities.storage.len; ++id) {
+							Entity* e = entities.get(id);
 							
 							switch (e->tag) {
 								
 								case ET_MESH:
-									draw_mesh((eMesh*)e, to_cam, from_cam);
+									draw_mesh((eMesh*)e, world_to_cam, cam_to_world);
 									break;
 									
 								case ET_MESH_NANOSUIT:
-									draw_mesh_nanosuit((eMesh_Nanosuit*)e, to_cam, from_cam);
+									draw_mesh_nanosuit((eMesh_Nanosuit*)e, world_to_cam, cam_to_world);
 									break;
 									
 								case ET_LIGHT:
-									draw_light_bulb((Light*)e, to_cam, from_cam);
+									draw_light_bulb((Light*)e, world_to_cam, cam_to_world);
 									break;
 									
 								case ET_MATERIAL_SHOWCASE_GRID:
-									draw_material_showcase_grid((Material_Showcase_Grid*)e, to_cam, from_cam);
+									draw_material_showcase_grid((Material_Showcase_Grid*)e, world_to_cam, cam_to_world);
 									break;
 									
 								case ET_GROUP:
-									if (!e->aabb_mesh_paren.is_inf()) {
-									//	dbg_lines.push_box_cam(paren_to_cam, e->aabb_mesh_paren, v3(0.5f));
+									if (0 && !e->mesh_aabb_paren.is_inf()) {
+										auto* paren = e->parent ? entities.get(e->parent) : nullptr;
+										dbg_lines.push_box_world(world_to_cam * paren->to_world.forw, e->mesh_aabb_paren, v3(0.5f));
 									}
 									break;
 								case ET_SCENE:
-									if (!e->aabb_mesh_paren.is_inf()) {
-										dbg_lines.push_box_cam(paren_to_cam, e->aabb_mesh_paren, v3(0.85f));
+									if (0 && !e->mesh_aabb_paren.is_inf()) {
+										auto* paren = e->parent ? entities.get(e->parent) : nullptr;
+										dbg_lines.push_box_cam(world_to_cam * paren->to_world.forw, e->mesh_aabb_paren, v3(0.85f));
 									}
 									break;
 								
 								case ET_ROOT:
 								default: assert(false);
 							}
-						};
-						
-						for_entity_subtree_mat(scn, world_to_cam, cam_to_world, draw_entity);
-						
+						}
 					}
 				}
 				
 			}
 			
-			e = scn->next;
+			id = scn->next;
 			++scn_i;
 		}
 	}
@@ -2931,12 +2941,12 @@ DECL void frame () {
 		glDrawArrays(GL_TRIANGLES, 0, 6); // draw attributeless by using gl_VertexID
 	}
 	
-	{ // Entity highlighting by draing bounding box with as dbg_lines
+	{ // Entity highlighting by drawing bounding box with as dbg_lines
 		PROFILE_SCOPED(THR_ENGINE, "entity_highlighting");
 		
 		if (!editor.highl_manipulator && editor.highl && editor.highl != editor.selected) {
 			v3 highl_col = col(0.25f, 0.25f, 1.0f);
-			dbg_lines.push_box_world(hm::ident(), editor.highl->aabb_mesh_world.box_edges(), highl_col);
+			dbg_lines.push_box_world(hm::ident(), entities.get(editor.highl)->mesh_aabb_world.box_edges(), highl_col);
 		}
 	}
 	
@@ -2970,16 +2980,20 @@ DECL void frame () {
 						assert(editor.selected);
 					}
 					
-					hm cam_to_paren;
-					hm paren_to_cam = calc_mat_parent_world(editor.selected, &cam_to_paren);
+					auto* sel_e = entities.get(editor.selected);
 					
-					paren_to_cam = world_to_cam * paren_to_cam;
-					cam_to_paren = cam_to_paren * cam_to_world;
+					hm paren_to_cam = world_to_cam;
+					hm cam_to_paren = cam_to_world;
+					if (sel_e->parent) {
+						Entity* paren = entities.get(sel_e->parent);
+						paren_to_cam *= paren->to_world.forw;
+						cam_to_paren = paren->to_world.inv * cam_to_paren;
+					}
 					
 					v3 scaleCorrect;
 					{
 						
-						hv pos_cam = paren_to_cam * hv(editor.selected->pos);
+						hv pos_cam = paren_to_cam * hv(sel_e->to_paren.pos);
 						f32 zDist_cam = -pos_cam.z;
 						
 						f32 fovScaleCorrect = fp::tan(camera.vfov / 2.0f) / 6.0f;
@@ -3028,7 +3042,7 @@ DECL void frame () {
 						p_col[highl_axis] = 0.75f;
 						n_col[highl_axis] = 0.0f;
 						
-						hm mat = paren_to_cam * translate_h(editor.selected->pos) * scale_h(scaleCorrect * axisScale);
+						hm mat = paren_to_cam * translate_h(sel_e->to_paren.pos) * scale_h(scaleCorrect * axisScale);
 						
 						draw_solid_color( meshes.non_entity_meshes[AXIS_CROSS_POS_X +highl_axis],
 								mat, hm::ident(), p_col); // TODO: maybe pass actual inverse matric here, if needed
@@ -3044,7 +3058,7 @@ DECL void frame () {
 						p_col[axis] = temp;
 						n_col[axis] = 0.0f;
 						
-						hm mat = paren_to_cam * translate_h(editor.selected->pos) * scale_h(scaleCorrect);
+						hm mat = paren_to_cam * translate_h(sel_e->to_paren.pos) * scale_h(scaleCorrect);
 						
 						draw_solid_color( meshes.non_entity_meshes[AXIS_CROSS_POS_X +axis],
 								mat, hm::ident(), p_col); // TODO: maybe pass actual inverse matric here, if needed
@@ -3073,14 +3087,14 @@ DECL void frame () {
 					};
 					auto draw_plane = [&] (m3 rot) {
 						draw_solid_color(meshes.non_entity_meshes[AXIS_CROSS_PLANE],
-								paren_to_cam * translate_h(editor.selected->pos)
+								paren_to_cam * translate_h(sel_e->to_paren.pos)
 								* hm::ident().m3(rot) * scale_h(scaleCorrect), hm::ident(), // TODO: maybe pass actual inverse matric here, if needed
 								v3(1.0f, 0.2f, 0.2f));
 					};
 					
 					glDisable(GL_CULL_FACE);
 					
-					v3 dir = -(cam_to_paren * hv(editor.selected->pos)).xyz();
+					v3 dir = -(cam_to_paren * hv(sel_e->to_paren.pos)).xyz();
 					{ // XY Nrm_Wall
 						si rotMultiple = getRotMultiple(dir.x, dir.y);
 						m3 rot = rotate_Z_90deg(rotMultiple);
