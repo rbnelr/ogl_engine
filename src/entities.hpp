@@ -13,7 +13,7 @@ namespace entities_n {
 		ET_SCENE,
 	};
 	enum entity_flag : u32 {
-		EF_HAS_AABB=	0b01,
+		EF_CASTS_SHADOW=	0b01,
 	}; DEFINE_ENUM_FLAG_OPS(entity_flag, u32)
 	
 	enum light_type_e : u32 {
@@ -48,41 +48,51 @@ namespace entities_n {
 	DECLD m2		material_showcase_grid_mat = m2::row(	+1, 0,
 															 0,-1 );
 	
-	struct Transform {
-		// Forward transform is always scale first, orientation second and position last
-		
-		v3				pos;
-		quat			ori;
-		v3				scale;
-		
-		hm				forw;
-		hm				inv;
-		
-		DECLM static constexpr Transform qnan () {
-			return { v3(QNAN), quat(v3(QNAN), QNAN), v3(QNAN), hm::all(QNAN), hm::all(QNAN) };
-		}
-		DECLM void calc_transform () {
-			forw =	translate_h(pos) * hm::ident().m3(conv_to_m3(ori)) * scale_h(scale);
-			inv =	scale_h(v3(1) / scale) * hm::ident().m3(conv_to_m3(inverse(ori))) * translate_h(-pos);
-		}
-	};
-	
 	struct Entity {
 		lstr			name;
 		u32				depth; // depth in hierarchy
 		
-		entity_flag		eflags; // might go away, only used to identify entities with and without AABB (is it selectable)
+		entity_flag		eflags;
 		entity_tag		tag;
 		
 		eid				next;
 		eid				parent;
 		eid				children;
 		
-		Transform		to_paren;
-		AABB			mesh_aabb_paren; // only valid if (eflags & EF_HAS_AABB)
+		// in parent space
+		v3				pos;
+		quat			ori;
+		v3				scale;
 		
-		Transform		to_world;
-		AABB			mesh_aabb_world; // only valid if (eflags & EF_HAS_AABB)
+		hm				to_paren;
+		hm				from_paren;
+		
+		hm				to_world;
+		hm				from_world;
+		
+		AABB			select_aabb_paren;
+		AABB			shadow_aabb_paren; // only valid if (eflags & EF_CASTS_SHADOW)
+		
+		DECLM void calc_paren_transform () {
+			to_paren =		translate_h(pos) * hm::ident().m3(conv_to_m3(ori)) * scale_h(scale);
+			from_paren =	scale_h(v3(1) / scale) * hm::ident().m3(conv_to_m3(inverse(ori))) * translate_h(-pos);
+		}
+		DECLM void calc_transforms (Entity const* paren) {
+			calc_paren_transform();
+			
+			to_world =		to_paren;
+			from_world =	from_paren;
+			if (paren) {
+				to_world =		paren->to_world * to_world;
+				from_world *=	paren->from_world;
+			}
+			
+		}
+		
+		DECLM void aabb_set_inf () {
+			select_aabb_paren = AABB::inf();
+			shadow_aabb_paren = AABB::inf();
+		}
 		
 	};
 	
@@ -99,6 +109,18 @@ namespace entities_n {
 	struct Material_Showcase_Grid : public Entity {
 		Mesh*			mesh;
 		v2				grid_offs;
+		
+		DECLM AABB calc_aabb () {
+			
+			assert(material_showcase_grid_steps.x >= 1 && material_showcase_grid_steps.y >= 1);
+			
+			AABB aabb_mesh = mesh->aabb;
+			
+			auto mat = translate_h(v3( material_showcase_grid_mat * (cast_v2<v2>(material_showcase_grid_steps -v2u32(1)) * grid_offs), 0.0f ));
+			auto aabb_outter = mat * aabb_mesh.box_corners();
+			
+			return aabb_mesh.minmax(aabb_outter);
+		}
 	};
 	struct Group : public Entity {
 		
@@ -131,119 +153,83 @@ namespace entities_n {
 			ret.base = Entity{	"<null>", (u32)-1,
 								(entity_flag)-1, (entity_tag)-1,
 								0,0,0,
-								Transform::qnan(), AABB::qnan(),
-								Transform::qnan(), AABB::qnan() };
+								v3(QNAN), quat(v3(QNAN), QNAN), v3(QNAN),
+								hm::ident(), hm::ident(), hm::ident(), hm::ident(), // to allow conditionless getting of parent to world matrix
+								AABB::qnan(), AABB::qnan() };
 			cmemset(&ret.base +1, DBG_MEM_UNINITIALIZED_BYTE, sizeof(Entity_union) -sizeof(Entity));
 			return ret;
 		}
 		
-		DECLM void calc_transforms_and_aabb (Entity_union const* paren) {
-			base.to_paren.calc_transform();
+		DECLM void aabb_calc (Entity* paren) {
 			
-			//base.to_world.pos =		(base.to_paren.forw * hv(base.to_paren.pos)).v3();
-			//base.to_world.ori =		(base.to_paren.forw * hv(base.to_paren.pos)).v3();
-			//base.to_world.scale;
-			
-			base.to_world.forw =	base.to_paren.forw;
-			base.to_world.inv =		base.to_paren.inv;
-			if (paren) {
-				base.to_world.forw =	paren->base.to_world.forw * base.to_world.forw;
-				base.to_world.inv *=	paren->base.to_world.inv;
-			}
-			
-		}
-		
-		#if 0
-		DECLM void calc_transforms_and_aabb (Entity_union const* paren) {
-			base.to_paren.calc_transform();
-			base.aabb_mesh_paren = to_space(base.to_paren.forw) mesh->aabb
-			
-		}
-		
-		template <bool SHADOW_CAST_AABB>
-		DECLM void calc_aabb
-		
-		entity_flag _calc_mesh_aabb (Entity_union* e, hm mp parent_to_world) {
-			
-			entity_flag ret = (entity_flag)0;
+			// aabb were minmax'ed with our children aabbs, if we don't have children they are still inf
 			
 			AABB aabb_mesh;
 			
-			switch (e->tag) {
+			switch (base.tag) {
 				case ET_MESH:
 				case ET_MESH_NANOSUIT: {
-					auto* m = (eMesh_Base*)e;
-					aabb_mesh = m->mesh->aabb;
-					ret = EF_HAS_MESHES;
+					aabb_mesh = eMesh_Base.mesh->aabb;
+					
 				} break;
 				
 				case ET_MATERIAL_SHOWCASE_GRID: {
-					aabb_mesh = calc_material_showcase_grid_aabb((Material_Showcase_Grid*)e);
-					ret = EF_HAS_MESHES;
+					aabb_mesh = Material_Showcase_Grid.calc_aabb();
 				} break;
 				
 				case ET_LIGHT: {
-					auto* l = (Light*)e;
-					aabb_mesh = l->mesh->aabb;
-					ret = EF_HAS_MESHES;
+					aabb_mesh = Light.mesh->aabb;
 				} break;
 				
-				case ET_GROUP: {
-				case ET_SCENE:
-					aabb_mesh = AABB::inf();
+				case ET_GROUP:
+				case ET_SCENE: {
+					// keep potential inf
 				} break;
 					
 				default: assert(false);
 			}
 			
-			hm to_parent = me_to_parent(e);
-			hm to_world = parent_to_world * to_parent;
-			
-			if (ret) {
-				auto aabb_mesh_corners = aabb_mesh.box_corners();
-				
-				e->aabb_mesh_paren = AABB::from_obb(to_parent * aabb_mesh_corners);
-				e->aabb_mesh_world = AABB::from_obb(to_world * aabb_mesh_corners);
-				
-				//dbg_lines.push_box_world(parent_to_world * to_parent, aabb_mesh.box_edges(), v3(0.2f));
-			} else {
-				e->aabb_mesh_paren = AABB::inf();
-				e->aabb_mesh_world = AABB::inf();
-			}
-			
-			auto* c = e->children;
-			while (c) {
-				auto res = _calc_mesh_aabb(c, to_world);
-				if (res) {
-					ret |= res;
+			switch (base.tag) {
+				case ET_MESH:
+				case ET_MESH_NANOSUIT:
+				case ET_MATERIAL_SHOWCASE_GRID:
+				case ET_LIGHT: {
+					auto aabb_paren = AABB::from_obb(base.to_paren * aabb_mesh.box_corners());
 					
-					e->aabb_mesh_paren.minmax( to_parent * c->aabb_mesh_paren.box_corners() );
-					e->aabb_mesh_world.minmax( c->aabb_mesh_world );
-				}
+					base.select_aabb_paren.minmax( aabb_paren );
+					if (base.tag != ET_LIGHT) {
+						base.shadow_aabb_paren.minmax( aabb_paren );
+					}
+				} break;
 				
-				c = c->next;
+				case ET_GROUP:
+				case ET_SCENE: {
+					
+				} break;
+					
+				default: assert(false);
 			}
 			
-			if (ret) {
-			//	dbg_lines.push_box_world(parent_to_world, e->aabb_mesh_paren.box_edges(), v3(1.0f));
-			//	dbg_lines.push_box_world(hm::ident(), e->aabb_mesh_world.box_edges(), v3(0.25f));
+			f32 dummy_aabb_radius = 0.15f;
+			AABB dummy = {	-dummy_aabb_radius,+dummy_aabb_radius,
+							-dummy_aabb_radius,+dummy_aabb_radius,
+							-dummy_aabb_radius,+dummy_aabb_radius };
+			
+			if (base.select_aabb_paren.is_inf()) {
+				base.select_aabb_paren = dummy +base.pos;
+			}
+			if (paren) paren->select_aabb_paren.minmax( paren->to_paren * base.select_aabb_paren.box_corners() );
+			
+			base.eflags &= ~EF_CASTS_SHADOW;
+			if (base.shadow_aabb_paren.is_inf()) {
+				// do not attribute to parent aabb
+			} else {
+				base.eflags |= EF_CASTS_SHADOW;
+				if (paren) paren->shadow_aabb_paren.minmax( paren->to_paren * base.shadow_aabb_paren.box_corners() );
 			}
 			
-			e->eflags &= ~EF_HAS_MESHES;
-			e->eflags |= ret;
-			return ret;
 		}
-		void calc_mesh_aabb () {
-			PROFILE_SCOPED(THR_ENGINE, "entities_calc_mesh_aabb");
-			
-			auto* e = root.children;
-			while (e) {
-				_calc_mesh_aabb(e, hm::ident());
-				
-				e = e->next;
-			}
-		}
-		#endif
+		
 	};
 };
 using namespace entities_n;
@@ -252,15 +238,26 @@ struct Entities {
 	
 	dynarr<Entity_union> storage; // all entities in one array as unions
 	
+	eid		first;
+	
 	DECLM void init () {
 		storage = storage.alloc(256);
 		
 		storage.push() = Entity_union::null();
 	}
+	DECLM void _clear () { // for testing
+		storage.clear(256);
+		
+		storage.push() = Entity_union::null();
+		first = 0;
+	}
 	
+	DECLM Entity* get_null_valid (eid id) {
+		return &storage[id].base;
+	}
 	DECLM Entity* get (eid id) {
 		assert(id > 0);
-		return &storage[id].base;
+		return id != 0 ? get_null_valid(id) : nullptr;
 	}
 	DECLM eid search (lstr cr name) {
 		for (eid i=1; i<storage.len; ++i) {
@@ -275,23 +272,29 @@ struct Entities {
 	DECLM eid push () {
 		auto ret = storage.len;
 		storage.push();
+		if (ret == 1) first = ret;
 		return ret;
 	}
 	DECLM void pop () {
 		storage.pop();
 	}
 	
-	DECLM void _calc_entities_transforms_and_aabb_recurse (Entity_union* e, Entity_union const* paren, u32 depth) {
-		for (;;) {
+	DECLM void _calc_entities_transforms_and_aabb_recurse (eid id, Entity* paren, u32 depth) {
+		do {
+			auto* e = &storage[id];
+			
 			e->base.depth = depth;
-			e->calc_transforms_and_aabb(paren);
-			if (e->base.children) _calc_entities_transforms_and_aabb_recurse(&storage[e->base.children], e, depth +1);
-			if (!e->base.next) break;
-			e = &storage[e->base.next];
-		}
+			e->base.calc_transforms(paren);
+			e->base.aabb_set_inf();
+			if (e->base.children) _calc_entities_transforms_and_aabb_recurse(e->base.children, &e->base, depth +1);
+			e->aabb_calc(paren);
+			
+			id = e->base.next;
+		} while (id);
 	}
-	DECLM void calc_entities_transforms_and_aabb () {
-		if (storage.len > 1) _calc_entities_transforms_and_aabb_recurse(&storage[1], nullptr, 0);
+	
+	DECLM void calc_entities_and_aabb_transforms () {
+		if (first) _calc_entities_transforms_and_aabb_recurse(first, nullptr, 0);
 	}
 	
 };

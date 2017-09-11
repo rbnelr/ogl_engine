@@ -487,12 +487,20 @@ DONE:
    -> index 0 is null value
    -> in all.entities the entities refer to each other as strings like in a file hirachy ("scene/group/mesh")
     -> these names are resolved after full file is parsed, so in the file entities can be referred to before they are 'declared'
-	
+
+#2017.09.11 mo. abend
+ fixed bugs in new (preliminary) entities system
+ -wrong normal matrix calculation (forgot transpose so it was just a normal inverse)
+ -somehow some entities in all.entities had wrong position and orientation data
+ 
+ implemented all.entities
+ ->use new parsed entities in engine (keep old entity creation code for now)
+ 
 TODO
 -FEATURES:
  
  implement all.entities
- -use new parsed entities in engine (keep old entity creation code for now)
+ ->use new parsed entities in engine (keep old entity creation code for now)
  -implement saving of all.entities
  :I can edit and actually save the scenes now
  etc.

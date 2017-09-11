@@ -3604,6 +3604,18 @@ namespace var {
 	
 	namespace entities_n {
 		
+		DECLD constexpr		cstr		ALL_ENTITIES_FILENAME =		"all.entities";
+		DECLD 				HANDLE		fh;
+		DECLD 				FILETIME	entities_file_filetime;
+		
+		_DECL void init () {
+			assert(!win32::open_existing_file(ALL_ENTITIES_FILENAME, &fh,
+					GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE));
+			
+			assert(GetFileTime(fh, NULL, NULL, &entities_file_filetime) != 0);
+			
+		}
+		
 		enum ctor_e : u32 {
 			CTOR_SCENE=0,
 			CTOR_LIGHT_SUNLIGHT,
@@ -3804,7 +3816,7 @@ namespace var {
 		
 		_DECL Token* e_scene (Token* tok, Scene* e) {
 			e->tag = ET_SCENE;
-			print("scene % % %\n", e->name.to_abs(str_storage.arr), e->to_paren.pos, e->to_paren.ori);
+			print("scene % % %\n", e->name.to_abs(str_storage.arr), e->pos, e->ori);
 			return tok;
 		}
 		_DECL Token* e_light_sunlight (Token* tok, Light* e) {
@@ -3819,7 +3831,7 @@ namespace var {
 			e->type = LT_DIRECTIONAL;
 			e->mesh = meshes.get_mesh("sun_lamp.nouv_vcol");
 			
-			print("sunlight % % % % %\n", e->name.to_abs(str_storage.arr), e->to_paren.pos, e->to_paren.ori, (u32)e->flags, e->luminance);
+			print("sunlight % % % % %\n", e->name.to_abs(str_storage.arr), e->pos, e->ori, (u32)e->flags, e->luminance);
 			return tok;
 		}
 		_DECL Token* e_light_lightbulb (Token* tok, Light* e) {
@@ -3829,13 +3841,12 @@ namespace var {
 			syntaxdev(tok = light_flags(tok, &e->flags), "e_light_lightbulb:: light_flags()");
 			syntax_token(&tok, COMMA, "e_light_lightbulb:: comma");
 			
-			v3 lum;
 			syntaxdev(tok = luminance(tok, &e->luminance), "e_light_lightbulb:: luminance()");
 			
 			e->type = LT_POINT;
 			e->mesh = meshes.get_mesh("light_bulb.nouv_vcol");
 			
-			print("lightbulb % % % % %\n", e->name.to_abs(str_storage.arr), e->to_paren.pos, e->to_paren.ori, (u32)e->flags, e->luminance);
+			print("lightbulb % % % % %\n", e->name.to_abs(str_storage.arr), e->pos, e->ori, (u32)e->flags, e->luminance);
 			return tok;
 		}
 		_DECL Token* e_mesh (Token* tok, eMesh* e) {
@@ -3859,7 +3870,7 @@ namespace var {
 			e->tex.roughness =		(textures_e)-1;
 			e->tex.metallic =		(textures_e)-1;
 			
-			print("mesh % % % %\n", e->name.to_abs(str_storage.arr), e->to_paren.pos, e->to_paren.ori, mesh.to_abs(str_storage.arr));
+			print("mesh % % % %\n", e->name.to_abs(str_storage.arr), e->pos, e->ori, mesh.to_abs(str_storage.arr));
 			return tok;
 		}
 		_DECL Token* e_mesh_nanosuit (Token* tok, eMesh_Nanosuit* e) {
@@ -3882,12 +3893,12 @@ namespace var {
 			e->tex.normal =					(textures_e)-1;
 			e->tex.specular_roughness =		(textures_e)-1;
 			
-			print("mesh_nanosuit % % % %\n", e->name.to_abs(str_storage.arr), e->to_paren.pos, e->to_paren.ori, mesh.to_abs(str_storage.arr));
+			print("mesh_nanosuit % % % %\n", e->name.to_abs(str_storage.arr), e->pos, e->ori, mesh.to_abs(str_storage.arr));
 			return tok;
 		}
 		_DECL Token* e_group (Token* tok, Group* e) {
 			e->tag = ET_GROUP;
-			print("group % % %\n", e->name.to_abs(str_storage.arr), e->to_paren.pos, e->to_paren.ori);
+			print("group % % %\n", e->name.to_abs(str_storage.arr), e->pos, e->ori);
 			return tok;
 		}
 		
@@ -3917,26 +3928,23 @@ namespace var {
 				if (prev_next) *prev_next = id;
 				
 				e->next =		0;
-				e->parent =	paren;
+				e->parent =		paren;
 				e->children =	0;
 				
-				syntaxdev(tok = position(tok, &e->to_paren.pos), "pos_ori:: position()");
+				syntaxdev(tok = position(tok, &e->pos), "pos_ori:: position()");
 				syntax_token(&tok, COMMA, "pos_ori:: comma");
 				
-				syntaxdev(tok = orientation(tok, &e->to_paren.ori), "pos_ori:: orientation()");
+				syntaxdev(tok = orientation(tok, &e->ori), "pos_ori:: orientation()");
 				
-				e->to_paren.scale = v3(1);
-				e->to_paren.forw =	hm::all(QNAN);
-				e->to_paren.inv =	hm::all(QNAN);
+				e->scale =			v3(1);
 				
-				e->mesh_aabb_paren = AABB::qnan();
+				e->to_paren =		hm::all(QNAN);
+				e->from_paren =		hm::all(QNAN);
+				e->to_world =		hm::all(QNAN);
+				e->from_world =		hm::all(QNAN);
 				
-				e->to_world.pos =	v3(QNAN);
-				e->to_world.ori =	quat(v3(QNAN), QNAN);
-				e->to_world.scale =	v3(QNAN);
-				e->to_world.forw =	hm::all(QNAN);
-				e->to_world.inv =	hm::all(QNAN);
-				e->mesh_aabb_world = AABB::qnan();
+				e->select_aabb_paren =	AABB::qnan();
+				e->shadow_aabb_paren =	AABB::qnan();
 				
 				switch (ctor) {
 					case CTOR_SCENE:			tok = e_scene(tok,				(Scene*)e);				break;
@@ -3995,19 +4003,16 @@ namespace var {
 		}
 	}
 	
-	_DECL void test_parse_entitites () {
+	_DECL void test_load_entitites () {
+		using namespace entities_n;
 		
 		print(">>>>>>>>>> test_parse_entitites\n");
 		
-		HANDLE fh;
-		assert(!win32::open_existing_file("all.entities", &fh,
-				GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE));
-		
 		//
-		entities_n::str_storage.free();
+		str_storage.free();
 		
 		auto data = ::array<char>::alloc(win32::get_file_size(fh) +1);
-		entities_n::str_storage = entities_n::str_storage.alloc(kibi(4));
+		str_storage = str_storage.alloc(kibi(4));
 		
 		win32::set_filepointer(fh, 0);
 		
@@ -4019,7 +4024,7 @@ namespace var {
 		
 		if (tokens.len >= 1 && tokens[tokens.len -1].tok == EOF_) {
 			
-			auto* tok = entities_n::file(tokens.arr);
+			auto* tok = file(tokens.arr);
 			if (tok && tok->tok == EOF_) {
 				
 			} else {
@@ -4032,10 +4037,34 @@ namespace var {
 		
 		for (eid i=1; i<entities.storage.len; ++i) {
 			auto* e = entities.get(i);
-			e->name = e->name.to_abs(entities_n::str_storage.arr);
+			e->name = e->name.to_abs(str_storage.arr);
 		}
 		
 		print(">>>>>>>>>> \n");
+		
+	}
+	_DECL void test_reload_entitites () {
+		using namespace entities_n;
+		
+		FILETIME now;
+		
+		assert(GetFileTime(fh, NULL, NULL, &now) != 0);
+		
+		auto ret = CompareFileTime(&now, &entities_file_filetime);
+		
+		entities_file_filetime = now;
+		
+		if (		ret == 1 ) {
+			
+		} else if (	ret == 0 ) {
+			return;
+		} else {
+			assert(ret == -1);
+			warning("entities file % changed, but new time is before prev time!", ALL_ENTITIES_FILENAME);
+		}
+		
+		entities._clear();
+		test_load_entitites();
 		
 	}
 	

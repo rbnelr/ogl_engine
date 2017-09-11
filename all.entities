@@ -1,5 +1,5 @@
 
-scene("shadow_test_0", v3(-6.19, +12.07, +1.00), quat(ident)
+scene("shadow_test_0", v3(-6.19, +12.07, +1.00) +v3(+0,0,0), quat(ident))
 {
 	sunlight("Test dir light", v3(+1.21, -2.92, +3.51), quat(v3(+0.61, +0.01, +0.01), +0.79),
 		SHADOW, srgb(244,217,171) * col(2000))
@@ -16,21 +16,25 @@ scene("shadow_test_0", v3(-6.19, +12.07, +1.00), quat(ident)
 			0, srgb(48,79,200) * col(100))
 	}
 	
-	mesh("Window_Pillar", v3(+3.7783, -5.7335, +0.0000), quat(v3(+0.0005, -0.0004, -0.6161), +0.7877),
+	mesh("Window_Pillar", v3(-3.21, +0.00, +0.16), quat(v3(-0.00, +0.00, -1.00), +0.08),
 		"window_pillar.nouv", 0)
 	{
-		lightbulb("Torch light L", v3(+4.5799, -6.4858, +1.9066), quat(ident),
+		lightbulb("Torch light L", v3(-0.91969, +0.610, +1.880), quat(ident),
 			0, srgb(240,142,77) * col(60))
 			
-		lightbulb("Torch light R", v3(+4.1454, -4.6933, +1.8854), quat(ident),
+		lightbulb("Torch light R", v3(+0.91969, +0.610, +1.880), quat(ident),
 			0, srgb(240,142,77) * col(60))
 	}
 	
-	group("Nanosuit", v3(-0.6927, -1.1003, +0.5381), quat(v3(+0.0049, -0.0048, -0.6973), +0.7167))
+	group("Nanosuit", v3(+1.64, +3.23, +0.54), quat(v3(+0.00, +0.02, +1.00), +0.01))
 	{
-		mesh_nanosuit("Torso",	v3(0), quat(ident), "nanosuit_torso", 0)
-		mesh_nanosuit("Legs",	v3(0), quat(ident), "nanosuit_legs", 0)
-		mesh_nanosuit("Neck",	v3(0), quat(ident), "nanosuit_neck", 0)
-		mesh_nanosuit("Helmet",	v3(0), quat(ident), "nanosuit_helmet", 0)
+		mesh_nanosuit("Torso",	v3(0), quat(ident), "nano_suit/nanosuit_torso", 0)
+		mesh_nanosuit("Legs",	v3(0), quat(ident), "nano_suit/nanosuit_legs", 0)
+		mesh_nanosuit("Neck",	v3(0), quat(ident), "nano_suit/nanosuit_neck", 0)
+		mesh_nanosuit("Helmet",	v3(0), quat(ident), "nano_suit/nanosuit_helmet", 0)
+	}
+	
+	group("Nanosuit 2", v3(+2.64, +3.23, +0.54), quat(v3(+0.00, +0.02, +1.00), +0.01))
+	{
 	}
 }

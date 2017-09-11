@@ -487,6 +487,7 @@ struct Ray {
 	v3	pos;
 	v3	dir; // not normalized
 };
+
 DECL Ray target_ray_from_screen_pos (v2 vp window_pos, v2 vp window_res, v2 vp cam_frust_scale, f32 clip_near) { // result in cam space
 	v2 temp = window_pos / window_res;
 	temp = (temp * v2(2.0f)) -v2(1.0f);
@@ -662,7 +663,7 @@ union Box_Corners { // l=low h=high
 	};
 	v3			arr[8];
 	
-	Box_Edges box_edges () const {
+	DECLM Box_Edges box_edges () const {
 		Box_Edges ret;
 		ret.lll_hll = {lll, hll};
 		ret.hll_hhl = {hll, hhl};
@@ -693,18 +694,18 @@ union AABB {
 	};
 	f32	arr[6];
 	
-	static constexpr AABB inf () { // initialize to infinite values so that doing MIN() & MAX() in a loop will get us the AABB
+	DECLM static constexpr AABB inf () { // initialize to infinite values so that doing MIN() & MAX() in a loop will get us the AABB
 		return { {	+fp::inf<f32>(), -fp::inf<f32>(),
 					+fp::inf<f32>(), -fp::inf<f32>(),
 					+fp::inf<f32>(), -fp::inf<f32>() } };
 	}
-	static constexpr AABB qnan () {
+	DECLM static constexpr AABB qnan () {
 		return { {	fp::qnan<f32>(), fp::qnan<f32>(),
 					fp::qnan<f32>(), fp::qnan<f32>(),
 					fp::qnan<f32>(), fp::qnan<f32>() } };
 	}
 	
-	bool is_inf () const {
+	DECLM bool is_inf () const {
 		bool ret = !std::isfinite(xl);
 		#if DEBUG
 		if (ret) {
@@ -716,7 +717,7 @@ union AABB {
 		return ret;
 	}
 	
-	AABB& minmax (v3 vp v) {
+	DECLM AABB& minmax (v3 vp v) {
 		xl = MIN(xl, v.x);
 		xh = MAX(xh, v.x);
 		yl = MIN(yl, v.y);
@@ -725,24 +726,24 @@ union AABB {
 		zh = MAX(zh, v.z);
 		return *this;
 	}
-	AABB& minmax (Box_Corners cr box) {
+	DECLM AABB& minmax (Box_Corners cr box) {
 		for (u32 i=0; i<8; ++i) {
 			minmax(box.arr[i]);
 		}
 		return *this;
 	}
-	AABB& minmax (AABB cr aabb) {
+	DECLM AABB& minmax (AABB cr aabb) {
 		minmax(aabb.box_corners());
 		return *this;
 	}
 	
-	static AABB from_obb (Box_Corners cr obb) {
+	DECLM static AABB from_obb (Box_Corners cr obb) {
 		AABB ret = inf();
 		ret.minmax(obb);
 		return ret;
 	}
 	
-	Box_Corners box_corners () const {
+	DECLM Box_Corners box_corners () const {
 		Box_Corners ret;
 		ret.lll =	v3(xl,yl,zl);
 		ret.hll =	v3(xh,yl,zl);
@@ -756,22 +757,29 @@ union AABB {
 		return ret;
 	}
 	
-	Box_Edges box_edges () const {
+	DECLM Box_Edges box_edges () const {
 		return box_corners().box_edges();
+	}
+	
+	DECLM AABB& operator+= (v3 vp v) {
+		for (ui i=0; i<6; ++i) {
+			arr[i] += v[i/2];
+		}
+		return *this;
 	}
 	
 };
 
 } // namespace math
 
-math::Box_Corners operator* (m3 mp m, math::Box_Corners cr b) {
+DECL math::Box_Corners operator* (m3 mp m, math::Box_Corners cr b) {
 	math::Box_Corners ret;
 	for (ui i=0; i<8; ++i) {
 		ret.arr[i] = m * b.arr[i];
 	}
 	return ret;
 }
-math::Box_Corners operator* (hm mp m, math::Box_Corners cr b) {
+DECL math::Box_Corners operator* (hm mp m, math::Box_Corners cr b) {
 	math::Box_Corners ret;
 	for (ui i=0; i<8; ++i) {
 		ret.arr[i] = (m * hv(b.arr[i])).xyz();
@@ -779,10 +787,10 @@ math::Box_Corners operator* (hm mp m, math::Box_Corners cr b) {
 	return ret;
 }
 
-math::Box_Corners operator+ (math::Box_Corners cr b, v3 vp v) {
-	math::Box_Corners ret;
-	for (ui i=0; i<8; ++i) {
-		ret.arr[i] = b.arr[i] +v;
+DECL math::AABB operator+ (math::AABB cr aabb, v3 vp v) {
+	math::AABB ret = aabb;
+	for (ui i=0; i<6; ++i) {
+		ret.arr[i] += v[i/2];
 	}
 	return ret;
 }
